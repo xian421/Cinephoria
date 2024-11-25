@@ -9,7 +9,7 @@
   fetchMovies();
 </script>
 
-<style>
+<style> 
   ul {
       list-style: none;
       padding: 0;
