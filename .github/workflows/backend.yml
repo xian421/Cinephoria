@@ -10,9 +10,11 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # Repository auschecken
+      # Repository vollständig auschecken
       - name: Checkout repository
         uses: actions/checkout@v3
+        with:
+          fetch-depth: 0  # Klont das gesamte Repository
 
       # Python einrichten
       - name: Set up Python
@@ -26,9 +28,9 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      # Tests ausführen
-      #- name: Run tests
-       # run: pytest
+      # Heroku CLI installieren
+      - name: Install Heroku CLI
+        run: curl https://cli-assets.heroku.com/install.sh | sh
 
       # Deployment auf Heroku
       - name: Deploy to Heroku
