@@ -41,7 +41,7 @@
     display: flex;
     align-items: center;
     justify-content: space-around; /* Gleichmäßige Verteilung */
-    background: #f2f2f2;
+    background: #ffffff;
     padding: 1rem;
     border-radius: 12px;
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
@@ -74,19 +74,19 @@
     font-size: 1.2rem;
     font-weight: bold;
     color: rgb(0, 0, 0);
-    background: #f2f2f2; /* Grundfarbe der Buttons */
+    background: #ffffff; /* Grundfarbe der Buttons */
     border: none;
     border-radius: 12px;
     padding: 1rem 2rem;
-    
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
     cursor: pointer;
     transition: all 0.3s ease;
-    min-width: 120px; /* Einheitliche Breite */
+    min-width: 160px; /* Einheitliche Breite */
     text-align: center;
   }
 
   button:hover {
-    background: #4e5d5a; /* Hover-Farbe */
+    background: #1abc9c; /* Hover-Farbe */
     transform: scale(1.1); /* Leichte Vergrößerung beim Hover */
   }
 
@@ -103,7 +103,7 @@
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    background: #2e3b4e;
+    background: #ffffff;
     padding: 2rem 1rem;
     border-radius: 12px;
     box-shadow: 0 -4px 6px rgba(0, 0, 0, 0.3);
@@ -119,12 +119,12 @@
   .footer-buttons button {
     font-size: 1rem;
     font-weight: bold;
-    color: white;
-    background: #6c7a89; /* Grundfarbe der Buttons */
+    color: rgb(0, 0, 0);
+    background: #ffffff; /* Grundfarbe der Buttons */
     border: none;
     border-radius: 12px;
     padding: 0.8rem 1.5rem;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
     cursor: pointer;
     transition: all 0.3s ease;
   }
@@ -147,7 +147,7 @@
     display: flex;
     justify-content: center;
     align-items: center;
-    background: #6c7a89;
+    background: #ffffff;
     width: 50px;
     height: 50px;
     border-radius: 50%;
@@ -185,6 +185,24 @@
     text-align: center;
   }
 
+
+  .social-icons img {
+  width: 50px; /* Breite der Icons */
+  height: 50px; /* Höhe der Icons */
+  border-radius: 50%; /* Runde Icons */
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3); /* Leichter Schatten */
+  transition: all 0.3s ease;
+  object-fit: cover; /* Bildanpassung für perfekte Darstellung */
+}
+
+.social-icons img:hover {
+  transform: scale(1.1); /* Vergrößerung beim Hover */
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.4); /* Schatten verstärken */
+}
+
+.footer-text {
+  color: black;
+}
 
 
 
@@ -256,15 +274,19 @@
     <div class="social-icons">
       <a href="https://facebook.com" target="_blank" aria-label="Facebook">
         <i class="fab fa-facebook-f"></i>
+        <img src="/facebook.png" alt="LinkedIn" />
       </a>
       <a href="https://twitter.com" target="_blank" aria-label="Twitter">
         <i class="fab fa-twitter"></i>
+        <img src="/twitter.png" alt="LinkedIn" />
       </a>
       <a href="https://instagram.com" target="_blank" aria-label="Instagram">
         <i class="fab fa-instagram"></i>
+        <img src="/instagram.png" alt="LinkedIn" />
       </a>
       <a href="https://linkedin.com" target="_blank" aria-label="LinkedIn">
         <i class="fab fa-linkedin-in"></i>
+        <img src="/linked.png" alt="LinkedIn" />
       </a>
     </div>
   
@@ -275,7 +297,7 @@
   
     <!-- Footer Text -->
     <p class="footer-text">
-      © 2024 Meine App. Alle Rechte vorbehalten.
+      © 2024 Cinephoria. Alle Rechte vorbehalten.
     </p>
   </footer>
   
