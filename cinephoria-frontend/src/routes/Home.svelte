@@ -249,6 +249,5 @@
   .close:hover {
     color: #ff0000;
   }
+
 </style>
-
-
