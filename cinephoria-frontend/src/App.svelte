@@ -69,7 +69,7 @@
   import Upcoming from './routes/Upcoming.svelte';
   import NotFound from './routes/NotFound.svelte';
 
-  // Routen definieren
+  // Routen definieren  
   const routes = {
     '/': Home,
     '/now-playing': NowPlaying,
