@@ -58,7 +58,7 @@
     border-radius: 8px;
   }
 </style> -->
-
+<!-- 
 <script>
   import { wrap } from 'svelte-spa-router/wrap';
   import Router from 'svelte-spa-router';
@@ -85,6 +85,51 @@
 </nav>
 
 <main>
+  <Router {routes} />
+</main>
+
+<style>
+  nav {
+    display: flex;
+    gap: 16px;
+    padding: 16px;
+    background: #333;
+  }
+  nav a {
+    color: white;
+    text-decoration: none;
+    font-weight: bold;
+  }
+  nav a:hover {
+    text-decoration: underline;
+  }
+  main {
+    padding: 16px;
+  }
+</style> -->
+
+
+<script>
+  import Router from 'svelte-spa-router';
+
+  // Importiere die Seiten
+  import Home from './routes/Home.svelte';
+  import About from './routes/About.svelte';
+
+  // Definiere die Routen
+  const routes = {
+    '/': Home, // Standardroute (Home)
+    '/about': About, // Weitere Route (About)
+  };
+</script>
+
+<nav>
+  <a href="/">Home</a>
+  <a href="/about">About</a>
+</nav>
+
+<main>
+  <!-- Router-Komponente -->
   <Router {routes} />
 </main>
 
