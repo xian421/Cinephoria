@@ -4,11 +4,18 @@
   let nowPlayingMovies = [];
   let selectedMovie = null;
 
+  // Konstanten für URLs
+  const API_URL = 'https://cinephoria-backend-c53f94f0a255.herokuapp.com/movies/now_playing';
+  const IMAGE_BASE_URL = 'https://image.tmdb.org/t/p/w500';
+
   onMount(async () => {
-    const response = await fetch(
-      'https://cinephoria-backend-c53f94f0a255.herokuapp.com/movies/now_playing'
-    );
-    nowPlayingMovies = (await response.json()).results;
+    try {
+      const response = await fetch(API_URL);
+      const data = await response.json();
+      nowPlayingMovies = data.results;
+    } catch (error) {
+      console.error('Fehler beim Laden der Filme:', error);
+    }
   });
 
   function openModal(movie) {
@@ -22,31 +29,62 @@
   const currentYear = new Date().getFullYear();
 </script>
 
+<main>
+  <h1>Aktuelles Kinoprogramm im CINEPHORIA</h1>
 
+  <!-- Filmliste -->
+  <section class="movies">
+    {#each nowPlayingMovies as movie}
+    <article class="movie-card">
+      <button
+        class="movie-button"
+        on:click={() => openModal(movie)}
+        aria-label="Details zu {movie.title} anzeigen"
+      >
+        <img src="{IMAGE_BASE_URL}{movie.poster_path}" alt="{movie.title}" />
+        <div class="movie-details">
+          <h2>{movie.title}</h2>
+        </div>
+      </button>
+    </article>
+    {/each}
+  </section>
 
-<h1>Aktuelles Kinoprogramm im CINEPHORIA</h1>
-
-<div class="movies">
-  {#each nowPlayingMovies as movie}
-    <div class="movie-card" on:click={() => openModal(movie)}>
-      <img src={`https://image.tmdb.org/t/p/w500${movie.poster_path}`} alt={movie.title} />
-      <div class="movie-details">
-        <h2>{movie.title}</h2>
-      </div>
-    </div>
-  {/each}
-</div>
-
-{#if selectedMovie}
-  <div class="modal" on:click={closeModal}>
-    <div class="modal-content" on:click|stopPropagation>
-      <button class="close" on:click={closeModal}>&times;</button>
+  <!-- Modal -->
+  {#if selectedMovie}
+  <div
+    class="modal"
+    on:click={closeModal}
+    tabindex="0"
+    role="button"
+    aria-label="Modal schließen"
+    on:keydown={(event) => {
+      if (event.key === 'Enter' || event.key === ' ') {
+        closeModal();
+      }
+    }}
+  >
+    <!-- svelte-ignore a11y_click_events_have_key_events -->
+    <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
+    <div
+      class="modal-content"
+      role="dialog"
+      aria-modal="true"
+      on:click|stopPropagation
+    >
+      <button
+        class="close"
+        on:click={closeModal}
+        aria-label="Modal schließen"
+      >
+        &times;
+      </button>
       <div class="modal-header">
         <!-- Poster-Bild -->
         <img
           class="poster"
-          src={`https://image.tmdb.org/t/p/w500${selectedMovie.poster_path}`}
-          alt={selectedMovie.title}
+          src="{IMAGE_BASE_URL}{selectedMovie.poster_path}"
+          alt="{selectedMovie.title}"
         />
         <!-- Film-Details -->
         <div class="info">
@@ -56,7 +94,6 @@
           <p><strong>Release-Datum:</strong> {selectedMovie.release_date}</p>
           <p><strong>Beliebtheit:</strong> {selectedMovie.popularity}</p>
           <p><strong>Bewertung:</strong> {selectedMovie.vote_average} / 10 ({selectedMovie.vote_count} Stimmen)</p>
-          <!-- Neuer Button -->
           <button class="more-info">Weitere Informationen</button>
         </div>
       </div>
@@ -68,21 +105,14 @@
 {/if}
 
 
+</main>
+
 <style>
   /* Allgemeine Styles */
-  body {
+  :global(body) {
     margin: 0;
     font-family: Arial, sans-serif;
     background-color: #f8f8f8;
-  }
-
-  header {
-    width: 100%;
-    padding: 10px;
-    background-color: #333;
-    color: white;
-    text-align: center;
-    font-size: 1.5rem;
   }
 
   h1 {
@@ -92,6 +122,7 @@
     color: #333;
   }
 
+  /* Filmliste */
   .movies {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
@@ -132,6 +163,16 @@
     color: #444;
   }
 
+  .movie-button {
+  background: none;
+  border: none;
+  padding: 0;
+  margin: 0;
+  width: 100%;
+  text-align: left;
+  cursor: pointer;
+}
+
   /* Modal */
   .modal {
     position: fixed;
@@ -151,10 +192,11 @@
     padding: 20px;
     border-radius: 8px;
     width: 90%;
-    max-width: 800px; /* Breiteres Modal */
+    max-width: 800px;
     max-height: 90%;
     overflow-y: auto;
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+    position: relative;
   }
 
   .modal-header {
@@ -164,7 +206,7 @@
   }
 
   .poster {
-    width: 30%; /* Verkleinertes Bild */
+    width: 30%;
     border-radius: 8px;
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
   }
@@ -196,33 +238,34 @@
 
   .close:hover {
     color: #ff0000;
+  }
 
-    footer {
-      background-color: #333;
-      color: white;
-      text-align: center;
-      padding: 1.5rem 1rem;
-      font-size: 0.9rem;
-    }
+  /* Footer */
+  footer {
+    background-color: #333;
+    color: white;
+    text-align: center;
+    padding: 1.5rem 1rem;
+    font-size: 0.9rem;
+  }
 
-    footer a {
-      color: #4CAF50;
-      text-decoration: none;
-      margin: 0 0.5rem;
-    }
+  footer a {
+    color: #4CAF50;
+    text-decoration: none;
+    margin: 0 0.5rem;
+  }
 
-    footer a:hover {
-      text-decoration: underline;
-    }
+  footer a:hover {
+    text-decoration: underline;
+  }
 
-    .footer-links {
-      margin-bottom: 1rem;
-    }
+  .footer-links {
+    margin-bottom: 1rem;
+  }
 
-    .footer-links a {
-      display: inline-block;
-      margin: 0 1rem;
-    }
+  .footer-links a {
+    display: inline-block;
+    margin: 0 1rem;
   }
 </style>
 
