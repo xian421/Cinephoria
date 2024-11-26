@@ -1,4 +1,4 @@
-<script>
+<!-- <script>
   import { onMount } from 'svelte';
 
   let nowPlayingMovies = [];
@@ -56,5 +56,54 @@
   .movie-card img {
     width: 100%;
     border-radius: 8px;
+  }
+</style> -->
+
+<script>
+  import { wrap } from 'svelte-spa-router/wrap';
+  import Router from 'svelte-spa-router';
+
+  // Seiten importieren
+  import Home from './routes/Home.svelte';
+  import NowPlaying from './routes/NowPlaying.svelte';
+  import Upcoming from './routes/Upcoming.svelte';
+  import NotFound from './routes/NotFound.svelte';
+
+  // Routen definieren
+  const routes = {
+    '/': Home,
+    '/now-playing': NowPlaying,
+    '/upcoming': Upcoming,
+    '*': NotFound, // Wildcard für 404-Seiten
+  };
+</script>
+
+<nav>
+  <a href="/">Home</a>
+  <a href="/now-playing">Now Playing</a>
+  <a href="/upcoming">Upcoming</a>
+</nav>
+
+<main>
+  <Router {routes} />
+</main>
+
+<style>
+  nav {
+    display: flex;
+    gap: 16px;
+    padding: 16px;
+    background: #333;
+  }
+  nav a {
+    color: white;
+    text-decoration: none;
+    font-weight: bold;
+  }
+  nav a:hover {
+    text-decoration: underline;
+  }
+  main {
+    padding: 16px;
   }
 </style>
