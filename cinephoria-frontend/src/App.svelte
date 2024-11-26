@@ -66,7 +66,7 @@
   // Seiten importieren
   import Home from './routes/Home.svelte';
   import NowPlaying from './routes/NowPlaying.svelte';
-  import Upcoming from ' ./routes/Upcoming.svelte';
+  import Upcoming from './routes/Upcoming.svelte';
   import NotFound from './routes/NotFound.svelte';
 
   // Routen definieren  
