@@ -22,9 +22,7 @@
   const currentYear = new Date().getFullYear();
 </script>
 
-<header>
-  Cinephoria. Das ist ein Header
-</header>
+
 
 <h1>Aktuelles Kinoprogramm im CINEPHORIA</h1>
 
