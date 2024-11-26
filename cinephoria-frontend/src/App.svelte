@@ -108,7 +108,7 @@
   }
 </style> -->
 
-<script>
+<!-- <script>
   import Router from 'svelte-spa-router';
   import Home from './routes/Home.svelte';
   import About from './routes/About.svelte';
@@ -121,7 +121,7 @@
 
 <nav>
   <a href="/">Home</a>
-  <a href="/about">Abouuut</a>
+  <a href="/about">About</a>
 </nav>
 
 <main>
@@ -146,4 +146,42 @@
   main {
     padding: 16px;
   }
-</style>
+</style> -->
+
+<script>
+  import { Router, Link, Route } from "svelte-routing";
+  import Home from "./routes/Home.svelte";
+  import NowPlaying from "./routes/Nowplaying.svelte";
+  import Upcoming from "./routes/Upcoming.svelte";
+
+  export let url = ""; // Für SSR
+</script>
+
+<Router {url}>
+  <nav>
+    <Link to="/">Home</Link>
+    <Link to="/nowplaying">NowPlaying</Link>
+    <Link to="/upcoming">Upcoming</Link>
+  </nav>
+
+  <div>
+    <Route path="/" component={Home} />
+    <Route path="/nowplaying" component={NowPlaying} />
+    <Route path="/upcoming" component={Upcoming} />
+  </div>
+</Router>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
