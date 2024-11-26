@@ -1,5 +1,6 @@
 <script>
   import { onMount } from 'svelte';
+  import { navigate } from 'svelte-routing'; // Hinzugefügt
 
   let nowPlayingMovies = [];
   let selectedMovie = null;
@@ -26,8 +27,15 @@
     selectedMovie = null;
   }
 
+  function navigateToDescription() {
+    console.log('Navigiere zu Beschreibung mit ID:', selectedMovie.id);
+    navigate(`/beschreibung/${selectedMovie.id}`);
+    closeModal();
+  }
+
   const currentYear = new Date().getFullYear();
 </script>
+
 
 <main>
   <h1>Aktuelles Kinoprogramm im CINEPHORIA</h1>
@@ -94,7 +102,9 @@
           <p><strong>Release-Datum:</strong> {selectedMovie.release_date}</p>
           <p><strong>Beliebtheit:</strong> {selectedMovie.popularity}</p>
           <p><strong>Bewertung:</strong> {selectedMovie.vote_average} / 10 ({selectedMovie.vote_count} Stimmen)</p>
-          <button class="more-info">Weitere Informationen</button>
+          <button class="more-info" on:click={navigateToDescription}>
+            Weitere Informationen
+          </button>
         </div>
       </div>
       <div class="modal-body">
