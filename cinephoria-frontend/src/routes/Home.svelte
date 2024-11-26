@@ -44,11 +44,13 @@
     <div class="modal-content" on:click|stopPropagation>
       <button class="close" on:click={closeModal}>&times;</button>
       <div class="modal-header">
+        <!-- Poster-Bild -->
         <img
           class="poster"
           src={`https://image.tmdb.org/t/p/w500${selectedMovie.poster_path}`}
           alt={selectedMovie.title}
         />
+        <!-- Film-Details -->
         <div class="info">
           <h2>{selectedMovie.title}</h2>
           <p><strong>Originaltitel:</strong> {selectedMovie.original_title}</p>
@@ -56,6 +58,8 @@
           <p><strong>Release-Datum:</strong> {selectedMovie.release_date}</p>
           <p><strong>Beliebtheit:</strong> {selectedMovie.popularity}</p>
           <p><strong>Bewertung:</strong> {selectedMovie.vote_average} / 10 ({selectedMovie.vote_count} Stimmen)</p>
+          <!-- Neuer Button -->
+          <button class="more-info">Weitere Informationen</button>
         </div>
       </div>
       <div class="modal-body">
@@ -64,6 +68,7 @@
     </div>
   </div>
 {/if}
+
 
 <style>
   /* Allgemeine Styles */
