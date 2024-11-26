@@ -108,18 +108,14 @@
   }
 </style> -->
 
-
 <script>
   import Router from 'svelte-spa-router';
-
-  // Importiere die Seiten
   import Home from './routes/Home.svelte';
   import About from './routes/About.svelte';
 
-  // Definiere die Routen
   const routes = {
-    '/': Home, // Standardroute (Home)
-    '/about': About, // Weitere Route (About)
+    '/': Home, // Home-Seite
+    '/about': About, // About-Seite
   };
 </script>
 
@@ -129,7 +125,6 @@
 </nav>
 
 <main>
-  <!-- Router-Komponente -->
   <Router {routes} />
 </main>
 
