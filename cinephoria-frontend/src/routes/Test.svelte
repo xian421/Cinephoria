@@ -8,9 +8,7 @@
         nowPlayingMovies = (await response.json()).results;
     });
 </script>
-<header>
-    Cinephoria. Das ist ein Header
-  </header>
+
   
 
   
