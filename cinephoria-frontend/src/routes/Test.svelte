@@ -10,7 +10,6 @@
 </script>
 
   
-
   
 <h1>Aktuelles Kinoprogramm im CINEPHORIA</h1>
 <div class="movies">
