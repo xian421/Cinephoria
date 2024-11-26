@@ -232,5 +232,5 @@
     <a href="/datenschutz">Datenschutzerklärung</a>
     <a href="/kontakt">Kontakt</a>
   </div>
-  <p>© {currentYear} Dein Projektname. Alle Rechte vorbehalten.</p>
+  <p>© {currentYear} Cinephoria. Alle Rechte vorbehalten.</p>
 </footer>
