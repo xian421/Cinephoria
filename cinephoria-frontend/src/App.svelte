@@ -84,5 +84,5 @@
     <a href="/nowplaying">Now Playing</a>
     <a href="/upcoming">Upcoming</a>
   </div>
-  <img src="/img/logo.jpg" alt="Cinephoria banner" />
+  <img src="/img/Logo.jpg" alt="Cinephoria banner" />
 </main>
