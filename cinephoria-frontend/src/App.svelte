@@ -14,7 +14,7 @@
     <Link to="/">Home</Link>
     <Link to="/nowplaying">NowPlaying</Link>
     <Link to="/upcoming">Upcoming</Link>
-    
+    <Link to="/test">Test</Link>
   </nav>
 
   <div>
