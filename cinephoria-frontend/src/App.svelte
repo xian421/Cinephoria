@@ -110,8 +110,8 @@
 
 <script>
   import Router from 'svelte-spa-router';
-  import Home from './routes/Home.svelte';
-  import About from './routes/About.svelte';
+  import Home from './Home.svelte';
+  import About from './About.svelte';
 
   const routes = {
     '/': Home, // Home-Seite
