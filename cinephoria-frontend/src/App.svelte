@@ -6,7 +6,6 @@
   import NotFound from "./routes/Notfound.svelte";
   import Test from "./routes/Test.svelte";
 
-
   export let url = ""; // Für SSR
 </script>
 
@@ -26,4 +25,3 @@
     <Route path="/test" component={Test} />
   </div>
 </Router>
-
