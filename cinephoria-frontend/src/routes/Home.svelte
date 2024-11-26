@@ -249,34 +249,6 @@
   .close:hover {
     color: #ff0000;
   }
-
-  /* Footer */
-  footer {
-    background-color: #333;
-    color: white;
-    text-align: center;
-    padding: 1.5rem 1rem;
-    font-size: 0.9rem;
-  }
-
-  footer a {
-    color: #4CAF50;
-    text-decoration: none;
-    margin: 0 0.5rem;
-  }
-
-  footer a:hover {
-    text-decoration: underline;
-  }
-
-  .footer-links {
-    margin-bottom: 1rem;
-  }
-
-  .footer-links a {
-    display: inline-block;
-    margin: 0 1rem;
-  }
 </style>
 
 
