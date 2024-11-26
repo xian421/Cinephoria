@@ -3,7 +3,7 @@
   import Home from "./routes/Home.svelte";
   import NowPlaying from "./routes/Nowplaying.svelte";
   import Upcoming from "./routes/Upcoming.svelte";
-  import NotFound from "./routes/NotFound.svelte"; // NotFound-Seite importieren
+  import NotFound from "./routes/Notfound.svelte"; // NotFound-Seite importieren
 
   export let url = ""; // Für SSR
 </script>
