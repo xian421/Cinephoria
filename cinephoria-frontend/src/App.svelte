@@ -67,7 +67,7 @@
   import Home from './routes/Home.svelte';
   import Upcoming from './routes/Upcoming.svelte';
   import NotFound from './routes/Notfound.svelte';
-  //  import NowPlaying from './routes/nowplaying.svelte';
+  import NowPlaying from './routes/nowplaying.svelte';
 
   // Routen definieren  
   const routes = {
