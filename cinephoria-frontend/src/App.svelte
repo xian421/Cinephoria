@@ -5,6 +5,7 @@
   import Upcoming from "./routes/Upcoming.svelte";
   import NotFound from "./routes/Notfound.svelte";
   import Test from "./routes/Test.svelte";
+  import Beschreibung from './Beschreibung.svelte';
 
   export let url = ""; // Für SSR
 
@@ -172,5 +173,6 @@
     <Route path="/upcoming" component={Upcoming} />
     <Route path="*" component={NotFound} />
     <Route path="/test" component={Test} />
+    <Route path="/beschreibung/:id" component={Beschreibung} />
   </div>
 </Router>
