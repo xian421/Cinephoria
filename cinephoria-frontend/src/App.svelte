@@ -5,7 +5,7 @@
   import Upcoming from "./routes/Upcoming.svelte";
   import NotFound from "./routes/Notfound.svelte";
   import Test from "./routes/Test.svelte";
-  import Beschreibung from './Beschreibung.svelte';
+  import Beschreibung from './routes/Beschreibung.svelte';
 
   export let url = ""; // Für SSR
 
