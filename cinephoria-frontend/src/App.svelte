@@ -127,7 +127,7 @@
   <nav>
     <!-- Logo-Bereich -->
     <a href="/" class="logo">
-      <img src="/Logo.jpeg" alt="Logo" />
+      <img src="/Logo.png" alt="Logo" />
     </a>
 
     <!-- Hamburger-Menü für kleine Bildschirme -->
