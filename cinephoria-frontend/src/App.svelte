@@ -66,15 +66,15 @@
   // Seiten importieren
   import Home from './routes/Home.svelte';
   import Upcoming from './routes/Upcoming.svelte';
-  import NotFound from './routes/Notfound.svelte';
-  import NowPlaying from './routes/nowplaying.svelte';
+  import Notfound from './routes/Notfound.svelte';
+  import Nowplaying from './routes/nowplaying.svelte';
 
   // Routen definieren  
   const routes = {
     '/': Home,
-    '/now-playing': NowPlaying,
+    '/now-playing': Nowplaying,
     '/upcoming': Upcoming,
-    '*': NotFound, // Wildcard für 404-Seiten
+    '*': Notfound, // Wildcard für 404-Seiten
   };
 </script>
 
