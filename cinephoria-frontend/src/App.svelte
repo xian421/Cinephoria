@@ -26,7 +26,7 @@
     display: flex;
     align-items: center; 
     justify-content: space-between;
-    background: #ece8e8; /* Hellgrauer Hintergrund passend zum Logo */
+    background: #f3f3f3; /* Hellgrauer Hintergrund passend zum Logo */
     color: white;
     padding: 0.5rem 2rem;
     height: 60px; /* Passt die Höhe an das Logo an */
