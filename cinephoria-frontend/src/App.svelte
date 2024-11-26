@@ -34,7 +34,12 @@
       behavior: "smooth"
     });
   };
+
+
+
+
 </script>
+
 
 <style>
   nav {
@@ -49,6 +54,7 @@
     top: 0;
     z-index: 1000;
   }
+  
 
   .logo {
     display: flex;
@@ -58,10 +64,11 @@
     color: white;
     font-size: 1.2rem;
     font-weight: bold;
+    transition: transform 0.4s ease;
   }
 
   .logo:hover {
-    transform: scale(1.1); /* Vergrößerung des Logos beim Hover */
+    transform: scale(1.25); /* Vergrößerung des Logos beim Hover */
   }
 
   .logo img {
@@ -71,44 +78,60 @@
   }
 
   button {
-    font-size: 1.2rem;
-    font-weight: bold;
-    color: rgb(0, 0, 0);
-    background: #ffffff; /* Grundfarbe der Buttons */
-    border: none;
-    border-radius: 12px;
-    padding: 1rem 2rem;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-    cursor: pointer;
-    transition: all 0.3s ease;
-    min-width: 160px; /* Einheitliche Breite */
-    text-align: center;
-  }
+  font-size: 1.2rem;
+  font-weight: bold;
+  color: rgb(0, 0, 0);
+  background: #ffffff; /* Grundfarbe der Buttons */
+  border: 2px solid transparent; /* Standardmäßig kein Rand */
+  border-radius: 12px;
+  padding: 1rem 2rem;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  cursor: pointer;
+  transition: all 0.3s ease;
+  min-width: 160px; /* Einheitliche Breite */
+  text-align: center;
+}
 
-  button:hover {
-    background: #1abc9c; /* Hover-Farbe */
-    transform: scale(1.1); /* Leichte Vergrößerung beim Hover */
-  }
+button:hover {
+  border-color: #1abc9c; /* Farbiger Rand beim Hover */
+  transform: scale(1.1); /* Leichte Vergrößerung beim Hover */
+}
 
-  button.active {
-    background: #5686a6; /* Farbe für aktiven Button */
-    color: white;
-    transform: scale(1.05); /* Leichte Vergrößerung für aktiven Zustand */
-  }
+button.active {
+  color: rgb(0, 0, 0);
+  border-color: rgb(21, 151, 112);
+  transform: scale(1.05); /* Leichte Vergrößerung für aktiven Zustand */
+}
 
 
 
-  footer {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    background: #ffffff;
-    padding: 2rem 1rem;
-    border-radius: 12px;
-    box-shadow: 0 -4px 6px rgba(0, 0, 0, 0.3);
-    margin-top: 2rem;
-  }
+footer {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: #ffffff;
+  padding: 2rem 1rem;
+  border-radius: 0 0 12px 12px; /* Nur die unteren Ecken abrunden */
+  box-shadow: 0 -4px 6px rgba(0, 0, 0, 0.3);
+  margin-top: 2rem;
+  overflow: hidden; /* Verhindert Überlagerungen durch das Pseudo-Element */
+}
+
+footer::before {
+  content: '';
+  position: absolute;
+  top: -30px; /* Hebt die Form nach oben */
+  left: 0;
+  width: 100%;
+  height: 60px;
+  background: #ffffff;
+  border-radius: 50%; /* Halbkreis-Effekt */
+  box-shadow: 0 -4px 6px rgba(0, 0, 0, 0.1);
+  z-index: -1; /* Hinter dem Footer platzieren */
+}
+
 
   .footer-buttons {
     display: flex;
@@ -117,22 +140,22 @@
   }
 
   .footer-buttons button {
-    font-size: 1rem;
-    font-weight: bold;
-    color: rgb(0, 0, 0);
-    background: #ffffff; /* Grundfarbe der Buttons */
-    border: none;
-    border-radius: 12px;
-    padding: 0.8rem 1.5rem;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-    cursor: pointer;
-    transition: all 0.3s ease;
-  }
+  font-size: 1rem;
+  font-weight: bold;
+  color: rgb(0, 0, 0);
+  background: #ffffff; /* Grundfarbe der Buttons */
+  border: 2px solid transparent; /* Standardmäßig kein Rand */
+  border-radius: 12px;
+  padding: 0.8rem 1.5rem;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
 
-  .footer-buttons button:hover {
-    background: #1abc9c; /* Hover-Farbe */
-    transform: scale(1.1); /* Leichte Vergrößerung beim Hover */
-  }
+.footer-buttons button:hover {
+  border-color: #1abc9c; /* Farbiger Rand beim Hover */
+  transform: scale(1.1); /* Leichte Vergrößerung beim Hover */
+}
 
   .social-icons {
     display: flex;
@@ -161,23 +184,23 @@
   }
 
   .scroll-to-top {
-    font-size: 1rem;
-    font-weight: bold;
-    color: white;
-    background: #3498db;
-    border: none;
-    border-radius: 50px;
-    padding: 0.8rem 1.5rem;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
-    cursor: pointer;
-    transition: all 0.3s ease;
-    margin-top: 1.5rem;
-  }
+  font-size: 1rem;
+  font-weight: bold;
+  color: white;
+  background: #3498db;
+  border: 2px solid transparent; /* Standardmäßig kein Rand */
+  border-radius: 50px;
+  padding: 0.8rem 1.5rem;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+  cursor: pointer;
+  transition: all 0.3s ease;
+  margin-top: 1.5rem;
+}
 
-  .scroll-to-top:hover {
-    background: #1abc9c;
-    transform: scale(1.1);
-  }
+.scroll-to-top:hover {
+  border-color: #1abc9c; /* Farbiger Rand beim Hover */
+  transform: scale(1.1);
+}
 
   .footer-text {
     color: #c0c0c0;
@@ -187,17 +210,24 @@
 
 
   .social-icons img {
-  width: 50px; /* Breite der Icons */
-  height: 50px; /* Höhe der Icons */
-  border-radius: 50%; /* Runde Icons */
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3); /* Leichter Schatten */
+    text-decoration: none;
+  color: white;
+  font-size: 1.5rem;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: #ffffff;
+  width: 50px;
+  height: 50px;
+  border: 2px solid transparent; /* Standardmäßig kein Rand */
+  border-radius: 50%;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
   transition: all 0.3s ease;
-  object-fit: cover; /* Bildanpassung für perfekte Darstellung */
 }
 
 .social-icons img:hover {
-  transform: scale(1.1); /* Vergrößerung beim Hover */
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.4); /* Schatten verstärken */
+  border-color: #1abc9c; /* Farbiger Rand beim Hover */
+  transform: scale(1.1);
 }
 
 .footer-text {

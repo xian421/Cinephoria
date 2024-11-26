@@ -122,8 +122,10 @@
   :global(body) {
     margin: 0;
     font-family: Arial, sans-serif;
-    background-color: #f8f8f8;
+    background-color: #eeeded;
+    box-shadow: #333;
   }
+  
 
   h1 {
     text-align: center;
@@ -152,8 +154,9 @@
   }
 
   .movie-card:hover {
-    transform: scale(1.05);
+    transform: scale(1.1);
     box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+    
   }
 
   .movie-card img {
