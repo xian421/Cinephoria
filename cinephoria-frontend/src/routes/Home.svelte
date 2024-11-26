@@ -269,11 +269,4 @@
   }
 </style>
 
-<footer>
-  <div class="footer-links">
-    <a href="/impressum">Impressum</a>
-    <a href="/datenschutz">Datenschutzerklärung</a>
-    <a href="/kontakt">Kontakt</a>
-  </div>
-  <p>© {currentYear} Cinephoria. Alle Rechte vorbehalten.</p>
-</footer>
+
