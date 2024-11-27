@@ -66,8 +66,8 @@
     if (response.ok) {
       alert(data.message); // Erfolgreiches Login
       console.log(`Eingeloggt als: ${data.email}`);
-      email = "test";
-      password = "gg";
+      email = "";
+      password = "";
       isLoggedIn = true;
     } else {
       alert(data.error); // Fehlermeldung anzeigen
