@@ -45,13 +45,36 @@
     isLoginOpen = !isLoginOpen; // Öffnen/Schließen des Dropdowns
   };
 
-  const handleLogin = () => {
-    if (email && password) {
-      alert(`Erfolgreich eingeloggt als: ${email}`);
+  const handleLogin = async () => {
+  if (!email || !password) {
+    alert("Bitte E-Mail und Passwort eingeben!");
+    return;
+  }
+
+  try {
+    const response = await fetch("https://dein-backend-url/login", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ email, password }),
+    });
+
+    const data = await response.json();
+
+    if (response.ok) {
+      alert(data.message); // Erfolgreiches Login
+      console.log(`Eingeloggt als: ${data.email}`);
+      // Du kannst hier z.B. den Benutzerstatus speichern
     } else {
-      alert("Bitte E-Mail und Passwort eingeben!");
+      alert(data.error); // Fehlermeldung anzeigen
     }
-  };
+  } catch (error) {
+    console.error("Fehler beim Login:", error);
+    alert("Ein Fehler ist aufgetreten. Bitte versuche es erneut.");
+  }
+};
+
 
 
 </script>
@@ -349,10 +372,10 @@ footer::before {
       <button on:click={toggleLoginDropdown}>Login</button>
       <div class="dropdown-menu">
         <form on:submit|preventDefault={handleLogin}>
-          <input type="email" placeholder="E-Mail" bind:value={email} />
-          <input type="password" placeholder="Passwort" bind:value={password} />
+          <input type="email" placeholder="E-Mail" bind:value={email} required />
+          <input type="password" placeholder="Passwort" bind:value={password} required />
           <button type="submit">Einloggen</button>
-        </form>
+        </form>        
       </div>
     </div>
   </nav>

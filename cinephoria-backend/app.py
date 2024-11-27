@@ -1,39 +1,20 @@
-# import requests
-# from flask import Flask, jsonify
-# from flask_cors import CORS
-
-# app = Flask(__name__)
-# CORS(app)
-
-# # Dein TMDb API-Key
-# TMDB_API_KEY = "11f3a5009a106254982604a825c553d1"
-
-# # Route, um aktuelle Filme von TMDb zu holen
-# @app.route('/movies', methods=['GET'])
-# def get_movies():
-#     url = f"https://api.themoviedb.org/3/movie/now_playing?api_key={TMDB_API_KEY}&language=en-US&page=1"
-#     response = requests.get(url)
-#     if response.status_code == 200:
-#         data = response.json()
-#         # Nur relevante Informationen extrahieren
-#         movies = [
-#             {"id": movie["id"], "title": movie["title"], "release_date": movie["release_date"]}
-#             for movie in data.get("results", [])
-#         ]
-#         return jsonify(movies)
-#     else:
-#         return jsonify({"error": "Unable to fetch movies"}), response.status_code
-
-# if __name__ == '__main__': 
-#     app.run(debug=True)
-
-
-import requests
-from flask import Flask, jsonify
+import psycopg2
+from flask import Flask, request, jsonify
 from flask_cors import CORS
+import requests
 
 app = Flask(__name__)
 CORS(app)
+
+# Datenbankkonfiguration
+DATABASE_URL = "postgres://u9v1p2ouoehmll:pa83fe38fd05666e13bce1b16c58e23ecc849ac08945632f8986c00ce25bd250e@c3gtj1dt5vh48j.cluster-czrs8kj4isg7.us-east-1.rds.amazonaws.com:5432/db5lga5e41bidv"
+
+# Verbindung zur Datenbank herstellen
+connection = psycopg2.connect(DATABASE_URL)
+connection.autocommit = True  # Automatisches Commit für Änderungen
+cursor = connection.cursor()
+
+
 
 # TMDb API-Konfiguration
 TMDB_API_URL = "https://api.themoviedb.org/3/movie"
@@ -90,6 +71,41 @@ def get_movie_details(movie_id):
     else:
         # Fehler behandeln und Fehlermeldung zurückgeben
         return jsonify({"error": f"Unable to fetch details for movie ID {movie_id}"}), response.status_code
+    
+
+
+@app.route('/login', methods=['POST'])
+def login():
+    data = request.get_json()
+    email = data.get('email')
+    password = data.get('password')
+
+    if not email or not password:
+        return jsonify({'error': 'E-Mail und Passwort sind erforderlich'}), 400
+
+    try:
+        # Benutzer und Passwort-Hash abrufen
+        cursor.execute("SELECT password FROM users WHERE email = %s", (email,))
+        result = cursor.fetchone()
+
+        if not result:
+            return jsonify({'error': 'Ungültige E-Mail oder Passwort'}), 401
+
+        stored_password = result[0]
+
+        # Passwort überprüfen
+        cursor.execute("SELECT crypt(%s, %s) = %s AS password_match", (password, stored_password, stored_password))
+        is_valid = cursor.fetchone()[0]
+
+        if is_valid:
+            return jsonify({'message': 'Login erfolgreich', 'email': email}), 200
+        else:
+            return jsonify({'error': 'Ungültige E-Mail oder Passwort'}), 401
+
+    except Exception as e:
+        print(f"Fehler: {e}")
+        return jsonify({'error': 'Fehler bei der Anmeldung'}), 500
+
 
 
 if __name__ == '__main__':
