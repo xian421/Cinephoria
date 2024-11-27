@@ -86,6 +86,7 @@
 
       if (response.ok) {
         // Login erfolgreich
+        console.log("Login-Daten:", data);
         email = "";
         password = "";
         isLoggedIn = true;

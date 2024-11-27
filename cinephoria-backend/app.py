@@ -91,13 +91,13 @@ def login():
 
     try:
         # Benutzer und Passwort-Hash abrufen
-        cursor.execute("SELECT id, password FROM users WHERE email = %s", (email,))
+        cursor.execute("SELECT id, password, vorname, nachname FROM users WHERE email = %s", (email,))
         result = cursor.fetchone()
 
         if not result:
             return jsonify({'error': 'Ungültige E-Mail oder Passwort'}), 401
 
-        user_id, stored_password = result
+        user_id, stored_password, vorname, nachname = result
 
         # Passwort überprüfen
         cursor.execute("SELECT crypt(%s, %s) = %s AS password_match", (password, stored_password, stored_password))
@@ -108,16 +108,24 @@ def login():
             token = jwt.encode({
                 'user_id': user_id,
                 'email': email,
-                'exp': datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(hours=1)  # Token läuft nach 1 Stunde ab
+                'first_name': vorname,  
+                'last_name': nachname, 
+                'exp': datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(hours=1)
             }, SECRET_KEY, algorithm='HS256')
 
-            return jsonify({'message': 'Login erfolgreich', 'token': token}), 200
+            return jsonify({
+                'message': 'Login erfolgreich',
+                'token': token,
+                'first_name': vorname,
+                'last_name': nachname
+            }), 200
         else:
             return jsonify({'error': 'Ungültige E-Mail oder Passwort'}), 401
 
     except Exception as e:
         print(f"Fehler: {e}")
         return jsonify({'error': 'Fehler bei der Anmeldung'}), 500
+
 
 
 @app.route('/register', methods=['POST'])
