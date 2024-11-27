@@ -506,7 +506,7 @@ footer::before {
 }
 
 .profile-container:hover {
-  transform: scale(1.05); /* Leichte Vergrößerung beim Hover */
+  transform: scale(1.1); /* Leichte Vergrößerung beim Hover */
 }
 
 .profile-text {
@@ -514,15 +514,15 @@ footer::before {
 }
 
 .profile-initials {
-  width: 30px;
-  height: 30px;
+  width: 50px;
+  height: 50px;
   display: flex;
   align-items: center;
   justify-content: center;
   border-radius: 50%;
   background-color: red;
   color: white;
-  font-size: 14px;
+  font-size: 20px;
   font-weight: bold;
 }
 
