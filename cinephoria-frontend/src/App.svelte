@@ -289,11 +289,11 @@ footer::before {
 }
 
 
-.dropdown-container {
+.login-dropdown-container {
     position: relative;
   }
 
-  .dropdown-menu {
+  .login-dropdown-menu {
   display: none;
   position: absolute;
   top: calc(100% + 10px);
@@ -309,10 +309,32 @@ footer::before {
 }
 
 
-.dropdown-container.open .dropdown-menu {
+.login-dropdown-container.open .login-dropdown-menu {
   display: block;
 }
 
+.login-dropdown-menu input:focus {
+  outline: none;
+  border-color: #1abc9c;
+  box-shadow: 0 0 4px rgba(26, 188, 156, 0.5);
+}
+
+.login-dropdown-menu button {
+  width: 100%;
+  background: #3498db;
+  color: #ffffff;
+  font-size: 1rem;
+  font-weight: bold;
+  padding: 0.8rem;
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.login-dropdown-menu button:hover {
+  background: #24b497;
+}
 .dropdown-menu ul {
   list-style: none;
   padding: 0;
@@ -411,16 +433,17 @@ footer::before {
       </div>
     </div>
   {:else}
-    <div class="dropdown-container {isLoginOpen ? 'open' : ''}">
-      <button on:click={toggleLoginDropdown}>Login</button>
-      <div class="dropdown-menu">
-        <form on:submit|preventDefault={handleLogin}>
-          <input type="email" placeholder="E-Mail" bind:value={email} required />
-          <input type="password" placeholder="Passwort" bind:value={password} required />
-          <button type="submit">Einloggen</button>
-        </form>
-      </div>
+  <div class="login-dropdown-container {isLoginOpen ? 'open' : ''}">
+    <button on:click={toggleLoginDropdown}>Login</button>
+    <div class="login-dropdown-menu">
+      <form on:submit|preventDefault={handleLogin}>
+        <input type="email" placeholder="E-Mail" bind:value={email} required />
+        <input type="password" placeholder="Passwort" bind:value={password} required />
+        <button type="submit">Einloggen</button>
+      </form>
     </div>
+  </div>
+  
   {/if}
   
 
