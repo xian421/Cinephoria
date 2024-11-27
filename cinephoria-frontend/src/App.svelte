@@ -531,8 +531,8 @@ footer::before {
         icon: "info",
         html: `
         <p>Max Mustermann<br />
-        Musterstra&szlig;e 111<br />
-        Geb&auml;ude 44<br />
+        Musterweg 111<br />
+        Hausnummer 44<br />
         90210 Musterstadt</p>
         <h2>Kontakt</h2>
         <p>Telefon: +49 (0) 123 44 55 66<br />
