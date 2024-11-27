@@ -319,7 +319,9 @@ footer::before {
     top: calc(100% + 10px);
     right: 0;
     background: #ffffff;
-    padding: 1rem;
+    padding: 1rem; /* Allgemeines Padding */
+    padding-left: 20px; /* Zusätzlicher Abstand links */
+    padding-right: 20px; /* Zusätzlicher Abstand rechts */
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
     border-radius: 12px;
     z-index: 1000;
@@ -327,7 +329,8 @@ footer::before {
     transform: scaleY(0); /* Standardmäßig geschlossen */
     transform-origin: top;
     transition: transform 0.3s ease-in-out;
-  }
+}
+
 
   .dropdown-container.open .dropdown-menu {
     transform: scaleY(1); /* Geöffnet */
