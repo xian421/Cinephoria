@@ -37,6 +37,22 @@
 
 
 
+  let email = "";
+  let password = "";
+  let isLoginOpen = false;
+
+  const toggleLoginDropdown = () => {
+    isLoginOpen = !isLoginOpen; // Öffnen/Schließen des Dropdowns
+  };
+
+  const handleLogin = () => {
+    if (email && password) {
+      alert(`Erfolgreich eingeloggt als: ${email}`);
+    } else {
+      alert("Bitte E-Mail und Passwort eingeben!");
+    }
+  };
+
 
 </script>
 
@@ -200,6 +216,7 @@ footer::before {
 .scroll-to-top:hover {
   border-color: #1abc9c; /* Farbiger Rand beim Hover */
   transform: scale(1.1);
+  background: #24b497;
 }
 
   .footer-text {
@@ -235,7 +252,66 @@ footer::before {
 }
 
 
+.dropdown-container {
+    position: relative;
+  }
 
+  .dropdown-menu {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    position: absolute;
+    top: calc(100% + 10px);
+    right: 0;
+    background: #ffffff;
+    padding: 1rem;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+    border-radius: 12px;
+    z-index: 1000;
+    width: 300px;
+    transform: scaleY(0); /* Standardmäßig geschlossen */
+    transform-origin: top;
+    transition: transform 0.3s ease-in-out;
+  }
+
+  .dropdown-container.open .dropdown-menu {
+    transform: scaleY(1); /* Geöffnet */
+  }
+
+  .dropdown-menu input {
+  width: calc(100% - 16px); /* Platz für Padding und Border */
+  padding: 0.8rem;
+  margin: 0.5rem 0;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  font-size: 1rem;
+  box-sizing: border-box; /* Sicherstellen, dass Padding/Borders eingerechnet werden */
+}
+
+  .dropdown-menu input:focus {
+    outline: none;
+    border-color: #1abc9c;
+    box-shadow: 0 0 4px rgba(26, 188, 156, 0.5);
+  }
+
+  .dropdown-menu button {
+    width: 100%;
+    background: #3498db;
+    color: #ffffff;
+    font-size: 1rem;
+    font-weight: bold;
+    padding: 0.8rem;
+    border: none;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+
+  }
+
+  .dropdown-menu button:hover {
+    background: #24b497;
+  }
 </style>
 
 
@@ -254,13 +330,13 @@ footer::before {
       class="{currentPath === '/' ? 'active' : ''}"
       on:click={() => navigate('/')}
     >
-      Home
+      Alle Filme
     </button>
     <button
       class="{currentPath === '/nowplaying' ? 'active' : ''}"
       on:click={() => navigate('/nowplaying')}
     >
-      NowPlaying
+      Programm
     </button>
     <button
       class="{currentPath === '/upcoming' ? 'active' : ''}"
@@ -268,12 +344,17 @@ footer::before {
     >
       Upcoming
     </button>
-    <button
-      class="{currentPath === '/test' ? 'active' : ''}"
-      on:click={() => navigate('/test')}
-    >
-      Test
-    </button>
+
+    <div class="dropdown-container {isLoginOpen ? 'open' : ''}">
+      <button on:click={toggleLoginDropdown}>Login</button>
+      <div class="dropdown-menu">
+        <form on:submit|preventDefault={handleLogin}>
+          <input type="email" placeholder="E-Mail" bind:value={email} />
+          <input type="password" placeholder="Passwort" bind:value={password} />
+          <button type="submit">Einloggen</button>
+        </form>
+      </div>
+    </div>
   </nav>
 
   <!-- Routes -->
@@ -319,6 +400,8 @@ footer::before {
         <img src="/linked.png" alt="LinkedIn" />
       </a>
     </div>
+
+    
   
     <!-- Scroll-to-Top Button -->
     <button class="scroll-to-top" on:click={scrollToTop}>
