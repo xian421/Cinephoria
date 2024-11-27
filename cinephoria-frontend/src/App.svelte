@@ -40,6 +40,7 @@
   let email = "";
   let password = "";
   let isLoginOpen = false;
+  let isLoggedIn = false;
 
   const toggleLoginDropdown = () => {
     isLoginOpen = !isLoginOpen; // Öffnen/Schließen des Dropdowns
@@ -65,7 +66,7 @@
     if (response.ok) {
       alert(data.message); // Erfolgreiches Login
       console.log(`Eingeloggt als: ${data.email}`);
-      // Du kannst hier z.B. den Benutzerstatus speichern
+      isLoggedIn = true;
     } else {
       alert(data.error); // Fehlermeldung anzeigen
     }
@@ -368,16 +369,23 @@ footer::before {
       Upcoming
     </button>
 
-    <div class="dropdown-container {isLoginOpen ? 'open' : ''}">
-      <button on:click={toggleLoginDropdown}>Login</button>
-      <div class="dropdown-menu">
-        <form on:submit|preventDefault={handleLogin}>
-          <input type="email" placeholder="E-Mail" bind:value={email} required />
-          <input type="password" placeholder="Passwort" bind:value={password} required />
-          <button type="submit">Einloggen</button>
-        </form>        
-      </div>
+    {#if isLoggedIn}
+  <button on:click={() => alert("Das ist dein Profil")}>
+    Profil
+  </button>
+{:else}
+  <div class="dropdown-container {isLoginOpen ? 'open' : ''}">
+    <button on:click={toggleLoginDropdown}>Login</button>
+    <div class="dropdown-menu">
+      <form on:submit|preventDefault={handleLogin}>
+        <input type="email" placeholder="E-Mail" bind:value={email} required />
+        <input type="password" placeholder="Passwort" bind:value={password} required />
+        <button type="submit">Einloggen</button>
+      </form>
     </div>
+  </div>
+{/if}
+
   </nav>
 
   <!-- Routes -->
