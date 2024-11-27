@@ -7,6 +7,8 @@
   import Test from "./routes/Test.svelte";
   import Beschreibung from './routes/Beschreibung.svelte';
   import Sitzplan from './routes/Sitzplan.svelte';
+  import Register from './routes/Register.svelte';
+  import ForgotPassword from './routes/Forgotpassword.svelte';
   import Swal from 'sweetalert2';
 
   export let url = ""; // Für SSR
@@ -452,9 +454,6 @@ footer::before {
       on:click={() => navigate('/upcoming')}
     >
       Upcoming
-
-
-
       
     </button>
 
@@ -488,6 +487,13 @@ footer::before {
           <input type="email" placeholder="E-Mail" bind:value={email} required />
           <input type="password" placeholder="Passwort" bind:value={password} required />
           <button type="submit">Einloggen</button>
+          <div style="display: flex; justify-content: space-between; gap: 10px; margin-top: 10px;">
+            <button on:click={() => navigate('/register')} style="background: none; border: none; color: #007bff; cursor: pointer;">Stattdessen Registrieren</button>
+            <button on:click={() => navigate('/forgot-password')} style="background: none; border: none; color: #007bff; cursor: pointer;">Passwort vergessen?</button>
+          </div>
+          
+          
+          
         </form>
       </div>
     </div>
@@ -505,6 +511,7 @@ footer::before {
     <Route path="*" component={NotFound} />
     <Route path="/test" component={Test} />
     <Route path="/sitzplan" component={Sitzplan} />
+    <Route path="/register" component={Register} />
     <Route path="/beschreibung/:id" component={Beschreibung} />
   </div>
   
