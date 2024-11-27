@@ -6,6 +6,7 @@
   import NotFound from "./routes/Notfound.svelte";
   import Test from "./routes/Test.svelte";
   import Beschreibung from './routes/Beschreibung.svelte';
+  import Sitzplan from './routes/Sitzplan.svelte';
   import Swal from 'sweetalert2';
 
   export let url = ""; // Für SSR
@@ -451,7 +452,19 @@ footer::before {
       on:click={() => navigate('/upcoming')}
     >
       Upcoming
+
+
+
+      
     </button>
+
+
+    <button
+      class="{currentPath === '/sitzplan' ? 'active' : ''}"
+      on:click={() => navigate('/sitzplan')}
+    >
+      Sitzplan
+      </button>
 
     {#if isLoggedIn}
     <div class="profile-dropdown-container {isProfileDropdownOpen ? 'open' : ''}">
@@ -491,6 +504,7 @@ footer::before {
     <Route path="/upcoming" component={Upcoming} />
     <Route path="*" component={NotFound} />
     <Route path="/test" component={Test} />
+    <Route path="/sitzplan" component={Sitzplan} />
     <Route path="/beschreibung/:id" component={Beschreibung} />
   </div>
   
