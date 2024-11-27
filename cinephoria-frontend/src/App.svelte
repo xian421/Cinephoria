@@ -6,6 +6,7 @@
   import NotFound from "./routes/Notfound.svelte";
   import Test from "./routes/Test.svelte";
   import Beschreibung from './routes/Beschreibung.svelte';
+  import Swal from 'sweetalert2';
 
   export let url = ""; // Für SSR
 
