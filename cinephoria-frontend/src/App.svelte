@@ -526,7 +526,21 @@ footer::before {
       <button on:click={() => alert("Kontaktformular öffnet sich hier!")}>
         Kontakt
       </button>
-      <button on:click={() => alert("Impressum anzeigen!")}>
+      <button on:click={() => Swal.fire({
+        title: "Impressum",
+        icon: "info",
+        html: `
+        <p>Max Mustermann<br />
+        Musterstra&szlig;e 111<br />
+        Geb&auml;ude 44<br />
+        90210 Musterstadt</p>
+        <h2>Kontakt</h2>
+        <p>Telefon: +49 (0) 123 44 55 66<br />
+        Telefax: +49 (0) 123 44 55 99<br />
+        E-Mail: mustermann@musterfirma.de</p>
+        `,
+        confirmButtonText: "Schließen"
+        })}>
         Impressum
       </button>
       <button on:click={() => alert("Datenschutz anzeigen!")}>
