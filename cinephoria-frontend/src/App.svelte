@@ -82,10 +82,12 @@ const toggleProfileMenu = () => {
   isProfileMenuOpen = !isProfileMenuOpen; // Öffnen/Schließen des Dropdowns
 };
 
-const handleLogout = () => {
-  localStorage.removeItem("isLoggedIn"); // Login-Status entfernen
+let isProfileDropdownOpen = false;
+
+const logout = () => {
   isLoggedIn = false;
-  alert("Du wurdest abgemeldet!");
+  isProfileDropdownOpen = false;
+  alert('Erfolgreich abgemeldet');
 };
 
 
@@ -349,6 +351,63 @@ footer::before {
   .dropdown-menu button:hover {
     background: #24b497;
   }
+
+
+
+
+
+
+
+  /* Profil-Dropdown */
+.profile-dropdown-container {
+  position: relative;
+}
+
+.profile-dropdown-menu {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: flex-start;
+  position: absolute;
+  top: calc(100% + 10px);
+  right: 0;
+  background: #ffffff;
+  padding: 1rem;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+  border-radius: 12px;
+  z-index: 1000;
+  width: 200px;
+  transform: scaleY(0); /* Standardmäßig geschlossen */
+  transform-origin: top;
+  transition: transform 0.3s ease-in-out;
+}
+
+.profile-dropdown-container.open .profile-dropdown-menu {
+  transform: scaleY(1); /* Geöffnet */
+}
+
+.profile-dropdown-menu ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  width: 100%;
+}
+
+.profile-dropdown-menu li {
+  padding: 0.8rem;
+  font-size: 1rem;
+  color: #333;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+  width: 100%;
+  text-align: left;
+}
+
+.profile-dropdown-menu li:hover {
+  background-color: #f0f0f0;
+  border-radius: 8px;
+}
+
 </style>
 
 
@@ -383,18 +442,20 @@ footer::before {
     </button>
 
     {#if isLoggedIn}
-    <div class="dropdown-container {isProfileMenuOpen ? 'open' : ''}">
-      <button on:click={toggleProfileMenu}>Profil</button>
-      <div class="dropdown-menu">
+    <div class="profile-dropdown-container {isProfileDropdownOpen ? 'open' : ''}">
+      <button on:click={() => (isProfileDropdownOpen = !isProfileDropdownOpen)}>
+        Profil
+      </button>
+      <div class="profile-dropdown-menu">
         <ul>
-          <li on:click={() => alert("Das ist dein Profil!")}>Profil anzeigen</li>
-          <li on:click={() => alert("Einstellungen öffnen!")}>Einstellungen</li>
-          <li on:click={() => alert("Favoriten ansehen!")}>Favoriten</li>
-          <li on:click={handleLogout}>Abmelden</li>
+          <li on:click={() => alert('Profil anzeigen')}>Profil anzeigen</li>
+          <li on:click={() => alert('Einstellungen')}>Einstellungen</li>
+          <li on:click={logout}>Abmelden</li>
         </ul>
       </div>
     </div>
   {:else}
+    <!-- Login Dropdown -->
     <div class="dropdown-container {isLoginOpen ? 'open' : ''}">
       <button on:click={toggleLoginDropdown}>Login</button>
       <div class="dropdown-menu">
@@ -406,6 +467,7 @@ footer::before {
       </div>
     </div>
   {/if}
+  
   
 
   </nav>
