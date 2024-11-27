@@ -497,10 +497,8 @@ footer::before {
 .profile-container {
   display: flex;
   align-items: center;
-  gap: 8px;
-  background: none;
-  border: none;
-  cursor: pointer;
+  gap: 8px; /* Abstand zwischen Text und Initialen */
+  cursor: pointer; /* Zeigt an, dass es klickbar ist */
   font-size: 1rem;
   font-weight: bold;
   color: black;
@@ -511,16 +509,20 @@ footer::before {
   transform: scale(1.05); /* Leichte Vergrößerung beim Hover */
 }
 
+.profile-text {
+  margin-right: 8px; /* Abstand zum Kreis */
+}
+
 .profile-initials {
-  width: 24px;
-  height: 24px;
+  width: 30px;
+  height: 30px;
   display: flex;
   align-items: center;
   justify-content: center;
   border-radius: 50%;
   background-color: red;
   color: white;
-  font-size: 12px;
+  font-size: 14px;
   font-weight: bold;
 }
 
@@ -569,10 +571,10 @@ footer::before {
 
       {#if isLoggedIn}
       <div class="profile-dropdown-container {isProfileDropdownOpen ? 'open' : ''}">
-        <button class="profile-container" on:click={() => (isProfileDropdownOpen = !isProfileDropdownOpen)}>
-          <span>Profil</span>
+        <div class="profile-container" on:click={() => (isProfileDropdownOpen = !isProfileDropdownOpen)}>
+          <span class="profile-text">Profil</span>
           <div class="profile-initials">{initials}</div>
-        </button>
+        </div>
         <div class="profile-dropdown-menu">
           <ul>
             <li on:click={() => alert('Profil anzeigen')}>Profil anzeigen</li>
