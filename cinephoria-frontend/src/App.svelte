@@ -14,6 +14,9 @@
   export let url = ""; // Für SSR
 
   let currentPath = ""; // Aktuelle Route
+  let userFirstName = ""; 
+  let userLastName = ""; 
+  let initials = "";
 
   const handleRouteChange = () => {
     currentPath = window.location.pathname;
@@ -50,62 +53,74 @@
     isLoginOpen = !isLoginOpen; // Öffnen/Schließen des Dropdowns
   };
 
+ // Initialen berechnen
+ const calculateInitials = () => {
+    if (userFirstName && userLastName) {
+      initials = `${userFirstName[0]}${userLastName[0]}`.toUpperCase();
+    }
+  };
+
   const handleLogin = async () => {
-  if (!email || !password) {
-    Swal.fire({
-      title: "Fehler",
-      text: "Bitte E-Mail und Passwort eingeben!",
-      icon: "error",
-      confirmButtonText: "OK",
-    });
-    return;
-  }
-
-  try {
-    const response = await fetch("https://cinephoria-backend-c53f94f0a255.herokuapp.com/login", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ email, password }),
-    });
-
-    const data = await response.json();
-
-    if (response.ok) {
-      // Login erfolgreich
-      email = "";
-      password = "";
-      isLoggedIn = true;
-
-      // Speichere das Token in den Cookies
-      document.cookie = `token=${data.token}; path=/; max-age=3600; secure; samesite=strict`;
-
-      Swal.fire({
-        title: "Erfolgreich eingeloggt!",
-        text: "Willkommen zurück!",
-        icon: "success",
-        timer: 1500,
-        showConfirmButton: false,
-      });
-    } else {
+    if (!email || !password) {
       Swal.fire({
         title: "Fehler",
-        text: data.error,
+        text: "Bitte E-Mail und Passwort eingeben!",
+        icon: "error",
+        confirmButtonText: "OK",
+      });
+      return;
+    }
+
+    try {
+      const response = await fetch("https://cinephoria-backend-c53f94f0a255.herokuapp.com/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email, password }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        // Login erfolgreich
+        email = "";
+        password = "";
+        isLoggedIn = true;
+
+        // Speichere das Token in den Cookies
+        document.cookie = `token=${data.token}; path=/; max-age=3600; secure; samesite=strict`;
+
+        // Setze den Benutzernamen und berechne Initialen
+        userFirstName = data.first_name; // Vom Backend
+        userLastName = data.last_name; // Vom Backend
+        calculateInitials();
+
+        Swal.fire({
+          title: "Erfolgreich eingeloggt!",
+          text: "Willkommen zurück!",
+          icon: "success",
+          timer: 1500,
+          showConfirmButton: false,
+        });
+      } else {
+        Swal.fire({
+          title: "Fehler",
+          text: data.error,
+          icon: "error",
+          confirmButtonText: "OK",
+        });
+      }
+    } catch (error) {
+      console.error("Fehler beim Login:", error);
+      Swal.fire({
+        title: "Fehler",
+        text: "Ein Fehler ist aufgetreten. Bitte versuche es erneut.",
         icon: "error",
         confirmButtonText: "OK",
       });
     }
-  } catch (error) {
-    console.error("Fehler beim Login:", error);
-    Swal.fire({
-      title: "Fehler",
-      text: "Ein Fehler ist aufgetreten. Bitte versuche es erneut.",
-      icon: "error",
-      confirmButtonText: "OK",
-    });
-  }
-};
+  };
 
 
 let isProfileMenuOpen = false;
@@ -146,6 +161,13 @@ const checkLoginStatus = () => {
     isLoggedIn = false;
   }
 };
+
+
+
+
+
+
+
 
 // Beim Laden der Seite überprüfen
 checkLoginStatus();
@@ -469,8 +491,21 @@ footer::before {
   background-color: #f0f0f0;
   border-radius: 8px;
 }
-
+  .profile-initials {
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    background-color: red;
+    color: white;
+    font-size: 16px;
+    font-weight: bold;
+    margin-left: 10px;
+  }
 </style>
+
 
 
 
@@ -512,40 +547,39 @@ footer::before {
       Sitzplan
       </button>
 
-    {#if isLoggedIn}
-    <div class="profile-dropdown-container {isProfileDropdownOpen ? 'open' : ''}">
-      <button on:click={() => (isProfileDropdownOpen = !isProfileDropdownOpen)}>
-        Profil
-      </button>
-      <div class="profile-dropdown-menu">
-        <ul>
-          <li on:click={() => alert('Profil anzeigen')}>Profil anzeigen</li>
-          <li on:click={() => alert('Einstellungen')}>Einstellungen</li>
-          <li on:click={logout}>Abmelden</li>
-        </ul>
+      {#if isLoggedIn}
+      <div class="profile-dropdown-container {isProfileDropdownOpen ? 'open' : ''}">
+        <button on:click={() => (isProfileDropdownOpen = !isProfileDropdownOpen)}>
+          Profil
+        </button>
+        <!-- Initialen anzeigen -->
+        <div class="profile-initials">{initials}</div>
+        <div class="profile-dropdown-menu">
+          <ul>
+            <li on:click={() => alert('Profil anzeigen')}>Profil anzeigen</li>
+            <li on:click={() => alert('Einstellungen')}>Einstellungen</li>
+            <li on:click={logout}>Abmelden</li>
+          </ul>
+        </div>
       </div>
-    </div>
-  {:else}
-    <!-- Login Dropdown -->
-    <div class="dropdown-container {isLoginOpen ? 'open' : ''}">
-      <button on:click={toggleLoginDropdown}>Login</button>
-      <div class="dropdown-menu">
-        <form on:submit|preventDefault={handleLogin}>
-          <input type="email" placeholder="E-Mail" bind:value={email} required />
-          <input type="password" placeholder="Passwort" bind:value={password} required />
-          <button type="submit">Einloggen</button>
-          <div style="display: flex; justify-content: space-between; gap: 10px; margin-top: 10px;">
-            <button on:click={() => navigate('/register')} style="background: none; border: none; color: #007bff; cursor: pointer;">Stattdessen Registrieren</button>
-            <button on:click={() => navigate('/forgot-password')} style="background: none; border: none; color: #007bff; cursor: pointer;">Passwort vergessen?</button>
-          </div>
-          
-          
-          
-        </form>
+      {:else}
+      <!-- Login Dropdown -->
+      <div class="dropdown-container {isLoginOpen ? 'open' : ''}">
+        <button on:click={toggleLoginDropdown}>Login</button>
+        <div class="dropdown-menu">
+          <form on:submit|preventDefault={handleLogin}>
+            <input type="email" placeholder="E-Mail" bind:value={email} required />
+            <input type="password" placeholder="Passwort" bind:value={password} required />
+            <button type="submit">Einloggen</button>
+            <div style="display: flex; justify-content: space-between; gap: 10px; margin-top: 10px;">
+              <button on:click={() => navigate('/register')} style="background: none; border: none; color: #007bff; cursor: pointer;">Stattdessen Registrieren</button>
+              <button on:click={() => navigate('/forgot-password')} style="background: none; border: none; color: #007bff; cursor: pointer;">Passwort vergessen?</button>
+            </div>
+          </form>
+        </div>
       </div>
-    </div>
-  {/if}
-  
+      {/if}
+      
   
 
   </nav>
