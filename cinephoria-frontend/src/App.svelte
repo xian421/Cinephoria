@@ -572,7 +572,6 @@ footer::before {
       {#if isLoggedIn}
       <div class="profile-dropdown-container {isProfileDropdownOpen ? 'open' : ''}">
         <div class="profile-container" on:click={() => (isProfileDropdownOpen = !isProfileDropdownOpen)}>
-          <span class="profile-text">Profil</span>
           <div class="profile-initials">{initials}</div>
         </div>
         <div class="profile-dropdown-menu">
