@@ -75,7 +75,8 @@
         title: 'Erfolgreich eingeloggt!',
         text: 'Willkommen zurück!',
         icon: 'success',
-        confirmButtonText: 'OK'
+        timer: 1500,
+        showConfirmButton: false
       });
 
     } else {
