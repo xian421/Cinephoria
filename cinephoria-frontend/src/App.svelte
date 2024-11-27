@@ -496,21 +496,31 @@ footer::before {
 }
 .profile-container {
   display: flex;
-  align-items: center; /* Vertikale Ausrichtung */
-  gap: 8px; /* Abstand zwischen Text und Kreis */
-  position: relative; /* Wichtig für den roten Kreis */
+  align-items: center;
+  gap: 8px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 1rem;
+  font-weight: bold;
+  color: black;
+  transition: all 0.3s ease;
+}
+
+.profile-container:hover {
+  transform: scale(1.05); /* Leichte Vergrößerung beim Hover */
 }
 
 .profile-initials {
-  width: 24px; /* Größe des Kreises */
-  height: 24px; 
+  width: 24px;
+  height: 24px;
   display: flex;
-  align-items: center; 
-  justify-content: center; 
-  border-radius: 50%; /* Rund */
-  background-color: red; 
-  color: white; 
-  font-size: 12px; 
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background-color: red;
+  color: white;
+  font-size: 12px;
   font-weight: bold;
 }
 
@@ -558,16 +568,16 @@ footer::before {
       </button>
 
       {#if isLoggedIn}
-  <div class="profile-dropdown-container {isProfileDropdownOpen ? 'open' : ''}">
-    <div class="profile-container" on:click={() => (isProfileDropdownOpen = !isProfileDropdownOpen)}>
-      <span>Profil</span>
-      <div class="profile-initials">{initials}</div>
-    </div>
-    <div class="profile-dropdown-menu">
-      <ul>
-        <li on:click={() => alert('Profil anzeigen')}>Profil anzeigen</li>
-        <li on:click={() => alert('Einstellungen')}>Einstellungen</li>
-        <li on:click={logout}>Abmelden</li>
+      <div class="profile-dropdown-container {isProfileDropdownOpen ? 'open' : ''}">
+        <button class="profile-container" on:click={() => (isProfileDropdownOpen = !isProfileDropdownOpen)}>
+          <span>Profil</span>
+          <div class="profile-initials">{initials}</div>
+        </button>
+        <div class="profile-dropdown-menu">
+          <ul>
+            <li on:click={() => alert('Profil anzeigen')}>Profil anzeigen</li>
+            <li on:click={() => alert('Einstellungen')}>Einstellungen</li>
+            <li on:click={logout}>Abmelden</li>
       </ul>
     </div>
   </div>
