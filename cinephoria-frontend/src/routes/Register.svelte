@@ -6,7 +6,7 @@
     let email = "";
     let password = "";
   
-    const handleRegister = async () => {
+    const handleRegisterm = async () => {
       if (!firstName || !lastName || !email || !password) {
         Swal.fire({
           title: "Fehler",
@@ -134,6 +134,6 @@
       <label for="password">Passwort</label>
       <input type="password" id="password" bind:value={password} placeholder="Gib dein Passwort ein" />
     </div>
-    <button class="register-button" on:click={handleRegister}>Registrieren</button>
+    <button class="register-button" on:click={handleRegisterm}>Registrieren</button>
   </div>
   
