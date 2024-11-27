@@ -120,5 +120,35 @@ def login():
         return jsonify({'error': 'Fehler bei der Anmeldung'}), 500
 
 
+@app.route('/register', methods=['POST'])
+def register():
+    data = request.get_json()
+    first_name = data.get('first_name')
+    last_name = data.get('last_name')
+    email = data.get('email')
+    password = data.get('password')
+
+    if not first_name or not last_name or not email or not password:
+        return jsonify({'error': 'Alle Felder sind erforderlich'}), 400
+
+    try:
+        # Prüfen, ob der Benutzer schon existiert
+        cursor.execute("SELECT email FROM users WHERE email = %s", (email,))
+        if cursor.fetchone():
+            return jsonify({'error': 'Benutzer mit dieser E-Mail existiert bereits'}), 409
+
+        # Passwort hashen mit der PostgreSQL-Methode
+        cursor.execute(
+            "INSERT INTO users (first_name, last_name, email, password) VALUES (%s, %s, %s, crypt(%s, gen_salt('bf')))",
+            (first_name, last_name, email, password),
+        )
+        return jsonify({'message': 'Registrierung erfolgreich'}), 201
+
+    except Exception as e:
+        print(f"Fehler bei der Registrierung: {e}")
+        return jsonify({'error': 'Ein Fehler ist aufgetreten'}), 500
+
+
+
 if __name__ == '__main__':
     app.run(debug=True)
