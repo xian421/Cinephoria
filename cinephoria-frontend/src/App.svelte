@@ -97,7 +97,7 @@
         // Setze den Benutzernamen und berechne Initialen
         userFirstName = data.first_name; // Vom Backend
         userLastName = data.last_name; // Vom Backend
-        calculateInitials();
+        initials = data.initials;
 
         Swal.fire({
           title: "Erfolgreich eingeloggt!",
@@ -159,11 +159,23 @@ const checkLoginStatus = () => {
   }, {});
 
   if (cookies.token) {
-    isLoggedIn = true;
+    const token = cookies.token;
+    try {
+      // Token dekodieren
+      const payload = JSON.parse(atob(token.split(".")[1]));
+
+      // Benutzerdaten aus dem Token laden
+      isLoggedIn = true;
+      initials = payload.initials || ""; // Initialen aus dem Token
+    } catch (error) {
+      console.error("Fehler beim Dekodieren des Tokens:", error);
+      isLoggedIn = false;
+    }
   } else {
     isLoggedIn = false;
   }
 };
+
 
 
 

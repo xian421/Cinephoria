@@ -104,12 +104,14 @@ def login():
         is_valid = cursor.fetchone()[0]
 
         if is_valid:
+            initials = f"{vorname[0].upper()}{nachname[0].upper()}"
             # JWT-Token generieren
             token = jwt.encode({
                 'user_id': user_id,
                 'email': email,
                 'first_name': vorname,  
                 'last_name': nachname, 
+                'initials': initials, 
                 'exp': datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(hours=1)
             }, SECRET_KEY, algorithm='HS256')
 
@@ -117,7 +119,8 @@ def login():
                 'message': 'Login erfolgreich',
                 'token': token,
                 'first_name': vorname,
-                'last_name': nachname
+                'last_name': nachname,
+                'initials': initials
             }), 200
         else:
             return jsonify({'error': 'Ungültige E-Mail oder Passwort'}), 401
