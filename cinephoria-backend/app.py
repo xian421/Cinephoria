@@ -46,12 +46,21 @@ HEADERS = {
 
 @app.route('/movies/now_playing', methods=['GET'])
 def get_now_playing():
-    url = f"{TMDB_API_URL}/now_playing?language=de-DE&page=1&region=DE"
-    response = requests.get(url, headers=HEADERS)
-    if response.status_code == 200:
-        return jsonify(response.json())
-    else:
-        return jsonify({"error": "Unable to fetch now playing movies"}), response.status_code
+    results = []
+    for i in range(1, 6):  # Seiten von 1 bis 5 durchlaufen
+        url = f"{TMDB_API_URL}/now_playing?language=de-DE&page={i}&region=DE"
+        response = requests.get(url, headers=HEADERS)
+        
+        if response.status_code == 200:
+            data = response.json()
+            results.extend(data['results'])  # Ergebnisse hinzufügen
+        else:
+            print(f"Fehler bei Seite {i}: {response.status_code}")
+    
+    # Alle Ergebnisse in ein JSON-Objekt packen
+    return jsonify({"results": results})
+
+
 
 @app.route('/movies/upcoming', methods=['GET'])
 def get_upcoming():
