@@ -65,10 +65,17 @@
 
     if (response.ok) {
       alert(data.message); // Erfolgreiches Login
-      console.log(`Eingeloggt als: ${data.email}`);
+      //console.log(`Eingeloggt als: ${data.email}`);
       email = "";
       password = "";
       isLoggedIn = true;
+
+      Swal.fire({
+      title: 'Erfolgreich eingeloggt!',
+      text: 'Willkommen zurück!',
+      icon: 'success', // Andere Optionen: 'error', 'warning', 'info', 'question'
+      confirmButtonText: 'OK'
+});
     } else {
       alert(data.error); // Fehlermeldung anzeigen
     }
