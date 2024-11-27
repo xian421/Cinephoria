@@ -57,6 +57,8 @@
  const calculateInitials = () => {
     if (userFirstName && userLastName) {
       initials = `${userFirstName[0]}${userLastName[0]}`.toUpperCase();
+      console.log("Initials:", initials); // Debugging
+
     }
   };
 
