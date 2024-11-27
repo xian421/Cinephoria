@@ -156,7 +156,7 @@
   .movie-card:hover {
     transform: scale(1.1);
     box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
-    
+
   }
 
   .movie-card img {
