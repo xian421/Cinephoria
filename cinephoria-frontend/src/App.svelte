@@ -52,7 +52,7 @@
   }
 
   try {
-    const response = await fetch("https://dein-backend-url/login", {
+    const response = await fetch("https://cinephoria-backend-c53f94f0a255.herokuapp.com/login", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
