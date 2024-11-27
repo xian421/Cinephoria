@@ -61,6 +61,22 @@ def get_upcoming():
         return jsonify(response.json())
     else:
         return jsonify({"error": "Unable to fetch upcoming movies"}), response.status_code
+    
+@app.route('/movies/<int:movie_id>', methods=['GET'])
+def get_movie_details(movie_id):
+    # URL für die TMDB-API mit der spezifischen Film-ID
+    url = f"{TMDB_API_URL}/{movie_id}?language=de-DE"
+    
+    # Anfrage an die API senden
+    response = requests.get(url, headers=HEADERS)
+    
+    # Erfolgreiche Antwort zurückgeben
+    if response.status_code == 200:
+        return jsonify(response.json())
+    else:
+        # Fehler behandeln und Fehlermeldung zurückgeben
+        return jsonify({"error": f"Unable to fetch details for movie ID {movie_id}"}), response.status_code
+
 
 if __name__ == '__main__':
     app.run(debug=True)

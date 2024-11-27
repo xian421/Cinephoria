@@ -1,23 +1,29 @@
 <script>
-    import { onMount, getContext } from 'svelte';
+  export let id; // ID wird von der Route übergeben
+  console.log('Geladene ID:', id); // Debugging
 
-    // Zugriff auf die Routenparameter
-    const { params } = getContext('svelte-routing'); // Hinzugefügt
-    const IMAGE_BASE_URL = 'https://image.tmdb.org/t/p/w500';
-    let movieId = params.id;
-    let movieDetails = {};
+  import { onMount } from 'svelte';
+  let movieDetails = {};
+  const IMAGE_BASE_URL = 'https://image.tmdb.org/t/p/w500';
 
-    // Beim Mounten der Komponente die Filmdetails abrufen
-    onMount(async () => {
-      try {
-        const response = await fetch(
-          `https://cinephoria-backend-c53f94f0a255.herokuapp.com/movies/${movieId}`
-        );
+  onMount(async () => {
+    if (!id) {
+      console.error('Keine ID gefunden!');
+      return;
+    }
+    try {
+      const response = await fetch(
+        `https://cinephoria-backend-c53f94f0a255.herokuapp.com/movies/${id}`
+      );
+      if (response.ok) {
         movieDetails = await response.json();
-      } catch (error) {
-        console.error('Fehler beim Laden der Filmdetails:', error);
+      } else {
+        console.error('Fehler beim Laden der Filmdetails:', response.statusText);
       }
-    });
+    } catch (error) {
+      console.error('Netzwerkfehler:', error);
+    }
+  });
 </script>
 
 {#if movieDetails.title}
@@ -25,7 +31,6 @@
     <h1>{movieDetails.title}</h1>
     <img src="{IMAGE_BASE_URL}{movieDetails.poster_path}" alt="{movieDetails.title}" />
     <p>{movieDetails.overview}</p>
-    <!-- Weitere Details anzeigen -->
   </main>
 {:else}
   <p>Lade Filmdetails...</p>
