@@ -2,6 +2,8 @@ import psycopg2
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 import requests
+import jwt
+import datetime
 
 app = Flask(__name__)
 CORS(app, origins=["https://cinephoria-theta.vercel.app"])
@@ -74,6 +76,10 @@ def get_movie_details(movie_id):
     
 
 
+
+
+SECRET_KEY = "dein_geheimer_schlüssel"  # Ändere das in eine sichere, lange Zeichenfolge
+
 @app.route('/login', methods=['POST'])
 def login():
     data = request.get_json()
@@ -85,27 +91,33 @@ def login():
 
     try:
         # Benutzer und Passwort-Hash abrufen
-        cursor.execute("SELECT password FROM users WHERE email = %s", (email,))
+        cursor.execute("SELECT id, password FROM users WHERE email = %s", (email,))
         result = cursor.fetchone()
 
         if not result:
             return jsonify({'error': 'Ungültige E-Mail oder Passwort'}), 401
 
-        stored_password = result[0]
+        user_id, stored_password = result
 
         # Passwort überprüfen
         cursor.execute("SELECT crypt(%s, %s) = %s AS password_match", (password, stored_password, stored_password))
         is_valid = cursor.fetchone()[0]
 
         if is_valid:
-            return jsonify({'message': 'Login erfolgreich', 'email': email}), 200
+            # JWT-Token generieren
+            token = jwt.encode({
+                'user_id': user_id,
+                'email': email,
+                'exp': datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(hours=1)  # Token läuft nach 1 Stunde ab
+            }, SECRET_KEY, algorithm='HS256')
+
+            return jsonify({'message': 'Login erfolgreich', 'token': token}), 200
         else:
             return jsonify({'error': 'Ungültige E-Mail oder Passwort'}), 401
 
     except Exception as e:
         print(f"Fehler: {e}")
         return jsonify({'error': 'Fehler bei der Anmeldung'}), 500
-
 
 
 if __name__ == '__main__':

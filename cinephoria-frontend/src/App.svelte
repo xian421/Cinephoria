@@ -52,7 +52,12 @@
 
   const handleLogin = async () => {
   if (!email || !password) {
-    alert("Bitte E-Mail und Passwort eingeben!");
+    Swal.fire({
+      title: "Fehler",
+      text: "Bitte E-Mail und Passwort eingeben!",
+      icon: "error",
+      confirmButtonText: "OK",
+    });
     return;
   }
 
@@ -68,28 +73,40 @@
     const data = await response.json();
 
     if (response.ok) {
-      //alert(data.message); // Erfolgreiches Login
-      console.log(`Eingeloggt als: ${data.email}`);
+      // Login erfolgreich
       email = "";
       password = "";
       isLoggedIn = true;
 
-      Swal.fire({
-        title: 'Erfolgreich eingeloggt!',
-        text: 'Willkommen zurück!',
-        icon: 'success',
-        timer: 1500,
-        showConfirmButton: false
-      });
+      // Speichere das Token in den Cookies
+      document.cookie = `token=${data.token}; path=/; max-age=3600; secure; samesite=strict`;
 
+      Swal.fire({
+        title: "Erfolgreich eingeloggt!",
+        text: "Willkommen zurück!",
+        icon: "success",
+        timer: 1500,
+        showConfirmButton: false,
+      });
     } else {
-      alert(data.error); // Fehlermeldung anzeigen
+      Swal.fire({
+        title: "Fehler",
+        text: data.error,
+        icon: "error",
+        confirmButtonText: "OK",
+      });
     }
   } catch (error) {
     console.error("Fehler beim Login:", error);
-    alert("Ein Fehler ist aufgetreten. Bitte versuche es erneut.");
+    Swal.fire({
+      title: "Fehler",
+      text: "Ein Fehler ist aufgetreten. Bitte versuche es erneut.",
+      icon: "error",
+      confirmButtonText: "OK",
+    });
   }
 };
+
 
 let isProfileMenuOpen = false;
 
@@ -100,11 +117,38 @@ const toggleProfileMenu = () => {
 let isProfileDropdownOpen = false;
 
 const logout = () => {
+  // Cookie löschen
+  document.cookie = "token=; path=/; max-age=0; secure; samesite=strict";
+
+  // Benutzer-Status zurücksetzen
   isLoggedIn = false;
-  isProfileDropdownOpen = false;
-  alert('Erfolgreich abgemeldet');
+
+  Swal.fire({
+    title: "Abgemeldet",
+    text: "Du wurdest erfolgreich abgemeldet.",
+    icon: "success",
+    timer: 1500,
+    showConfirmButton: false,
+  });
 };
 
+
+const checkLoginStatus = () => {
+  const cookies = document.cookie.split("; ").reduce((acc, cookie) => {
+    const [key, value] = cookie.split("=");
+    acc[key] = value;
+    return acc;
+  }, {});
+
+  if (cookies.token) {
+    isLoggedIn = true;
+  } else {
+    isLoggedIn = false;
+  }
+};
+
+// Beim Laden der Seite überprüfen
+checkLoginStatus();
 
 
 
