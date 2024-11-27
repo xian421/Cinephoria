@@ -23,7 +23,7 @@
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({ firstName, lastName, email, password }),
+          body: JSON.stringify({ first_name, last_name, email, password }),
         });
   
         const data = await response.json();
