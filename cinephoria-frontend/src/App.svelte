@@ -494,19 +494,26 @@ footer::before {
   background-color: #f0f0f0;
   border-radius: 8px;
 }
-  .profile-initials {
-    width: 40px;
-    height: 40px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 50%;
-    background-color: red;
-    color: white;
-    font-size: 16px;
-    font-weight: bold;
-    margin-left: 10px;
-  }
+.profile-container {
+  display: flex;
+  align-items: center; /* Vertikale Ausrichtung */
+  gap: 8px; /* Abstand zwischen Text und Kreis */
+  position: relative; /* Wichtig für den roten Kreis */
+}
+
+.profile-initials {
+  width: 24px; /* Größe des Kreises */
+  height: 24px; 
+  display: flex;
+  align-items: center; 
+  justify-content: center; 
+  border-radius: 50%; /* Rund */
+  background-color: red; 
+  color: white; 
+  font-size: 12px; 
+  font-weight: bold;
+}
+
 </style>
 
 
@@ -551,20 +558,20 @@ footer::before {
       </button>
 
       {#if isLoggedIn}
-      <div class="profile-dropdown-container {isProfileDropdownOpen ? 'open' : ''}">
-        <button on:click={() => (isProfileDropdownOpen = !isProfileDropdownOpen)}>
-          Profil
-        </button>
-        <!-- Initialen anzeigen -->
-        <div class="profile-initials">{initials}</div>
-        <div class="profile-dropdown-menu">
-          <ul>
-            <li on:click={() => alert('Profil anzeigen')}>Profil anzeigen</li>
-            <li on:click={() => alert('Einstellungen')}>Einstellungen</li>
-            <li on:click={logout}>Abmelden</li>
-          </ul>
-        </div>
-      </div>
+  <div class="profile-dropdown-container {isProfileDropdownOpen ? 'open' : ''}">
+    <div class="profile-container" on:click={() => (isProfileDropdownOpen = !isProfileDropdownOpen)}>
+      <span>Profil</span>
+      <div class="profile-initials">{initials}</div>
+    </div>
+    <div class="profile-dropdown-menu">
+      <ul>
+        <li on:click={() => alert('Profil anzeigen')}>Profil anzeigen</li>
+        <li on:click={() => alert('Einstellungen')}>Einstellungen</li>
+        <li on:click={logout}>Abmelden</li>
+      </ul>
+    </div>
+  </div>
+
       {:else}
       <!-- Login Dropdown -->
       <div class="dropdown-container {isLoginOpen ? 'open' : ''}">
