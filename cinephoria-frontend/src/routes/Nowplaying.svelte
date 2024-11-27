@@ -92,9 +92,11 @@
               on:click={() => navigateToDescription(movie)}
               aria-label="Details zu {movie.title} anzeigen"
             >
-              <img src="{IMAGE_BASE_URL}{movie.poster_path}" alt="{movie.title}" />
-              <div class="movie-details">
-                <h3>{movie.title}</h3>
+              <div class="movie-image-container">
+                <img src="{IMAGE_BASE_URL}{movie.poster_path}" alt="{movie.title}" />
+                <div class="movie-hover-overlay">
+                  <span class="movie-title">{movie.title}</span>
+                </div>
               </div>
             </button>
           </article>
@@ -103,7 +105,6 @@
     </section>
   {/each}
 </main>
-
 
 <style>
   :global(body) {
@@ -137,7 +138,7 @@
     display: flex;
     gap: 16px;
     overflow-x: auto;
-    overflow-y: hidden; /* Vertikales Scrollen deaktivieren */
+    overflow-y: hidden;
     padding-bottom: 10px;
     scrollbar-width: thin;
     white-space: nowrap;
@@ -153,7 +154,7 @@
   }
 
   .movie-card {
-    flex: 0 0 250px; /* Kleinere Breite für Filme */
+    flex: 0 0 200px;
     background-color: #fff;
     border-radius: 8px;
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
@@ -167,22 +168,53 @@
     box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
   }
 
-  .movie-card img {
-    width: 100%; /* Breite auf die Kartenbreite beschränkt */
-    height: 225px; /* Feste Höhe für einheitliche Darstellung */
-    object-fit: cover; /* Verhältnis beibehalten */
-    display: block;
+  .movie-image-container {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 2 / 3;
+    overflow: hidden;
   }
 
-  .movie-details {
-    padding: 8px;
+  .movie-image-container img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: opacity 0.3s linear;
+  }
+
+  .movie-image-container:hover img {
+    opacity: 0.7;
+  }
+
+  .movie-hover-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background-color: rgba(0, 0, 0, 0.6);
+    opacity: 0;
+    transition: opacity 0.3s linear;
+    padding: 10px;
+    box-sizing: border-box;
+  }
+
+  .movie-image-container:hover .movie-hover-overlay {
+    opacity: 1;
+  }
+
+  .movie-title {
+    color: #fff;
+    font-size: 1rem;
+    font-weight: bold;
     text-align: center;
-  }
-
-  .movie-details h3 {
-    font-size: 0.9rem; /* Kleinere Schriftgröße */
-    margin: 0;
-    color: #444;
+    white-space: normal; /* Zeilenumbruch erlauben */
+    overflow: visible; /* Text vollständig anzeigen */
+    line-height: 1.2; /* Abstände zwischen Zeilen */
   }
 
   .movie-button {
