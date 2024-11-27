@@ -53,12 +53,17 @@ def get_now_playing():
         
         if response.status_code == 200:
             data = response.json()
-            results.extend(data['results'])  # Ergebnisse hinzufügen
+            # Filter: Nur Filme mit einem gültigen `poster_path` hinzufügen
+            filtered_results = [
+                movie for movie in data['results'] if movie.get('poster_path')
+            ]
+            results.extend(filtered_results)
         else:
             print(f"Fehler bei Seite {i}: {response.status_code}")
     
     # Alle Ergebnisse in ein JSON-Objekt packen
     return jsonify({"results": results})
+
 
 
 
