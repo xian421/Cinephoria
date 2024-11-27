@@ -76,6 +76,19 @@
   }
 };
 
+let isProfileMenuOpen = false;
+
+const toggleProfileMenu = () => {
+  isProfileMenuOpen = !isProfileMenuOpen; // Öffnen/Schließen des Dropdowns
+};
+
+const handleLogout = () => {
+  localStorage.removeItem("isLoggedIn"); // Login-Status entfernen
+  isLoggedIn = false;
+  alert("Du wurdest abgemeldet!");
+};
+
+
 
 
 </script>
@@ -281,27 +294,43 @@ footer::before {
   }
 
   .dropdown-menu {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    position: absolute;
-    top: calc(100% + 10px);
-    right: 0;
-    background: #ffffff;
-    padding: 1rem;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
-    border-radius: 12px;
-    z-index: 1000;
-    width: 300px;
-    transform: scaleY(0); /* Standardmäßig geschlossen */
-    transform-origin: top;
-    transition: transform 0.3s ease-in-out;
-  }
+  display: none;
+  position: absolute;
+  top: calc(100% + 10px);
+  right: 0;
+  background: #ffffff;
+  padding: 1rem;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+  border-radius: 12px;
+  z-index: 1000;
+  width: 200px;
+  transform-origin: top;
+  transition: transform 0.3s ease-in-out;
+}
 
-  .dropdown-container.open .dropdown-menu {
-    transform: scaleY(1); /* Geöffnet */
-  }
+
+.dropdown-container.open .dropdown-menu {
+  display: block;
+}
+
+.dropdown-menu ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.dropdown-menu li {
+  padding: 0.8rem;
+  font-size: 1rem;
+  color: #333;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.dropdown-menu li:hover {
+  background-color: #f0f0f0;
+  border-radius: 8px;
+}
 
   .dropdown-menu input {
   width: calc(100% - 16px); /* Platz für Padding und Border */
@@ -370,21 +399,30 @@ footer::before {
     </button>
 
     {#if isLoggedIn}
-  <button on:click={() => alert("Das ist dein Profil")}>
-    Profil
-  </button>
-{:else}
-  <div class="dropdown-container {isLoginOpen ? 'open' : ''}">
-    <button on:click={toggleLoginDropdown}>Login</button>
-    <div class="dropdown-menu">
-      <form on:submit|preventDefault={handleLogin}>
-        <input type="email" placeholder="E-Mail" bind:value={email} required />
-        <input type="password" placeholder="Passwort" bind:value={password} required />
-        <button type="submit">Einloggen</button>
-      </form>
+    <div class="dropdown-container {isProfileMenuOpen ? 'open' : ''}">
+      <button on:click={toggleProfileMenu}>Profil</button>
+      <div class="dropdown-menu">
+        <ul>
+          <li on:click={() => alert("Das ist dein Profil!")}>Profil anzeigen</li>
+          <li on:click={() => alert("Einstellungen öffnen!")}>Einstellungen</li>
+          <li on:click={() => alert("Favoriten ansehen!")}>Favoriten</li>
+          <li on:click={handleLogout}>Abmelden</li>
+        </ul>
+      </div>
     </div>
-  </div>
-{/if}
+  {:else}
+    <div class="dropdown-container {isLoginOpen ? 'open' : ''}">
+      <button on:click={toggleLoginDropdown}>Login</button>
+      <div class="dropdown-menu">
+        <form on:submit|preventDefault={handleLogin}>
+          <input type="email" placeholder="E-Mail" bind:value={email} required />
+          <input type="password" placeholder="Passwort" bind:value={password} required />
+          <button type="submit">Einloggen</button>
+        </form>
+      </div>
+    </div>
+  {/if}
+  
 
   </nav>
 
