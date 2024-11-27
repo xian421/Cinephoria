@@ -1,10 +1,10 @@
-<!-- <script>
+<script>
   export let id; // ID wird von der Route übergeben
-  console.log('Geladene ID:', id); // Debugging
-
   import { onMount } from 'svelte';
+
   let movieDetails = {};
   const IMAGE_BASE_URL = 'https://image.tmdb.org/t/p/w500';
+  let isLoading = true;
 
   onMount(async () => {
     if (!id) {
@@ -22,66 +22,48 @@
       }
     } catch (error) {
       console.error('Netzwerkfehler:', error);
+    } finally {
+      isLoading = false;
     }
   });
 </script>
 
-{#if movieDetails.title}
-  <main>
-    <h1>{movieDetails.title}</h1>
-    <img src="{IMAGE_BASE_URL}{movieDetails.poster_path}" alt="{movieDetails.title}" />
-    <p>{movieDetails.overview}</p>
-  </main>
-{:else}
-  <p>Lade Filmdetails...</p>
-{/if} -->
-
-
-<script>
- // export let film = {}; // Film-Daten, die von der Route übergeben werden
-
-  const film = {
-  poster: "https://link-zu-deinem-poster.jpg",
-  title: "Vaiana 2",
-  runtime: 100,
-  rating: "0",
-  genre: "Animation",
-  description:
-    "Vaiana 2 enthält Sequenzen mit Blitzlicht, die sich auf photosensitive Menschen oder Menschen mit photosensitiver Epilepsie auswirken könnten.",
-  showtimes: ["14:45", "15:10", "17:25", "17:50", "20:00", "20:25"],
-};
-
-</script>
-
 <style>
-  .film-container {
+  .movie-container {
     display: flex;
     gap: 2rem;
     padding: 2rem;
+    font-family: Arial, sans-serif;
   }
 
-  .film-poster {
+  .poster {
     max-width: 300px;
     border-radius: 8px;
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
   }
 
-  .film-details {
+  .details {
     flex: 1;
   }
 
-  .film-title {
+  .title {
     font-size: 2rem;
     font-weight: bold;
+    margin-bottom: 0.5rem;
+  }
+
+  .tagline {
+    font-style: italic;
+    color: #888;
     margin-bottom: 1rem;
   }
 
-  .film-meta {
+  .meta {
     margin-bottom: 1.5rem;
     color: #555;
   }
 
-  .film-description {
+  .description {
     margin-bottom: 2rem;
     line-height: 1.6;
   }
@@ -115,27 +97,56 @@
   }
 </style>
 
-<div class="film-container">
-  <!-- Linke Spalte: Poster -->
-  <div>
-    <img src="{film.poster}" alt="{film.title}" class="film-poster" />
-  </div>
-
-  <!-- Rechte Spalte: Details -->
-  <div class="film-details">
-    <div class="film-title">{film.title}</div>
-    <div class="film-meta">
-      <span>Dauer: {film.runtime} Minuten</span> | <span>FSK: {film.rating}</span> | <span>Genre: {film.genre}</span>
-    </div>
-    <div class="film-description">
-      {film.description}
+{#if isLoading}
+  <p>Lade Filmdetails...</p>
+{:else if movieDetails.title}
+  <div class="movie-container">
+    <!-- Linke Spalte: Poster -->
+    <div>
+      <img
+        src="{IMAGE_BASE_URL}{movieDetails.poster_path}"
+        alt="{movieDetails.title}"
+        class="poster"
+      />
     </div>
 
-    <!-- Zeitplan -->
-    <div class="schedule">
-      {#each film.showtimes as time}
-        <div class="schedule-button">{time}</div>
-      {/each}
+    <!-- Rechte Spalte: Details -->
+    <div class="details">
+      <div class="title">{movieDetails.title}</div>
+      <div class="tagline">{movieDetails.tagline}</div>
+      <div class="meta">
+        <span>Dauer: {movieDetails.runtime} Minuten</span> | 
+        <span>FSK: {movieDetails.adult ? "18+" : "0+"}</span> | 
+        <span>Genre: {movieDetails.genres.map((genre) => genre.name).join(", ")}</span>
+      </div>
+      <div class="description">{movieDetails.overview}</div>
+
+      <!-- Produktionsfirmen -->
+      <div>
+        <h3>Produktionsfirmen:</h3>
+        <ul>
+          {#each movieDetails.production_companies as company}
+            <li>{company.name}</li>
+          {/each}
+        </ul>
+      </div>
+
+      <!-- Erscheinungsdatum -->
+      <div>
+        <h3>Veröffentlichung:</h3>
+        <p>{movieDetails.release_date}</p>
+      </div>
+
+      <!-- Bewertungen -->
+      <div>
+        <h3>Bewertung:</h3>
+        <p>
+          <span class="highlight">{movieDetails.vote_average.toFixed(1)}</span> 
+          von {movieDetails.vote_count} Stimmen
+        </p>
+      </div>
     </div>
   </div>
-</div>
+{:else}
+  <p>Filmdetails konnten nicht geladen werden.</p>
+{/if}
