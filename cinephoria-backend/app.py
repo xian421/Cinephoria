@@ -123,12 +123,12 @@ def login():
 @app.route('/register', methods=['POST'])
 def register():
     data = request.get_json()
-    first_name = data.get('first_name')
-    last_name = data.get('last_name')
+    vorname = data.get('first_name')  # Mapping von "first_name" auf "vorname"
+    nachname = data.get('last_name')  # Mapping von "last_name" auf "nachname"
     email = data.get('email')
     password = data.get('password')
 
-    if not first_name or not last_name or not email or not password:
+    if not vorname or not nachname or not email or not password:
         return jsonify({'error': 'Alle Felder sind erforderlich'}), 400
 
     try:
@@ -139,14 +139,15 @@ def register():
 
         # Passwort hashen mit der PostgreSQL-Methode
         cursor.execute(
-            "INSERT INTO users (first_name, last_name, email, password) VALUES (%s, %s, %s, crypt(%s, gen_salt('bf')))",
-            (first_name, last_name, email, password),
+            "INSERT INTO users (vorname, nachname, email, password) VALUES (%s, %s, %s, crypt(%s, gen_salt('bf')))",
+            (vorname, nachname, email, password),
         )
         return jsonify({'message': 'Registrierung erfolgreich'}), 201
 
     except Exception as e:
-        print(f"Fehler bei der Registrierung: {e}")
+        print(f"Fehler bei der Registrierung: {e}")  # Fehlerausgabe für Debugging
         return jsonify({'error': 'Ein Fehler ist aufgetreten'}), 500
+
 
 
 
