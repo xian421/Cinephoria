@@ -75,7 +75,7 @@
 
 
 <main>
-  <h1>Aktuelles Kinoprogramm im CINEPHORIA</h1>
+
 
   {#each Object.keys(groupedMovies).sort((a, b) => new Date(a) - new Date(b)) as dateKey}
     <section>
