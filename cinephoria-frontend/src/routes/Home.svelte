@@ -38,7 +38,7 @@
 
 
 <main>
-  <h1>Aktuelles Kinoprogramm im CINEPHORIA</h1>
+  
 
   <!-- Filmliste -->
   <section class="movies">

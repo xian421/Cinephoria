@@ -330,13 +330,13 @@ footer::before {
       class="{currentPath === '/' ? 'active' : ''}"
       on:click={() => navigate('/')}
     >
-      Home
+      Alle Filme
     </button>
     <button
       class="{currentPath === '/nowplaying' ? 'active' : ''}"
       on:click={() => navigate('/nowplaying')}
     >
-      NowPlaying
+      Programm
     </button>
     <button
       class="{currentPath === '/upcoming' ? 'active' : ''}"
