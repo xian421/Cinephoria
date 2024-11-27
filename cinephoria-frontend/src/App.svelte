@@ -96,40 +96,41 @@ const handleLogout = () => {
 
 <style>
   nav {
-  display: flex;
-  align-items: center;
-  justify-content: space-around; /* Gleichmäßige Verteilung */
-  background: #ffffff;
-  padding: 1rem;
-  border-radius: 12px;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
-  position: sticky;
-  top: 0;
-  z-index: 1000;
-}
+    display: flex;
+    align-items: center;
+    justify-content: space-around; /* Gleichmäßige Verteilung */
+    background: #ffffff;
+    padding: 1rem;
+    border-radius: 12px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+  }
+  
 
-.logo {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  text-decoration: none;
-  color: white;
-  font-size: 1.2rem;
-  font-weight: bold;
-  transition: transform 0.4s ease;
-}
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    text-decoration: none;
+    color: white;
+    font-size: 1.2rem;
+    font-weight: bold;
+    transition: transform 0.4s ease;
+  }
 
-.logo:hover {
-  transform: scale(1.25); /* Vergrößerung des Logos beim Hover */
-}
+  .logo:hover {
+    transform: scale(1.25); /* Vergrößerung des Logos beim Hover */
+  }
 
-.logo img {
-  height: 60px;
-  width: auto;
-  object-fit: contain;
-}
+  .logo img {
+    height: 60px;
+    width: auto;
+    object-fit: contain;
+  }
 
-button {
+  button {
   font-size: 1.2rem;
   font-weight: bold;
   color: rgb(0, 0, 0);
@@ -154,6 +155,8 @@ button.active {
   border-color: rgb(21, 151, 112);
   transform: scale(1.05); /* Leichte Vergrößerung für aktiven Zustand */
 }
+
+
 
 footer {
   position: relative;
@@ -182,13 +185,14 @@ footer::before {
   z-index: -1; /* Hinter dem Footer platzieren */
 }
 
-.footer-buttons {
-  display: flex;
-  gap: 1.5rem;
-  margin-bottom: 1.5rem;
-}
 
-.footer-buttons button {
+  .footer-buttons {
+    display: flex;
+    gap: 1.5rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .footer-buttons button {
   font-size: 1rem;
   font-weight: bold;
   color: rgb(0, 0, 0);
@@ -206,33 +210,33 @@ footer::before {
   transform: scale(1.1); /* Leichte Vergrößerung beim Hover */
 }
 
-.social-icons {
-  display: flex;
-  gap: 1.5rem;
-  margin-bottom: 1.5rem;
-}
+  .social-icons {
+    display: flex;
+    gap: 1.5rem;
+    margin-bottom: 1.5rem;
+  }
 
-.social-icons a {
-  text-decoration: none;
-  color: white;
-  font-size: 1.5rem;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  background: #ffffff;
-  width: 50px;
-  height: 50px;
-  border-radius: 50%;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
-  transition: all 0.3s ease;
-}
+  .social-icons a {
+    text-decoration: none;
+    color: white;
+    font-size: 1.5rem;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background: #ffffff;
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+    transition: all 0.3s ease;
+  }
 
-.social-icons a:hover {
-  background: #1abc9c;
-  transform: scale(1.1);
-}
+  .social-icons a:hover {
+    background: #1abc9c;
+    transform: scale(1.1);
+  }
 
-.scroll-to-top {
+  .scroll-to-top {
   font-size: 1rem;
   font-weight: bold;
   color: white;
@@ -252,120 +256,99 @@ footer::before {
   background: #24b497;
 }
 
-.footer-text {
-  color: #c0c0c0;
-  font-size: 0.9rem;
-  text-align: center;
+  .footer-text {
+    color: #c0c0c0;
+    font-size: 0.9rem;
+    text-align: center;
+  }
+
+
+  .social-icons img {
+    text-decoration: none;
+  color: white;
+  font-size: 1.5rem;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: #ffffff;
+  width: 50px;
+  height: 50px;
+  border: 2px solid transparent; /* Standardmäßig kein Rand */
+  border-radius: 50%;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+  transition: all 0.3s ease;
+}
+
+.social-icons img:hover {
+  border-color: #1abc9c; /* Farbiger Rand beim Hover */
+  transform: scale(1.1);
 }
 
 .footer-text {
   color: black;
 }
 
-/* Login Dropdown */
-.login-dropdown-container {
-  position: relative;
-}
 
-.login-dropdown-menu {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  position: absolute;
-  top: calc(100% + 10px);
-  right: 0;
-  background: #ffffff;
-  padding: 1rem;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
-  border-radius: 12px;
-  z-index: 1000;
-  width: 300px;
-  transform: scaleY(0); /* Standardmäßig geschlossen */
-  transform-origin: top;
-  transition: transform 0.3s ease-in-out;
-}
+.dropdown-container {
+    position: relative;
+  }
 
-.login-dropdown-container.open .login-dropdown-menu {
-  transform: scaleY(1); /* Geöffnet */
-}
+  .dropdown-menu {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    position: absolute;
+    top: calc(100% + 10px);
+    right: 0;
+    background: #ffffff;
+    padding: 1rem;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+    border-radius: 12px;
+    z-index: 1000;
+    width: 300px;
+    transform: scaleY(0); /* Standardmäßig geschlossen */
+    transform-origin: top;
+    transition: transform 0.3s ease-in-out;
+  }
 
-.login-dropdown-menu input {
-  width: calc(100% - 16px);
+  .dropdown-container.open .dropdown-menu {
+    transform: scaleY(1); /* Geöffnet */
+  }
+
+  .dropdown-menu input {
+  width: calc(100% - 16px); /* Platz für Padding und Border */
   padding: 0.8rem;
   margin: 0.5rem 0;
   border: 1px solid #ccc;
   border-radius: 8px;
   font-size: 1rem;
-  box-sizing: border-box;
+  box-sizing: border-box; /* Sicherstellen, dass Padding/Borders eingerechnet werden */
 }
 
-.login-dropdown-menu input:focus {
-  outline: none;
-  border-color: #1abc9c;
-  box-shadow: 0 0 4px rgba(26, 188, 156, 0.5);
-}
+  .dropdown-menu input:focus {
+    outline: none;
+    border-color: #1abc9c;
+    box-shadow: 0 0 4px rgba(26, 188, 156, 0.5);
+  }
 
-.login-dropdown-menu button {
-  width: 100%;
-  background: #3498db;
-  color: #ffffff;
-  font-size: 1rem;
-  font-weight: bold;
-  padding: 0.8rem;
-  border: none;
-  border-radius: 12px;
-  cursor: pointer;
-  transition: all 0.3s ease;
-}
+  .dropdown-menu button {
+    width: 100%;
+    background: #3498db;
+    color: #ffffff;
+    font-size: 1rem;
+    font-weight: bold;
+    padding: 0.8rem;
+    border: none;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.3s ease;
 
-.login-dropdown-menu button:hover {
-  background: #24b497;
-}
+  }
 
-/* Profil Dropdown */
-.dropdown-container {
-  position: relative;
-}
-
-.dropdown-menu {
-  display: none;
-  position: absolute;
-  top: calc(100% + 10px);
-  right: 0;
-  background: #ffffff;
-  padding: 1rem;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
-  border-radius: 12px;
-  z-index: 1000;
-  width: 200px;
-  transform-origin: top;
-  transition: transform 0.3s ease-in-out;
-}
-
-.dropdown-container.open .dropdown-menu {
-  display: block;
-}
-
-.dropdown-menu ul {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-}
-
-.dropdown-menu li {
-  padding: 0.8rem;
-  font-size: 1rem;
-  color: #333;
-  cursor: pointer;
-  transition: background-color 0.3s ease;
-}
-
-.dropdown-menu li:hover {
-  background-color: #f0f0f0;
-  border-radius: 8px;
-}
-
+  .dropdown-menu button:hover {
+    background: #24b497;
+  }
 </style>
 
 
@@ -412,17 +395,16 @@ footer::before {
       </div>
     </div>
   {:else}
-  <div class="login-dropdown-container {isLoginOpen ? 'open' : ''}">
-    <button on:click={toggleLoginDropdown}>Login</button>
-    <div class="login-dropdown-menu">
-      <form on:submit|preventDefault={handleLogin}>
-        <input type="email" placeholder="E-Mail" bind:value={email} required />
-        <input type="password" placeholder="Passwort" bind:value={password} required />
-        <button type="submit">Einloggen</button>
-      </form>
+    <div class="dropdown-container {isLoginOpen ? 'open' : ''}">
+      <button on:click={toggleLoginDropdown}>Login</button>
+      <div class="dropdown-menu">
+        <form on:submit|preventDefault={handleLogin}>
+          <input type="email" placeholder="E-Mail" bind:value={email} required />
+          <input type="password" placeholder="Passwort" bind:value={password} required />
+          <button type="submit">Einloggen</button>
+        </form>
+      </div>
     </div>
-  </div>
-  
   {/if}
   
 
