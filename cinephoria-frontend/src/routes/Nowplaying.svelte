@@ -2,6 +2,10 @@
   import { onMount } from 'svelte';
   import { navigate } from 'svelte-routing';
 
+  export let isOpen = false;
+  export let movie = null; // Filmobjekt
+  export let onClose = () => {};
+
   let nowPlayingMovies = [];
   let groupedMovies = {};
 
@@ -73,9 +77,22 @@
   }
 </script>
 
+{#if isOpen && movie}
+  <div class="popup-overlay" on:click={onClose}>
+    <div class="popup-content" on:click|stopPropagation>
+      <button class="close-button" on:click={onClose}>×</button>
+      <div class="popup-movie-details">
+        <img src={`https://image.tmdb.org/t/p/w500${movie.poster_path}`} alt={movie.title} />
+        <h2>{movie.title}</h2>
+        <p>Datum: {movie.showDate}</p>
+      </div>
+    </div>
+  </div>
+{/if}
+
 
 <main>
-
+  <h1>Aktuelles Kinoprogramm im CINEPHORIA</h1>
 
   {#each Object.keys(groupedMovies).sort((a, b) => new Date(a) - new Date(b)) as dateKey}
     <section>
@@ -105,6 +122,8 @@
     </section>
   {/each}
 </main>
+
+
 
 <style>
   :global(body) {
@@ -187,25 +206,48 @@
   }
 
   .movie-hover-overlay {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    background-color: rgba(0, 0, 0, 0.6);
-    opacity: 0;
-    transition: opacity 0.3s linear;
-    padding: 10px;
-    box-sizing: border-box;
-  }
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background-color: rgba(0, 0, 0, 0.6);
+  opacity: 0;
+  transition: opacity 0.3s linear;
+  padding: 10px;
+  box-sizing: border-box;
+}
 
-  .movie-image-container:hover .movie-hover-overlay {
-    opacity: 1;
-  }
+.movie-hover-overlay::after {
+  content: "Tickets";
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  background-color: rgba(52, 152, 219, 0.9);
+  color: white;
+  text-align: center;
+  font-size: 1rem;
+  font-weight: bold;
+  padding: 5px 0;
+  box-sizing: border-box;
+  opacity: 0;
+  transform: translateY(100%);
+  transition: opacity 0.3s, transform 0.3s;
+}
+
+.movie-image-container:hover .movie-hover-overlay::after {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.movie-image-container:hover .movie-hover-overlay {
+  opacity: 1;
+}
 
   .movie-title {
     color: #fff;
@@ -225,5 +267,62 @@
     width: 100%;
     text-align: left;
     cursor: pointer;
+  }
+
+
+  .popup-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.7);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+  }
+
+  .popup-content {
+    background: white;
+    padding: 20px;
+    border-radius: 8px;
+    max-width: 400px;
+    width: 90%;
+    text-align: center;
+    position: relative;
+  }
+
+  .popup-movie-details img {
+    width: 100%;
+    border-radius: 8px;
+    margin-bottom: 10px;
+  }
+
+  .popup-movie-details h2 {
+    margin: 10px 0;
+    font-size: 1.5rem;
+    color: #333;
+  }
+
+  .popup-movie-details p {
+    margin: 5px 0;
+    font-size: 1rem;
+    color: #555;
+  }
+
+  .close-button {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    cursor: pointer;
+    color: #333;
+  }
+
+  .close-button:hover {
+    color: red;
   }
 </style>
