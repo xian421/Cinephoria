@@ -17,7 +17,9 @@
   <div class="admin-page">
     {#each screens as screen}
       <div class="card">
-        <img src="/cinema-hall.webp" alt="Kinosaal" />
+        <div class="image-container">
+            <img src="/cinema-hall.webp" alt="Kinosaal" />
+          </div>          
         <div class="card-overlay">
           <div class="card-info">
             <h3>{screen.name}</h3>
@@ -87,4 +89,17 @@
     margin: 5px 0;
     font-size: 1rem;
   }
+
+  .image-container {
+  width: 100%;
+  aspect-ratio: 16 / 9; /* Seitenverhältnis von 16:9 */
+  overflow: hidden;
+}
+
+.image-container img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
 </style>
