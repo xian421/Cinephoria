@@ -3,53 +3,43 @@
   import { onMount } from 'svelte';
   import "@fortawesome/fontawesome-free/css/all.min.css";
 
-
+  let moviefsk = {};  // Initialisierung von moviefsk
   let movieDetails = {};
   const IMAGE_BASE_URL = 'https://image.tmdb.org/t/p/w500';
   let isLoading = true;
   let error = null;
 
   onMount(async () => {
-  if (!id) {
-    console.error('Keine ID gefunden!');
-    error = 'Keine ID gefunden!';
-    isLoading = false;
-    return;
-  }
-  try {
-    const response = await fetch(
-      `https://cinephoria-backend-c53f94f0a255.herokuapp.com/movies/${id}`
-    );
-    if (response.ok) {
-      movieDetails = await response.json();
-      
-      const responsefsk = await fetch(
-        `https://cinephoria-backend-c53f94f0a255.herokuapp.com/movie/${id}/release_dates`
-      );
-      if (responsefsk.ok) {
-        const moviefsk = await responsefsk.json();
-        
-        // Filtere nur die deutschen Release-Daten (iso_3166_1 == "DE")
-        const germanRelease = moviefsk.results.find(item => item.iso_3166_1 === 'DE');
-        if (germanRelease) {
-          moviefsk = germanRelease.release_dates[0]; // Der erste Release-Termin
-        } else {
-          console.error('Kein deutsches Veröffentlichungsdatum gefunden');
-          error = 'Kein deutsches Veröffentlichungsdatum gefunden';
-        }
-      } else {
-        console.error('Fehler beim Laden der Filmdetails:', responsefsk.statusText);
-        error = 'Fehler beim Laden der Filmdetails.';
-      }
+    if (!id) {
+      console.error('Keine ID gefunden!');
+      error = 'Keine ID gefunden!';
+      isLoading = false;
+      return;
     }
-  } catch (err) {
-    console.error('Netzwerkfehler:', err);
-    error = 'Netzwerkfehler. Bitte versuche es erneut.';
-  } finally {
-    isLoading = false;
-  }
-});
-
+    try {
+      const response = await fetch(
+        `https://cinephoria-backend-c53f94f0a255.herokuapp.com/movies/${id}`
+      );
+      if (response.ok) {
+        movieDetails = await response.json();
+        
+        const responsefsk = await fetch (
+        `https://cinephoria-backend-c53f94f0a255.herokuapp.com/movie/${id}/release_dates`
+        );
+        if (responsefsk.ok){
+          moviefsk = await responsefsk.json();
+        } else {
+          console.error('Fehler beim Laden der Filmdetails:', response.statusText);
+          error = 'Fehler beim Laden der Filmdetails.';
+        }
+      }
+    } catch (err) {
+      console.error('Netzwerkfehler:', err);
+      error = 'Netzwerkfehler. Bitte versuche es erneut.';
+    } finally {
+      isLoading = false;
+    }
+  });
 </script>
 
 <style>
@@ -156,7 +146,7 @@
       <div class="tagline">{movieDetails.tagline}</div>
       <div class="meta">
         <i class="fas fa-clock"></i> {movieDetails.runtime} '
-        <span>FSK: {moviefsk.certification}</span> | 
+        <span>FSK: {moviefsk.certification ? moviefsk.certification : 'Nicht verfügbar'}</span> 
         <span>Genre: {movieDetails.genres ? movieDetails.genres.map((genre) => genre.name).join(", ") : 'Keine Angaben'}</span>
       </div>
       
