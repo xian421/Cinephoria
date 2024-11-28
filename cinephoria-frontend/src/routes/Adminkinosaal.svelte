@@ -17,7 +17,7 @@
   <div class="admin-page">
     {#each screens as screen}
       <div class="card">
-        <img src="/cinema-hall.jpg" alt="Kinosaal" />
+        <img src="/cinema-hall.webp" alt="Kinosaal" />
         <div class="card-overlay">
           <div class="card-info">
             <h3>{screen.name}</h3>
@@ -34,7 +34,7 @@
 <style>
   .admin-page {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); /* Responsive Grid */
+    grid-template-columns: repeat(auto-fit, minmax(600px, 1fr)); /* Responsive Grid */
     gap: 20px;
     padding: 20px;
   }
