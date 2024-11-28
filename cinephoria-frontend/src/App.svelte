@@ -1,5 +1,6 @@
 <script>
   import { Router, Route } from "svelte-routing";
+  import { onMount } from 'svelte';
   import Home from "./routes/Home.svelte";
   import NowPlaying from "./routes/Nowplaying.svelte";
   import Upcoming from "./routes/Upcoming.svelte";
