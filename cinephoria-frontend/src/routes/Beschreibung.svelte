@@ -146,7 +146,7 @@
       <div class="tagline">{movieDetails.tagline}</div>
       <div class="meta">
         <i class="fas fa-clock"></i> {movieDetails.runtime} '
-        <span>FSK: {moviefsk.certification ? moviefsk.certification : 'Nicht verfügbar'}</span> 
+        <span>FSK: {moviefsk.release_dates[0].certification ? moviefsk.release_dates[0].certification : 'Nicht verfügbar'}</span> 
         <span>Genre: {movieDetails.genres ? movieDetails.genres.map((genre) => genre.name).join(", ") : 'Keine Angaben'}</span>
       </div>
       
