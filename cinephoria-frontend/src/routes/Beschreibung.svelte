@@ -1,6 +1,8 @@
 <script>
   export let id; // ID wird von der Route übergeben
   import { onMount } from 'svelte';
+  import "@fortawesome/fontawesome-free/css/all.min.css";
+
 
   let movieDetails = {};
   const IMAGE_BASE_URL = 'https://image.tmdb.org/t/p/w500';
@@ -106,6 +108,14 @@
     font-size: 1.2rem;
     margin: 2rem;
   }
+
+  .meta i {
+  font-size: 20px; /* Größe des Icons */
+  color: #555; /* Farbe des Icons */
+  margin-right: 5px; /* Abstand zwischen Icon und Text */
+  vertical-align: middle; /* Mittige Ausrichtung mit dem Text */
+}
+
 </style>
 
 {#if isLoading}
@@ -128,10 +138,11 @@
       <div class="title">{movieDetails.title}</div>
       <div class="tagline">{movieDetails.tagline}</div>
       <div class="meta">
-        <img src="./Dauer_des_films.png" alt="Dauer des Films" width="20" height="20" /> {movieDetails.runtime} '
+        <i class="fas fa-clock"></i> {movieDetails.runtime} '
         <span>FSK: {movieDetails.adult ? "18+" : "0+"}</span> | 
         <span>Genre: {movieDetails.genres ? movieDetails.genres.map((genre) => genre.name).join(", ") : 'Keine Angaben'}</span>
       </div>
+      
       <div class="description">{movieDetails.overview}</div>
 
       <!-- Produktionsfirmen -->
