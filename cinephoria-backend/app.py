@@ -75,7 +75,7 @@ def get_movie_details(movie_id):
         return jsonify({"error": f"Unable to fetch details for movie ID {movie_id}"}), response.status_code
     
 
-@app.route('/<int:movie_id>/release_dates', methods=['GET'])
+@app.route('movie/<int:movie_id>/release_dates', methods=['GET'])
 def get_movie_details_richtig(movie_id):
     # URL für die TMDB-API mit der spezifischen Film-ID
     url = f"{TMDB_API_URL}/{movie_id}/release_dates"
