@@ -19,24 +19,26 @@
   let userLastName = ""; 
   let initials = "";
   let kontakt = [];
-  let firstCinema = null;
+  let firstCinema = {};
 
 const KONTAKT_URL = 'https://cinephoria-backend-c53f94f0a255.herokuapp.com/cinemas';
 
   //Für Kontakt aus Backend von Datenbank
   onMount(async () => {
-      try {
+    try {
         const responseKontakt = await fetch(KONTAKT_URL);
         const data = await responseKontakt.json();
-        kontakt = data.cinemas;
+        kontakt = data.cinemas; // Setzt die Liste der Kinos
+
         if (kontakt && kontakt.length > 0) {
-          const firstCinema = kontakt[0];  // Erstes Kino
-          console.log('Location des ersten Kinos:', firstCinema.location);
-          } 
-       } catch (error) {
-          console.error('Fehler beim Laden des Kontakts: ', error);
-      }
-    });
+            firstCinema = kontakt[0]; // Verknüpft das erste Kino mit der globalen Variable
+            console.log('Location des ersten Kinos:', firstCinema.location);
+        }
+    } catch (error) {
+        console.error('Fehler beim Laden des Kontakts: ', error);
+    }
+});
+
 
 
 
