@@ -234,6 +234,7 @@ def get_cinemas():
 
 
 @app.route('/screens', methods=['GET'])
+@admin_required
 def get_screens():
     cinema_id = request.args.get('cinema_id', default=1, type=int)  # Standardwert: 1
     try:
