@@ -10,6 +10,7 @@
   import Sitzplan from './routes/Sitzplan.svelte';
   import Register from './routes/Register.svelte';
   import Forgotpassword from "./routes/Forgotpassword.svelte";
+  import Adminkinosaal from "./routes/Adminkinosaal.svelte";
   import Swal from 'sweetalert2';
 
   export let url = ""; // Für SSR
@@ -651,6 +652,7 @@ footer::before {
     <Route path="/sitzplan" component={Sitzplan} />
     <Route path="/register" component={Register} />
     <Route path="/forgot-password" component={Forgotpassword} />
+    <Route path="/adminkinosaal" component={Adminkinosaal} />
 
     <Route path="/beschreibung/:id" component={Beschreibung} />
   </div>

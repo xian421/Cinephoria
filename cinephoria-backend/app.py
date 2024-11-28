@@ -155,8 +155,8 @@ def login():
 @app.route('/cinemas', methods=['GET'])
 def get_cinemas():
     try:
-        with psycopg2.connect(DATABASE_URL) as conn:  # Verbindung automatisch schließen
-            with conn.cursor() as cursor:            # Cursor automatisch schließen
+        with psycopg2.connect(DATABASE_URL) as conn:  
+            with conn.cursor() as cursor:            
                 cursor.execute("SELECT cinema_id, name, location, contact_number FROM cinema")
                 result = cursor.fetchall()
 
@@ -175,6 +175,68 @@ def get_cinemas():
     except Exception as e:
         print(f"Fehler: {e}")
         return jsonify({'error': 'Fehler beim Abrufen der Kinos'}), 500
+
+
+# @app.route('/hierUrlfürfrontend', methods=['GET']) #url ändern
+# def get_hierName(): #Name ändern
+#     try:
+#         with psycopg2.connect(DATABASE_URL) as conn:  
+#             with conn.cursor() as cursor:            
+#                 cursor.execute("SELECT cinema_id, name, location, contact_number FROM cinema") #SQL Satement
+#                 result = cursor.fetchall()
+
+#                 Waswirdhiergeholt = [  #Name ändern
+#                     {
+#                         'cinema_id': row[0], #Das anpassen
+#                         'name': row[1],
+#                         'location': row[2],
+#                         'contact_number': row[3]
+#                     }
+#                     for row in result
+#                 ]
+
+#         return jsonify({'cinemas': cinemas}), 200 # hier Name
+
+#     except Exception as e:
+#         print(f"Fehler: {e}")
+#         return jsonify({'error': 'Fehler beim Abrufen der Kinos'}), 500 #Fehler anpassen
+
+
+
+
+@app.route('/screens', methods=['GET'])
+def get_screens():
+    cinema_id = request.args.get('cinema_id', default=1, type=int)  # Standardwert: 1
+    try:
+        with psycopg2.connect(DATABASE_URL) as conn:
+            with conn.cursor() as cursor:
+                cursor.execute("""
+                    SELECT s.screen_id, s.name, s.capacity, s.type, s.created_at, s.updated_at
+                    FROM screens s
+                    JOIN cinema c ON c.cinema_id = s.cinema_id
+                    WHERE c.cinema_id = %s
+                """, (cinema_id,))
+                
+                result = cursor.fetchall()
+
+                screens = [
+                    {
+                        'screen_id': row[0],
+                        'name': row[1],
+                        'capacity': row[2],
+                        'type': row[3],
+                        'created_at': row[4],
+                        'updated_at': row[5]
+                    }
+                    for row in result
+                ]
+
+        return jsonify({'screens': screens}), 200
+
+    except Exception as e:
+        print(f"Fehler: {e}")
+        return jsonify({'error': 'Fehler beim Abrufen der Kinosäle'}), 500
+
 
 
 
@@ -213,6 +275,6 @@ def register():
 
 
 
-    
+
 if __name__ == '__main__':
     app.run(debug=True)
