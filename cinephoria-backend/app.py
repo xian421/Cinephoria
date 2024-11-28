@@ -5,13 +5,14 @@ import requests
 import jwt
 import datetime
 from functools import wraps
+import os
 
 app = Flask(__name__)
 CORS(app, origins=["https://cinephoria-theta.vercel.app"])
 
 # Datenbankkonfiguration
-DATABASE_URL = "postgres://u9v1p2ouoehmll:pa83fe38fd05666e13bce1b16c58e23ecc849ac08945632f8986c00ce25bd250e@c3gtj1dt5vh48j.cluster-czrs8kj4isg7.us-east-1.rds.amazonaws.com:5432/db5lga5e41bidv"
-
+#DATABASE_URL = "postgres://u9v1p2ouoehmll:pa83fe38fd05666e13bce1b16c58e23ecc849ac08945632f8986c00ce25bd250e@c3gtj1dt5vh48j.cluster-czrs8kj4isg7.us-east-1.rds.amazonaws.com:5432/db5lga5e41bidv"
+DATABASE_URL = os.getenv('DATABASE_URL')
 # Verbindung zur Datenbank herstellen
 connection = psycopg2.connect(DATABASE_URL)
 connection.autocommit = True  # Automatisches Commit für Änderungen
