@@ -75,6 +75,29 @@ def get_movie_details(movie_id):
         return jsonify({"error": f"Unable to fetch details for movie ID {movie_id}"}), response.status_code
     
 
+@app.route('/movie/<int:movie_id>/release_dates', methods=['GET'])
+def get_movie_details_richtig(movie_id):
+    # URL für die TMDB-API mit der spezifischen Film-ID
+    url = f"{TMDB_API_URL}/{movie_id}/release_dates"
+    
+    # Anfrage an die API senden
+    response = requests.get(url, headers=HEADERS)
+    
+    # Erfolgreiche Antwort zurückgeben
+    if response.status_code == 200:
+        # JSON-Antwort parsen
+        data = response.json()
+        
+        # Filtere nur den Eintrag mit 'iso_3166_1': 'DE'
+        german_release = next((item for item in data['results'] if item['iso_3166_1'] == 'DE'), None)
+        
+        if german_release:
+            return jsonify(german_release)
+        else:
+            return jsonify({"error": "No release date found for Germany (DE)"}), 404
+    else:
+        # Fehler behandeln und Fehlermeldung zurückgeben
+        return jsonify({"error": f"Unable to fetch details for movie ID {movie_id}"}), response.status_code
 
 
 

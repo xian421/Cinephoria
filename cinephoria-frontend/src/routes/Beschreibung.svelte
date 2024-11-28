@@ -22,9 +22,16 @@
       );
       if (response.ok) {
         movieDetails = await response.json();
-      } else {
-        console.error('Fehler beim Laden der Filmdetails:', response.statusText);
-        error = 'Fehler beim Laden der Filmdetails.';
+        
+        const responsefsk = await fetch (
+        `https://cinephoria-backend-c53f94f0a255.herokuapp.com/movie/${id}/release_dates`
+        );
+        if (responsefsk.ok){
+          moviefsk = await responsefsk.json();
+        } else {
+          console.error('Fehler beim Laden der Filmdetails:', response.statusText);
+          error = 'Fehler beim Laden der Filmdetails.';
+        }
       }
     } catch (err) {
       console.error('Netzwerkfehler:', err);
@@ -139,7 +146,7 @@
       <div class="tagline">{movieDetails.tagline}</div>
       <div class="meta">
         <i class="fas fa-clock"></i> {movieDetails.runtime} '
-        <span>FSK: {movieDetails.adult ? "18+" : "0+"}</span> | 
+        <span>FSK: {moviesfsk.certification}</span> | 
         <span>Genre: {movieDetails.genres ? movieDetails.genres.map((genre) => genre.name).join(", ") : 'Keine Angaben'}</span>
       </div>
       
