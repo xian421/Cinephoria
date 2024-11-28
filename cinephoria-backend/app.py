@@ -4,6 +4,7 @@ from flask_cors import CORS
 import requests
 import jwt
 import datetime
+from functools import wraps
 
 app = Flask(__name__)
 CORS(app, origins=["https://cinephoria-theta.vercel.app"])
@@ -26,6 +27,32 @@ HEADERS = {
     "accept": "application/json",
     "Authorization": f"Bearer {TMDB_BEARER_TOKEN}"
 }
+
+
+
+# Middleware für Admin-Zugriff
+def admin_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        token = request.headers.get('Authorization', '').replace('Bearer ', '')
+        if not token:
+            return jsonify({'error': 'Token fehlt'}), 401
+        try:
+            decoded = jwt.decode(token, SECRET_KEY, algorithms=['HS256'])
+            role = decoded.get('role')
+            if role != 'admin':
+                return jsonify({'error': 'Zugriff verweigert - keine Admin-Rechte'}), 403
+        except jwt.ExpiredSignatureError:
+            return jsonify({'error': 'Token abgelaufen'}), 401
+        except jwt.InvalidTokenError:
+            return jsonify({'error': 'Ungültiges Token'}), 401
+        return f(*args, **kwargs)
+    return decorated_function
+
+
+
+
+
 
 @app.route('/movies/now_playing', methods=['GET'])
 def get_now_playing():
@@ -115,13 +142,13 @@ def login():
     try:
         with psycopg2.connect(DATABASE_URL) as conn:
             with conn.cursor() as cursor:
-                cursor.execute("SELECT id, password, vorname, nachname FROM users WHERE email = %s", (email,))
+                cursor.execute("SELECT id, password, vorname, nachname, role FROM users WHERE email = %s", (email,))
                 result = cursor.fetchone()
 
                 if not result:
                     return jsonify({'error': 'Ungültige E-Mail oder Passwort'}), 401
 
-                user_id, stored_password, vorname, nachname = result
+                user_id, stored_password, vorname, nachname, role = result
 
                 cursor.execute("SELECT crypt(%s, %s) = %s AS password_match", (password, stored_password, stored_password))
                 is_valid = cursor.fetchone()[0]
@@ -134,6 +161,7 @@ def login():
                         'first_name': vorname,
                         'last_name': nachname,
                         'initials': initials,
+                        'role': role,  # Füge die Rolle hinzu
                         'exp': datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(hours=1)
                     }, SECRET_KEY, algorithm='HS256')
 
@@ -150,6 +178,7 @@ def login():
     except Exception as e:
         print(f"Fehler: {e}")
         return jsonify({'error': 'Fehler bei der Anmeldung'}), 500
+
 
 
 @app.route('/cinemas', methods=['GET'])
@@ -211,7 +240,7 @@ def get_screens():
         with psycopg2.connect(DATABASE_URL) as conn:
             with conn.cursor() as cursor:
                 cursor.execute("""
-                    SELECT s.screen_id, s.name, s.capacity, s.type, s.created_at, s.updated_at
+                    SELECT s.screen_id, s.name, s.capacity, s.type, s.created_at, COALESCE(s.updated_at, s.created_at)
                     FROM screens s
                     JOIN cinema c ON c.cinema_id = s.cinema_id
                     WHERE c.cinema_id = %s
