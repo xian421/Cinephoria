@@ -6,12 +6,12 @@ import jwt
 import datetime
 from functools import wraps
 import os
+import secrets
 
 app = Flask(__name__)
 CORS(app, origins=["https://cinephoria-theta.vercel.app"])
 
 # Datenbankkonfiguration
-#DATABASE_URL = "postgres://u9v1p2ouoehmll:pa83fe38fd05666e13bce1b16c58e23ecc849ac08945632f8986c00ce25bd250e@c3gtj1dt5vh48j.cluster-czrs8kj4isg7.us-east-1.rds.amazonaws.com:5432/db5lga5e41bidv"
 DATABASE_URL = os.getenv('DATABASE_URL')
 # Verbindung zur Datenbank herstellen
 connection = psycopg2.connect(DATABASE_URL)
@@ -22,7 +22,7 @@ cursor = connection.cursor()
 
 # TMDb API-Konfiguration
 TMDB_API_URL = "https://api.themoviedb.org/3/movie"
-TMDB_BEARER_TOKEN = "eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiIxMWYzYTUwMDlhMTA2MjU0OTgyNjA0YTgyNWM1NTNkMSIsIm5iZiI6MTczMjU2NTAzNC4wNTkyOTksInN1YiI6IjY3NDRkNzNmNDYyNjBlMTRmYmViNTBjYyIsInNjb3BlcyI6WyJhcGlfcmVhZCJdLCJ2ZXJzaW9uIjoxfQ.rT1YsoHHShp4hErZ_LVASnwWLhfXCZ0TLiVw-ScGKUs"
+TMDB_BEARER_TOKEN = os.getenv('TMDB_BEARER_TOKEN')
 
 HEADERS = {
     "accept": "application/json",
@@ -129,7 +129,7 @@ def get_movie_details_richtig(movie_id):
 
 
 
-SECRET_KEY = "dein_geheimer_schlüssel"  # Ändere das in eine sichere, lange Zeichenfolge
+SECRET_KEY = secrets.token_urlsafe(64)
 
 @app.route('/login', methods=['POST'])
 def login():
