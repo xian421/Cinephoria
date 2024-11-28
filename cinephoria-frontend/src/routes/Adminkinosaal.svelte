@@ -2,16 +2,35 @@
     import { onMount } from "svelte";
   
     let screens = [];
+
+    const getTokenFromCookies = () => {
+    const cookies = document.cookie.split("; ").reduce((acc, cookie) => {
+      const [key, value] = cookie.split("=");
+      acc[key] = value;
+      return acc;
+    }, {});
+    return cookies.token || '';
+  };
+
   
-    onMount(async () => {
-      try {
-        const response = await fetch("https://cinephoria-backend-c53f94f0a255.herokuapp.com/screens");
-        const data = await response.json();
+  onMount(async () => {
+    const token = getTokenFromCookies();
+    try {
+      const response = await fetch("https://cinephoria-backend-c53f94f0a255.herokuapp.com/screens", {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      const data = await response.json();
+      if (response.ok) {
         screens = data.screens;
-      } catch (error) {
-        console.error("Fehler beim Laden der Kinosäle:", error);
+      } else {
+        console.error("Fehler beim Laden der Kinosäle:", data.error);
       }
-    });
+    } catch (error) {
+      console.error("Fehler beim Laden der Kinosäle:", error);
+    }
+  });
 </script>
   
 <div class="admin-page">

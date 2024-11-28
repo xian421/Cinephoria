@@ -109,6 +109,7 @@ const KONTAKT_URL = 'https://cinephoria-backend-c53f94f0a255.herokuapp.com/cinem
 
         // Speichere das Token in den Cookies
         document.cookie = `token=${data.token}; path=/; max-age=3600; secure; samesite=strict`;
+        
 
         // Setze den Benutzernamen und berechne Initialen
         userFirstName = data.first_name; // Vom Backend
@@ -659,7 +660,6 @@ footer::before {
     <Route path="/sitzplan" component={Sitzplan} />
     <Route path="/register" component={Register} />
     <Route path="/forgot-password" component={Forgotpassword} />
-    <Route path="/adminkinosaal" component={Adminkinosaal} />
     <Route path="/adminkinosaal" component={isAdmin ? Adminkinosaal : Unauthorized} />
 
     <Route path="/beschreibung/:id" component={Beschreibung} />
