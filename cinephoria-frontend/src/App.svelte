@@ -17,6 +17,26 @@
   let userFirstName = ""; 
   let userLastName = ""; 
   let initials = "";
+  let kontakt = [];
+
+const KONTAKT_URL = 'https://cinephoria-backend-c53f94f0a255.herokuapp.com/cinemas';
+
+  //Für Kontakt aus Backend von Datenbank
+  onMount(async () => {
+      try {
+        const responseKontakt = await fetch(KONTAKT_URL);
+        const data = await responseKontakt.json();
+        kontakt = data.cinemas;
+        if (kontakt && kontakt.length > 0) {
+          const firstCinema = kontakt[0];  // Erstes Kino
+          console.log('Location des ersten Kinos:', firstCinema.location);
+          } 
+       } catch (error) {
+          console.error('Fehler beim Laden des Kontakts: ', error);
+      }
+    });
+
+
 
   const handleRouteChange = () => {
     currentPath = window.location.pathname;
@@ -634,7 +654,20 @@ footer::before {
   <footer>
     <!-- Interaktive Buttons -->
     <div class="footer-buttons">
-      <button on:click={() => alert("Kontaktformular öffnet sich hier!")}>
+      <button on:click={() => Swal.fire({
+        title: "Kontakt",
+        icon: "info",
+        html: `
+        <p>${firstCinema.name}<br />
+        Hausnummer 44<br />
+        90210 Musterstadt</p>
+        <h2>Kontakt</h2>
+        <p>Telefon: +49 (0) 123 44 55 66<br />
+        Telefax: +49 (0) 123 44 55 99<br />
+        E-Mail: mustermann@musterfirma.de</p>
+        `,
+        confirmButtonText: "Schließen"
+        })}>
         Kontakt
       </button>
       <button on:click={() => Swal.fire({
