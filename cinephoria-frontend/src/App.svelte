@@ -11,6 +11,8 @@
   import Register from './routes/Register.svelte';
   import Forgotpassword from "./routes/Forgotpassword.svelte";
   import Adminkinosaal from "./routes/Adminkinosaal.svelte";
+  import Unauthorized from "./routes/Unauthorized.svelte";
+
   import Swal from 'sweetalert2';
 
   export let url = ""; // Für SSR
@@ -21,24 +23,16 @@
   let initials = "";
   let kontakt = [];
   let firstCinema = {};
+  let email = "";
+  let password = "";
+  let isLoginOpen = false;
+  let isLoggedIn = false;
+  let isAdmin = false;
 
 const KONTAKT_URL = 'https://cinephoria-backend-c53f94f0a255.herokuapp.com/cinemas';
 
   //Für Kontakt aus Backend von Datenbank
-  onMount(async () => {
-    try {
-        const responseKontakt = await fetch(KONTAKT_URL);
-        const data = await responseKontakt.json();
-        kontakt = data.cinemas; // Setzt die Liste der Kinos
-
-        if (kontakt && kontakt.length > 0) {
-            firstCinema = kontakt[0]; // Verknüpft das erste Kino mit der globalen Variable
-            console.log('Location des ersten Kinos:', firstCinema.location);
-        }
-    } catch (error) {
-        console.error('Fehler beim Laden des Kontakts: ', error);
-    }
-});
+  
 
 
 
@@ -69,10 +63,7 @@ const KONTAKT_URL = 'https://cinephoria-backend-c53f94f0a255.herokuapp.com/cinem
 
 
 
-  let email = "";
-  let password = "";
-  let isLoginOpen = false;
-  let isLoggedIn = false;
+
 
   const toggleLoginDropdown = () => {
     isLoginOpen = !isLoginOpen; // Öffnen/Schließen des Dropdowns
@@ -176,32 +167,48 @@ const logout = () => {
 };
 
 
+
 const checkLoginStatus = () => {
-  const cookies = document.cookie.split("; ").reduce((acc, cookie) => {
-    const [key, value] = cookie.split("=");
-    acc[key] = value;
-    return acc;
-  }, {});
+    const cookies = document.cookie.split("; ").reduce((acc, cookie) => {
+      const [key, value] = cookie.split("=");
+      acc[key] = value;
+      return acc;
+    }, {});
 
-  if (cookies.token) {
-    const token = cookies.token;
-    try {
-      // Token dekodieren
-      const payload = JSON.parse(atob(token.split(".")[1]));
-
-      // Benutzerdaten aus dem Token laden
-      isLoggedIn = true;
-      initials = payload.initials || ""; // Initialen aus dem Token
-    } catch (error) {
-      console.error("Fehler beim Dekodieren des Tokens:", error);
+    if (cookies.token) {
+      const token = cookies.token;
+      try {
+        // Token dekodieren
+        const payload = JSON.parse(atob(token.split(".")[1]));
+        isLoggedIn = true;
+        isAdmin = payload.role === "admin"; // Rolle überprüfen
+      } catch (error) {
+        console.error("Fehler beim Dekodieren des Tokens:", error);
+        isLoggedIn = false;
+        isAdmin = false;
+      }
+    } else {
       isLoggedIn = false;
+      isAdmin = false;
     }
-  } else {
-    isLoggedIn = false;
-  }
-};
+  };
 
 
+  onMount(async () => {
+    checkLoginStatus();
+    try {
+        const responseKontakt = await fetch(KONTAKT_URL);
+        const data = await responseKontakt.json();
+        kontakt = data.cinemas; // Setzt die Liste der Kinos
+
+        if (kontakt && kontakt.length > 0) {
+            firstCinema = kontakt[0]; // Verknüpft das erste Kino mit der globalen Variable
+            console.log('Location des ersten Kinos:', firstCinema.location);
+        }
+    } catch (error) {
+        console.error('Fehler beim Laden des Kontakts: ', error);
+    }
+});
 
 
 
@@ -653,6 +660,7 @@ footer::before {
     <Route path="/register" component={Register} />
     <Route path="/forgot-password" component={Forgotpassword} />
     <Route path="/adminkinosaal" component={Adminkinosaal} />
+    <Route path="/adminkinosaal" component={isAdmin ? Adminkinosaal : Unauthorized} />
 
     <Route path="/beschreibung/:id" component={Beschreibung} />
   </div>
