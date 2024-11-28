@@ -662,13 +662,9 @@ footer::before {
         title: "Kontakt",
         icon: "info",
         html: `
-        <p>${firstCinema.name}<br />
-        Hausnummer 44<br />
-        90210 Musterstadt</p>
-        <h2>Kontakt</h2>
-        <p>Telefon: +49 (0) 123 44 55 66<br />
-        Telefax: +49 (0) 123 44 55 99<br />
-        E-Mail: mustermann@musterfirma.de</p>
+        <h2>${firstCinema.name}</h2>
+        <p>Standort: ${firstCinema.location}<br />
+        Telefax: ${firstCinema.contact_number}<br />
         `,
         confirmButtonText: "Schließen"
         })}>
