@@ -19,7 +19,7 @@
   let userLastName = ""; 
   let initials = "";
   let kontakt = [];
-  let firstCinema = {};
+  let firstCinema = null;
 
 const KONTAKT_URL = 'https://cinephoria-backend-c53f94f0a255.herokuapp.com/cinemas';
 
