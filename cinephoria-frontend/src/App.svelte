@@ -1,6 +1,10 @@
 <script>
+  // Import von Abhängigkeiten
   import { Router, Route } from "svelte-routing";
   import { onMount } from 'svelte';
+  import Swal from 'sweetalert2';
+
+  // Import von Komponenten
   import Home from "./routes/Home.svelte";
   import NowPlaying from "./routes/Nowplaying.svelte";
   import Upcoming from "./routes/Upcoming.svelte";
@@ -13,30 +17,33 @@
   import Adminkinosaal from "./routes/Adminkinosaal.svelte";
   import Unauthorized from "./routes/Unauthorized.svelte";
 
-  import Swal from 'sweetalert2';
+  //Exportierte Eigenschaften
+  export let url = ""; // Für Server-Side Rendering (SSR)
 
-  export let url = ""; // Für SSR
+  // Konstanten
+  const KONTAKT_URL = 'https://cinephoria-backend-c53f94f0a255.herokuapp.com/cinemas';
 
+  // State-Variablen
   let currentPath = ""; // Aktuelle Route
+  let isLoggedIn = false;
+  let isAdmin = false;
+  let isLoginOpen = false;
+  let isProfileDropdownOpen = false;
+
+  //Benutzerdaten
   let userFirstName = ""; 
   let userLastName = ""; 
   let initials = "";
-  let kontakt = [];
-  let firstCinema = {};
+
+  //Login-Formular
   let email = "";
   let password = "";
-  let isLoginOpen = false;
-  let isLoggedIn = false;
-  let isAdmin = false;
 
-const KONTAKT_URL = 'https://cinephoria-backend-c53f94f0a255.herokuapp.com/cinemas';
+  //Kontaktinformationen
+  let kontakt = [];
+  let firstCinema = {};
 
-  //Für Kontakt aus Backend von Datenbank
-  
-
-
-
-
+  // Navigationsfunktionen 
   const handleRouteChange = () => {
     currentPath = window.location.pathname;
   };
@@ -61,23 +68,16 @@ const KONTAKT_URL = 'https://cinephoria-backend-c53f94f0a255.herokuapp.com/cinem
     });
   };
 
-
-
-
-
+  // Dropdown-Funktionen 
   const toggleLoginDropdown = () => {
-    isLoginOpen = !isLoginOpen; // Öffnen/Schließen des Dropdowns
+    isLoginOpen = !isLoginOpen;
   };
 
- // Initialen berechnen
- const calculateInitials = () => {
-    if (userFirstName && userLastName) {
-      initials = `${userFirstName[0]}${userLastName[0]}`.toUpperCase();
-      console.log("Initials:", initials); // Debugging
-
-    }
+  const toggleProfileMenu = () => {
+    isProfileDropdownOpen = !isProfileDropdownOpen;
   };
 
+  // Authentifizierungsfunktionen
   const handleLogin = async () => {
     if (!email || !password) {
       Swal.fire({
@@ -102,18 +102,16 @@ const KONTAKT_URL = 'https://cinephoria-backend-c53f94f0a255.herokuapp.com/cinem
 
       if (response.ok) {
         // Login erfolgreich
-        console.log("Login-Daten:", data);
         email = "";
         password = "";
         isLoggedIn = true;
 
         // Speichere das Token in den Cookies
         document.cookie = `token=${data.token}; path=/; max-age=3600; secure; samesite=strict`;
-        
 
-        // Setze den Benutzernamen und berechne Initialen
-        userFirstName = data.first_name; // Vom Backend
-        userLastName = data.last_name; // Vom Backend
+        // Setze Benutzerdaten
+        userFirstName = data.first_name;
+        userLastName = data.last_name;
         initials = data.initials;
 
         Swal.fire({
@@ -142,111 +140,90 @@ const KONTAKT_URL = 'https://cinephoria-backend-c53f94f0a255.herokuapp.com/cinem
     }
   };
 
+  const logout = () => {
+    // Cookie löschen
+    document.cookie = "token=; path=/; max-age=0; secure; samesite=strict";
 
-let isProfileMenuOpen = false;
+    // Benutzer-Status zurücksetzen
+    isLoggedIn = false;
+    isAdmin = false;
+    userFirstName = '';
+    userLastName = '';
+    initials = '';
 
-const toggleProfileMenu = () => {
-  isProfileMenuOpen = !isProfileMenuOpen; // Öffnen/Schließen des Dropdowns
-};
+    Swal.fire({
+      title: "Abgemeldet",
+      text: "Du wurdest erfolgreich abgemeldet.",
+      icon: "success",
+      timer: 1500,
+      showConfirmButton: false,
+    });
+  };
 
-let isProfileDropdownOpen = false;
+  const checkLoginStatus = () => {
+    const cookies = document.cookie.split("; ").reduce((acc, cookie) => {
+      const [key, value] = cookie.split("=");
+      acc[key] = value;
+      return acc;
+    }, {});
 
-const logout = () => {
-  // Cookie löschen
-  document.cookie = "token=; path=/; max-age=0; secure; samesite=strict";
+    if (cookies.token) {
+      const token = cookies.token;
+      try {
+        // Token dekodieren
+        const payload = JSON.parse(atob(token.split(".")[1]));
+        isLoggedIn = true;
+        isAdmin = payload.role === "admin";
 
-  // Benutzer-Status zurücksetzen
-  isLoggedIn = false;
+        // Benutzerdaten aus dem Token extrahieren
+        userFirstName = payload.first_name;
+        userLastName = payload.last_name;
+        initials = payload.initials;
 
-  Swal.fire({
-    title: "Abgemeldet",
-    text: "Du wurdest erfolgreich abgemeldet.",
-    icon: "success",
-    timer: 1500,
-    showConfirmButton: false,
-  });
-};
-
-
-
-const checkLoginStatus = () => {
-  const cookies = document.cookie.split("; ").reduce((acc, cookie) => {
-    const [key, value] = cookie.split("=");
-    acc[key] = value;
-    return acc;
-  }, {});
-
-  if (cookies.token) {
-    const token = cookies.token;
-    try {
-      // Token dekodieren
-      const payload = JSON.parse(atob(token.split(".")[1]));
-      isLoggedIn = true;
-      isAdmin = payload.role === "admin"; // Rolle überprüfen
-
-      // Benutzerdaten aus dem Token extrahieren
-      userFirstName = payload.first_name;
-      userLastName = payload.last_name;
-      initials = payload.initials;
-
-      // Falls die Initialen nicht im Token sind, berechne sie
-      if (!initials && userFirstName && userLastName) {
-        initials = `${userFirstName[0].toUpperCase()}${userLastName[0].toUpperCase()}`;
+        // Initialen berechnen, falls nicht vorhanden
+        if (!initials && userFirstName && userLastName) {
+          initials = `${userFirstName[0].toUpperCase()}${userLastName[0].toUpperCase()}`;
+        }
+      } catch (error) {
+        console.error("Fehler beim Dekodieren des Tokens:", error);
+        isLoggedIn = false;
+        isAdmin = false;
+        userFirstName = '';
+        userLastName = '';
+        initials = '';
       }
-    } catch (error) {
-      console.error("Fehler beim Dekodieren des Tokens:", error);
+    } else {
       isLoggedIn = false;
       isAdmin = false;
       userFirstName = '';
       userLastName = '';
       initials = '';
     }
-  } else {
-    isLoggedIn = false;
-    isAdmin = false;
-    userFirstName = '';
-    userLastName = '';
-    initials = '';
-  }
-};
+  };
 
-
-
+  // Lifecycle-Methode
   onMount(async () => {
     checkLoginStatus();
     try {
-        const responseKontakt = await fetch(KONTAKT_URL);
-        const data = await responseKontakt.json();
-        kontakt = data.cinemas; // Setzt die Liste der Kinos
+      const responseKontakt = await fetch(KONTAKT_URL);
+      const data = await responseKontakt.json();
+      kontakt = data.cinemas;
 
-        if (kontakt && kontakt.length > 0) {
-            firstCinema = kontakt[0]; // Verknüpft das erste Kino mit der globalen Variable
-            console.log('Location des ersten Kinos:', firstCinema.location);
-        }
+      if (kontakt && kontakt.length > 0) {
+        firstCinema = kontakt[0];
+      }
     } catch (error) {
-        console.error('Fehler beim Laden des Kontakts: ', error);
+      console.error('Fehler beim Laden des Kontakts: ', error);
     }
-});
-
-
-
-
-
-
-
-// Beim Laden der Seite überprüfen
-checkLoginStatus();
-
-
-
+  });
 </script>
 
-
 <style>
+  /* Navbar-Stile */
   nav {
     display: flex;
     align-items: center;
-    justify-content: space-around; /* Gleichmäßige Verteilung */
+    justify-content: space-around;
     background: #ffffff;
     padding: 1rem;
     border-radius: 12px;
@@ -255,8 +232,8 @@ checkLoginStatus();
     top: 0;
     z-index: 1000;
   }
-  
 
+  /* Logo-Stile */
   .logo {
     display: flex;
     align-items: center;
@@ -269,7 +246,7 @@ checkLoginStatus();
   }
 
   .logo:hover {
-    transform: scale(1.25); /* Vergrößerung des Logos beim Hover */
+    transform: scale(1.25);
   }
 
   .logo img {
@@ -278,61 +255,60 @@ checkLoginStatus();
     object-fit: contain;
   }
 
+  /* Button-Stile */
   button {
-  font-size: 1.2rem;
-  font-weight: bold;
-  color: rgb(0, 0, 0);
-  background: #ffffff; /* Grundfarbe der Buttons */
-  border: 2px solid transparent; /* Standardmäßig kein Rand */
-  border-radius: 12px;
-  padding: 1rem 2rem;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-  cursor: pointer;
-  transition: all 0.3s ease;
-  min-width: 160px; /* Einheitliche Breite */
-  text-align: center;
-}
+    font-size: 1.2rem;
+    font-weight: bold;
+    color: rgb(0, 0, 0);
+    background: #ffffff;
+    border: 2px solid transparent;
+    border-radius: 12px;
+    padding: 1rem 2rem;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    cursor: pointer;
+    transition: all 0.3s ease;
+    min-width: 160px;
+    text-align: center;
+  }
 
-button:hover {
-  border-color: #1abc9c; /* Farbiger Rand beim Hover */
-  transform: scale(1.1); /* Leichte Vergrößerung beim Hover */
-}
+  button:hover {
+    border-color: #1abc9c;
+    transform: scale(1.1);
+  }
 
-button.active {
-  color: rgb(0, 0, 0);
-  border-color: rgb(21, 151, 112);
-  transform: scale(1.05); /* Leichte Vergrößerung für aktiven Zustand */
-}
+  button.active {
+    color: rgb(0, 0, 0);
+    border-color: rgb(21, 151, 112);
+    transform: scale(1.05);
+  }
 
+  /* Footer-Stile */
+  footer {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: #ffffff;
+    padding: 2rem 1rem;
+    border-radius: 0 0 12px 12px;
+    box-shadow: 0 -4px 6px rgba(0, 0, 0, 0.3);
+    margin-top: 2rem;
+    overflow: hidden;
+  }
 
-
-footer {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  background: #ffffff;
-  padding: 2rem 1rem;
-  border-radius: 0 0 12px 12px; /* Nur die unteren Ecken abrunden */
-  box-shadow: 0 -4px 6px rgba(0, 0, 0, 0.3);
-  margin-top: 2rem;
-  overflow: hidden; /* Verhindert Überlagerungen durch das Pseudo-Element */
-}
-
-footer::before {
-  content: '';
-  position: absolute;
-  top: -30px; /* Hebt die Form nach oben */
-  left: 0;
-  width: 100%;
-  height: 60px;
-  background: #ffffff;
-  border-radius: 50%; /* Halbkreis-Effekt */
-  box-shadow: 0 -4px 6px rgba(0, 0, 0, 0.1);
-  z-index: -1; /* Hinter dem Footer platzieren */
-}
-
+  footer::before {
+    content: '';
+    position: absolute;
+    top: -30px;
+    left: 0;
+    width: 100%;
+    height: 60px;
+    background: #ffffff;
+    border-radius: 50%;
+    box-shadow: 0 -4px 6px rgba(0, 0, 0, 0.1);
+    z-index: -1;
+  }
 
   .footer-buttons {
     display: flex;
@@ -341,22 +317,22 @@ footer::before {
   }
 
   .footer-buttons button {
-  font-size: 1rem;
-  font-weight: bold;
-  color: rgb(0, 0, 0);
-  background: #ffffff; /* Grundfarbe der Buttons */
-  border: 2px solid transparent; /* Standardmäßig kein Rand */
-  border-radius: 12px;
-  padding: 0.8rem 1.5rem;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-  cursor: pointer;
-  transition: all 0.3s ease;
-}
+    font-size: 1rem;
+    font-weight: bold;
+    color: rgb(0, 0, 0);
+    background: #ffffff;
+    border: 2px solid transparent;
+    border-radius: 12px;
+    padding: 0.8rem 1.5rem;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    cursor: pointer;
+    transition: all 0.3s ease;
+  }
 
-.footer-buttons button:hover {
-  border-color: #1abc9c; /* Farbiger Rand beim Hover */
-  transform: scale(1.1); /* Leichte Vergrößerung beim Hover */
-}
+  .footer-buttons button:hover {
+    border-color: #1abc9c;
+    transform: scale(1.1);
+  }
 
   .social-icons {
     display: flex;
@@ -384,60 +360,40 @@ footer::before {
     transform: scale(1.1);
   }
 
-  .scroll-to-top {
-  font-size: 1rem;
-  font-weight: bold;
-  color: white;
-  background: #3498db;
-  border: 2px solid transparent; /* Standardmäßig kein Rand */
-  border-radius: 50px;
-  padding: 0.8rem 1.5rem;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
-  cursor: pointer;
-  transition: all 0.3s ease;
-  margin-top: 1.5rem;
-}
+  .social-icons img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+  }
 
-.scroll-to-top:hover {
-  border-color: #1abc9c; /* Farbiger Rand beim Hover */
-  transform: scale(1.1);
-  background: #24b497;
-}
+  .scroll-to-top {
+    font-size: 1rem;
+    font-weight: bold;
+    color: white;
+    background: #3498db;
+    border: 2px solid transparent;
+    border-radius: 50px;
+    padding: 0.8rem 1.5rem;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+    cursor: pointer;
+    transition: all 0.3s ease;
+    margin-top: 1.5rem;
+  }
+
+  .scroll-to-top:hover {
+    border-color: #1abc9c;
+    transform: scale(1.1);
+    background: #24b497;
+  }
 
   .footer-text {
-    color: #c0c0c0;
+    color: black;
     font-size: 0.9rem;
     text-align: center;
   }
 
-
-  .social-icons img {
-    text-decoration: none;
-  color: white;
-  font-size: 1.5rem;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  background: #ffffff;
-  width: 50px;
-  height: 50px;
-  border: 2px solid transparent; /* Standardmäßig kein Rand */
-  border-radius: 50%;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
-  transition: all 0.3s ease;
-}
-
-.social-icons img:hover {
-  border-color: #1abc9c; /* Farbiger Rand beim Hover */
-  transform: scale(1.1);
-}
-
-.footer-text {
-  color: black;
-}
-
-
-.dropdown-container {
+  /* Login-Dropdown-Stile */
+  .dropdown-container {
     position: relative;
   }
 
@@ -450,32 +406,29 @@ footer::before {
     top: calc(100% + 10px);
     right: 0;
     background: #ffffff;
-    padding: 1rem; /* Allgemeines Padding */
-    padding-left: 20px; /* Zusätzlicher Abstand links */
-    padding-right: 20px; /* Zusätzlicher Abstand rechts */
+    padding: 1rem 20px;
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
     border-radius: 12px;
     z-index: 1000;
     width: 300px;
-    transform: scaleY(0); /* Standardmäßig geschlossen */
+    transform: scaleY(0);
     transform-origin: top;
     transition: transform 0.3s ease-in-out;
-}
-
+  }
 
   .dropdown-container.open .dropdown-menu {
-    transform: scaleY(1); /* Geöffnet */
+    transform: scaleY(1);
   }
 
   .dropdown-menu input {
-  width: calc(100% - 16px); /* Platz für Padding und Border */
-  padding: 0.8rem;
-  margin: 0.5rem 0;
-  border: 1px solid #ccc;
-  border-radius: 8px;
-  font-size: 1rem;
-  box-sizing: border-box; /* Sicherstellen, dass Padding/Borders eingerechnet werden */
-}
+    width: calc(100% - 16px);
+    padding: 0.8rem;
+    margin: 0.5rem 0;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    font-size: 1rem;
+    box-sizing: border-box;
+  }
 
   .dropdown-menu input:focus {
     outline: none;
@@ -494,115 +447,100 @@ footer::before {
     border-radius: 12px;
     cursor: pointer;
     transition: all 0.3s ease;
-
   }
 
   .dropdown-menu button:hover {
     background: #24b497;
   }
 
+  /* Profil-Dropdown-Stile */
+  .profile-dropdown-container {
+    position: relative;
+  }
 
+  .profile-dropdown-menu {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: flex-start;
+    position: absolute;
+    top: calc(100% + 10px);
+    right: 0;
+    background: #ffffff;
+    padding: 1rem;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+    border-radius: 12px;
+    z-index: 1000;
+    width: 200px;
+    transform: scaleY(0);
+    transform-origin: top;
+    transition: transform 0.3s ease-in-out;
+  }
 
+  .profile-dropdown-container.open .profile-dropdown-menu {
+    transform: scaleY(1);
+  }
 
+  .profile-dropdown-menu ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    width: 100%;
+  }
 
+  .profile-dropdown-menu li {
+    padding: 0.8rem;
+    font-size: 1rem;
+    color: #333;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+    width: 100%;
+    text-align: left;
+  }
 
+  .profile-dropdown-menu li:hover {
+    background-color: #f0f0f0;
+    border-radius: 8px;
+  }
 
-  /* Profil-Dropdown */
-.profile-dropdown-container {
-  position: relative;
-}
+  .profile-container {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    font-size: 1rem;
+    font-weight: bold;
+    color: black;
+    transition: all 0.3s ease;
+  }
 
-.profile-dropdown-menu {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  justify-content: flex-start;
-  position: absolute;
-  top: calc(100% + 10px);
-  right: 0;
-  background: #ffffff;
-  padding: 1rem;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
-  border-radius: 12px;
-  z-index: 1000;
-  width: 200px;
-  transform: scaleY(0); /* Standardmäßig geschlossen */
-  transform-origin: top;
-  transition: transform 0.3s ease-in-out;
-}
+  .profile-container:hover {
+    transform: scale(1.1);
+  }
 
-.profile-dropdown-container.open .profile-dropdown-menu {
-  transform: scaleY(1); /* Geöffnet */
-}
-
-.profile-dropdown-menu ul {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-  width: 100%;
-}
-
-.profile-dropdown-menu li {
-  padding: 0.8rem;
-  font-size: 1rem;
-  color: #333;
-  cursor: pointer;
-  transition: background-color 0.3s ease;
-  width: 100%;
-  text-align: left;
-}
-
-.profile-dropdown-menu li:hover {
-  background-color: #f0f0f0;
-  border-radius: 8px;
-}
-.profile-container {
-  display: flex;
-  align-items: center;
-  gap: 8px; /* Abstand zwischen Text und Initialen */
-  cursor: pointer; /* Zeigt an, dass es klickbar ist */
-  font-size: 1rem;
-  font-weight: bold;
-  color: black;
-  transition: all 0.3s ease;
-}
-
-.profile-container:hover {
-  transform: scale(1.1); /* Leichte Vergrößerung beim Hover */
-}
-
-.profile-text {
-  margin-right: 8px; /* Abstand zum Kreis */
-}
-
-.profile-initials {
-  width: 50px;
-  height: 50px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 50%;
-  background-color: red;
-  color: white;
-  font-size: 20px;
-  font-weight: bold;
-}
-
+  .profile-initials {
+    width: 50px;
+    height: 50px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    background-color: red;
+    color: white;
+    font-size: 20px;
+    font-weight: bold;
+  }
 </style>
-
-
-
-
 
 <Router {url}>
   <!-- Navbar -->
   <nav>
-    <!-- Logo-Bereich -->
+    <!-- Logo -->
     <a href="/" class="logo" on:click={() => navigate('/')}>
       <img src="/Logo.png" alt="Logo" />
     </a>
 
-    <!-- Menü-Buttons -->
+    <!-- Navigationsbuttons -->
     <button
       class="{currentPath === '/' ? 'active' : ''}"
       on:click={() => navigate('/')}
@@ -620,20 +558,19 @@ footer::before {
       on:click={() => navigate('/upcoming')}
     >
       Upcoming
-      
     </button>
-
-
     <button
       class="{currentPath === '/sitzplan' ? 'active' : ''}"
       on:click={() => navigate('/sitzplan')}
     >
       Sitzplan
-      </button>
+    </button>
 
-      {#if isLoggedIn}
+    <!-- Benutzerbereich -->
+    {#if isLoggedIn}
+      <!-- Profil-Dropdown -->
       <div class="profile-dropdown-container {isProfileDropdownOpen ? 'open' : ''}">
-        <div class="profile-container" on:click={() => (isProfileDropdownOpen = !isProfileDropdownOpen)}>
+        <div class="profile-container" on:click={toggleProfileMenu}>
           <div class="profile-initials">{initials}</div>
         </div>
         <div class="profile-dropdown-menu">
@@ -641,12 +578,11 @@ footer::before {
             <li on:click={() => alert('Profil anzeigen')}>Profil anzeigen</li>
             <li on:click={() => alert('Einstellungen')}>Einstellungen</li>
             <li on:click={logout}>Abmelden</li>
-      </ul>
-    </div>
-  </div>
-
-      {:else}
-      <!-- Login Dropdown -->
+          </ul>
+        </div>
+      </div>
+    {:else}
+      <!-- Login-Dropdown -->
       <div class="dropdown-container {isLoginOpen ? 'open' : ''}">
         <button on:click={toggleLoginDropdown}>Login</button>
         <div class="dropdown-menu">
@@ -661,13 +597,10 @@ footer::before {
           </form>
         </div>
       </div>
-      {/if}
-      
-  
-
+    {/if}
   </nav>
 
-  <!-- Routes -->
+  <!-- Routen -->
   <div>
     <Route path="/" component={Home} />
     <Route path="/nowplaying" component={NowPlaying} />
@@ -678,10 +611,10 @@ footer::before {
     <Route path="/register" component={Register} />
     <Route path="/forgot-password" component={Forgotpassword} />
     <Route path="/adminkinosaal" component={isAdmin ? Adminkinosaal : Unauthorized} />
-
     <Route path="/beschreibung/:id" component={Beschreibung} />
   </div>
-  
+
+  <!-- Footer -->
   <footer>
     <!-- Interaktive Buttons -->
     <div class="footer-buttons">
@@ -689,68 +622,60 @@ footer::before {
         title: "Kontakt",
         icon: "info",
         html: `
-        <h2>${firstCinema.name}</h2>
-        <p>Standort: ${firstCinema.location}<br />
-        Telefax: ${firstCinema.contact_number}<br />
+          <h2>${firstCinema.name}</h2>
+          <p>Standort: ${firstCinema.location}<br />
+          Telefax: ${firstCinema.contact_number}<br />
         `,
         confirmButtonText: "Schließen"
-        })}>
+      })}>
         Kontakt
       </button>
       <button on:click={() => Swal.fire({
         title: "Impressum",
         icon: "info",
         html: `
-        <p>Max Mustermann<br />
-        Musterweg 111<br />
-        Hausnummer 44<br />
-        90210 Musterstadt</p>
-        <h2>Kontakt</h2>
-        <p>Telefon: +49 (0) 123 44 55 66<br />
-        Telefax: +49 (0) 123 44 55 99<br />
-        E-Mail: mustermann@musterfirma.de</p>
+          <p>Max Mustermann<br />
+          Musterweg 111<br />
+          Hausnummer 44<br />
+          90210 Musterstadt</p>
+          <h2>Kontakt</h2>
+          <p>Telefon: +49 (0) 123 44 55 66<br />
+          Telefax: +49 (0) 123 44 55 99<br />
+          E-Mail: mustermann@musterfirma.de</p>
         `,
         confirmButtonText: "Schließen"
-        })}>
+      })}>
         Impressum
       </button>
       <button on:click={() => alert("Datenschutz anzeigen!")}>
         Datenschutz
       </button>
     </div>
-  
+
     <!-- Social-Media-Icons -->
     <div class="social-icons">
       <a href="https://facebook.com" target="_blank" aria-label="Facebook">
-        <i class="fab fa-facebook-f"></i>
-        <img src="/facebook.png" alt="LinkedIn" />
+        <img src="/facebook.png" alt="Facebook" />
       </a>
       <a href="https://twitter.com" target="_blank" aria-label="Twitter">
-        <i class="fab fa-twitter"></i>
-        <img src="/twitter.png" alt="LinkedIn" />
+        <img src="/twitter.png" alt="Twitter" />
       </a>
       <a href="https://instagram.com" target="_blank" aria-label="Instagram">
-        <i class="fab fa-instagram"></i>
-        <img src="/instagram.png" alt="LinkedIn" />
+        <img src="/instagram.png" alt="Instagram" />
       </a>
       <a href="https://linkedin.com" target="_blank" aria-label="LinkedIn">
-        <i class="fab fa-linkedin-in"></i>
         <img src="/linked.png" alt="LinkedIn" />
       </a>
     </div>
 
-    
-  
     <!-- Scroll-to-Top Button -->
     <button class="scroll-to-top" on:click={scrollToTop}>
       Nach oben
     </button>
-  
-    <!-- Footer Text -->
+
+    <!-- Footer-Text -->
     <p class="footer-text">
       © 2024 Cinephoria. Alle Rechte vorbehalten.
     </p>
   </footer>
-  
 </Router>
-
