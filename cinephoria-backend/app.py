@@ -113,44 +113,70 @@ def login():
         return jsonify({'error': 'E-Mail und Passwort sind erforderlich'}), 400
 
     try:
-        # Benutzer und Passwort-Hash abrufen
-        cursor.execute("SELECT id, password, vorname, nachname FROM users WHERE email = %s", (email,))
-        result = cursor.fetchone()
+        with psycopg2.connect(DATABASE_URL) as conn:
+            with conn.cursor() as cursor:
+                cursor.execute("SELECT id, password, vorname, nachname FROM users WHERE email = %s", (email,))
+                result = cursor.fetchone()
 
-        if not result:
-            return jsonify({'error': 'Ungültige E-Mail oder Passwort'}), 401
+                if not result:
+                    return jsonify({'error': 'Ungültige E-Mail oder Passwort'}), 401
 
-        user_id, stored_password, vorname, nachname = result
+                user_id, stored_password, vorname, nachname = result
 
-        # Passwort überprüfen
-        cursor.execute("SELECT crypt(%s, %s) = %s AS password_match", (password, stored_password, stored_password))
-        is_valid = cursor.fetchone()[0]
+                cursor.execute("SELECT crypt(%s, %s) = %s AS password_match", (password, stored_password, stored_password))
+                is_valid = cursor.fetchone()[0]
 
-        if is_valid:
-            initials = f"{vorname[0].upper()}{nachname[0].upper()}"
-            # JWT-Token generieren
-            token = jwt.encode({
-                'user_id': user_id,
-                'email': email,
-                'first_name': vorname,  
-                'last_name': nachname, 
-                'initials': initials, 
-                'exp': datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(hours=1)
-            }, SECRET_KEY, algorithm='HS256')
+                if is_valid:
+                    initials = f"{vorname[0].upper()}{nachname[0].upper()}"
+                    token = jwt.encode({
+                        'user_id': user_id,
+                        'email': email,
+                        'first_name': vorname,
+                        'last_name': nachname,
+                        'initials': initials,
+                        'exp': datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(hours=1)
+                    }, SECRET_KEY, algorithm='HS256')
 
-            return jsonify({
-                'message': 'Login erfolgreich',
-                'token': token,
-                'first_name': vorname,
-                'last_name': nachname,
-                'initials': initials
-            }), 200
-        else:
-            return jsonify({'error': 'Ungültige E-Mail oder Passwort'}), 401
+                    return jsonify({
+                        'message': 'Login erfolgreich',
+                        'token': token,
+                        'first_name': vorname,
+                        'last_name': nachname,
+                        'initials': initials
+                    }), 200
+                else:
+                    return jsonify({'error': 'Ungültige E-Mail oder Passwort'}), 401
 
     except Exception as e:
         print(f"Fehler: {e}")
         return jsonify({'error': 'Fehler bei der Anmeldung'}), 500
+
+
+@app.route('/cinemas', methods=['GET'])
+def get_cinemas():
+    try:
+        with psycopg2.connect(DATABASE_URL) as conn:  # Verbindung automatisch schließen
+            with conn.cursor() as cursor:            # Cursor automatisch schließen
+                cursor.execute("SELECT cinema_id, name, location, contact_number FROM cinema")
+                result = cursor.fetchall()
+
+                cinemas = [
+                    {
+                        'cinema_id': row[0],
+                        'name': row[1],
+                        'location': row[2],
+                        'contact_number': row[3]
+                    }
+                    for row in result
+                ]
+
+        return jsonify({'cinemas': cinemas}), 200
+
+    except Exception as e:
+        print(f"Fehler: {e}")
+        return jsonify({'error': 'Fehler beim Abrufen der Kinos'}), 500
+
+
 
 
 
@@ -166,24 +192,27 @@ def register():
         return jsonify({'error': 'Alle Felder sind erforderlich'}), 400
 
     try:
-        # Prüfen, ob der Benutzer schon existiert
-        cursor.execute("SELECT email FROM users WHERE email = %s", (email,))
-        if cursor.fetchone():
-            return jsonify({'error': 'Benutzer mit dieser E-Mail existiert bereits'}), 409
+        with psycopg2.connect(DATABASE_URL) as conn:
+            with conn.cursor() as cursor:
+                # Prüfen, ob der Benutzer schon existiert
+                cursor.execute("SELECT email FROM users WHERE email = %s", (email,))
+                if cursor.fetchone():
+                    return jsonify({'error': 'Benutzer mit dieser E-Mail existiert bereits'}), 409
 
-        # Passwort hashen mit der PostgreSQL-Methode
-        cursor.execute(
-            "INSERT INTO users (vorname, nachname, email, password) VALUES (%s, %s, %s, crypt(%s, gen_salt('bf')))",
-            (vorname, nachname, email, password),
-        )
+                # Passwort hashen mit der PostgreSQL-Methode
+                cursor.execute(
+                    "INSERT INTO users (vorname, nachname, email, password) VALUES (%s, %s, %s, crypt(%s, gen_salt('bf')))",
+                    (vorname, nachname, email, password),
+                )
         return jsonify({'message': 'Registrierung erfolgreich'}), 201
 
     except Exception as e:
-        print(f"Fehler bei der Registrierung: {e}")  # Fehlerausgabe für Debugging
+        print(f"Fehler bei der Registrierung: {e}")
         return jsonify({'error': 'Ein Fehler ist aufgetreten'}), 500
+    
 
 
 
-
+    
 if __name__ == '__main__':
     app.run(debug=True)
