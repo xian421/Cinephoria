@@ -170,29 +170,46 @@ const logout = () => {
 
 
 const checkLoginStatus = () => {
-    const cookies = document.cookie.split("; ").reduce((acc, cookie) => {
-      const [key, value] = cookie.split("=");
-      acc[key] = value;
-      return acc;
-    }, {});
+  const cookies = document.cookie.split("; ").reduce((acc, cookie) => {
+    const [key, value] = cookie.split("=");
+    acc[key] = value;
+    return acc;
+  }, {});
 
-    if (cookies.token) {
-      const token = cookies.token;
-      try {
-        // Token dekodieren
-        const payload = JSON.parse(atob(token.split(".")[1]));
-        isLoggedIn = true;
-        isAdmin = payload.role === "admin"; // Rolle überprüfen
-      } catch (error) {
-        console.error("Fehler beim Dekodieren des Tokens:", error);
-        isLoggedIn = false;
-        isAdmin = false;
+  if (cookies.token) {
+    const token = cookies.token;
+    try {
+      // Token dekodieren
+      const payload = JSON.parse(atob(token.split(".")[1]));
+      isLoggedIn = true;
+      isAdmin = payload.role === "admin"; // Rolle überprüfen
+
+      // Benutzerdaten aus dem Token extrahieren
+      userFirstName = payload.first_name;
+      userLastName = payload.last_name;
+      initials = payload.initials;
+
+      // Falls die Initialen nicht im Token sind, berechne sie
+      if (!initials && userFirstName && userLastName) {
+        initials = `${userFirstName[0].toUpperCase()}${userLastName[0].toUpperCase()}`;
       }
-    } else {
+    } catch (error) {
+      console.error("Fehler beim Dekodieren des Tokens:", error);
       isLoggedIn = false;
       isAdmin = false;
+      userFirstName = '';
+      userLastName = '';
+      initials = '';
     }
-  };
+  } else {
+    isLoggedIn = false;
+    isAdmin = false;
+    userFirstName = '';
+    userLastName = '';
+    initials = '';
+  }
+};
+
 
 
   onMount(async () => {
