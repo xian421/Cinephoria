@@ -128,7 +128,7 @@
       <div class="title">{movieDetails.title}</div>
       <div class="tagline">{movieDetails.tagline}</div>
       <div class="meta">
-        <span>Dauer: {movieDetails.runtime} Minuten</span> | 
+        <img src="./Dauer_des_films.png" alt="Dauer des Films" width="20" height="20" /> {movieDetails.runtime} '
         <span>FSK: {movieDetails.adult ? "18+" : "0+"}</span> | 
         <span>Genre: {movieDetails.genres ? movieDetails.genres.map((genre) => genre.name).join(", ") : 'Keine Angaben'}</span>
       </div>
