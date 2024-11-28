@@ -19,8 +19,8 @@
       <div class="card">
         <div class="image-container">
             <img src="/cinema-hall.webp" alt="Kinosaal" />
-        </div>
-        <h3 class="card-name">{screen.name}</h3> <!-- Name immer anzeigen -->
+            <h3 class="card-name">{screen.name}</h3> <!-- Name bleibt im Bild -->
+        </div>        
         <div class="card-overlay">
           <div class="card-info">
             <p>Kapazität: {screen.capacity}</p>
@@ -31,6 +31,7 @@
       </div>
     {/each}
 </div>
+
 
 
 <style>
@@ -58,10 +59,17 @@
 }
 
 .card-name {
-    margin: 10px 0 0;
+    position: absolute;
+    bottom: 10px; /* Am unteren Rand des Bildes */
+    left: 50%;
+    transform: translateX(-50%);
     font-size: 1.5rem;
     font-weight: bold;
-    color: #333;
+    color: white; /* Sichtbarer Text auf dunklem Hintergrund */
+    text-shadow: 0px 0px 10px rgba(0, 0, 0, 0.8); /* Schatten für bessere Lesbarkeit */
+    background: rgba(0, 0, 0, 0.5); /* Halbtransparenter Hintergrund */
+    padding: 5px 10px;
+    border-radius: 8px;
 }
 
 .card-overlay {
@@ -94,6 +102,7 @@
 }
 
 .image-container {
+    position: relative; /* Macht das Element relativ für das absolute Positionieren */
     width: 100%;
     aspect-ratio: 16 / 9; /* Seitenverhältnis von 16:9 */
     overflow: hidden;
@@ -104,4 +113,5 @@
     height: 100%;
     object-fit: cover;
 }
+
 </style>
