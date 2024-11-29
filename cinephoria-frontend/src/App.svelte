@@ -15,6 +15,7 @@
   import Register from './routes/Register.svelte';
   import Forgotpassword from "./routes/Forgotpassword.svelte";
   import Adminkinosaal from "./routes/Adminkinosaal.svelte";
+  import Adminseats from "./routes/Adminseats.svelte";
   import Unauthorized from "./routes/Unauthorized.svelte";
 
   //Exportierte Eigenschaften
@@ -611,6 +612,7 @@
     <Route path="/register" component={Register} />
     <Route path="/forgot-password" component={Forgotpassword} />
     <Route path="/adminkinosaal" component={isAdmin ? Adminkinosaal : Unauthorized} />
+    <Route path="/adminseats" component={isAdmin ? Adminseats : Unauthorized} />
     <Route path="/beschreibung/:id" component={Beschreibung} />
   </div>
 
