@@ -13,6 +13,7 @@ CORS(app, origins=["https://cinephoria-theta.vercel.app"])
 
 # Datenbankkonfiguration
 DATABASE_URL = os.getenv('DATABASE_URL')
+
 # Verbindung zur Datenbank herstellen
 connection = psycopg2.connect(DATABASE_URL)
 connection.autocommit = True  # Automatisches Commit für Änderungen
@@ -267,6 +268,46 @@ def get_screens():
     except Exception as e:
         print(f"Fehler: {e}")
         return jsonify({'error': 'Fehler beim Abrufen der Kinosäle'}), 500
+
+
+
+
+@app.route('/seats', methods=['GET'])
+@admin_required
+def get_seats():
+    screen_id = request.args.get('screen_id', type=int)  # screen_id als Filter
+    if not screen_id:
+        return jsonify({'error': 'screen_id ist erforderlich'}), 400
+
+    try:
+        with psycopg2.connect(DATABASE_URL) as conn:
+            with conn.cursor() as cursor:
+                query = """
+                    SELECT seat_id, screen_id, row, number, type, created_at
+                    FROM seats
+                    WHERE screen_id = %s
+                    ORDER BY row, number
+                """
+                cursor.execute(query, (screen_id,))
+                result = cursor.fetchall()
+
+                seats = [
+                    {
+                        'seat_id': row[0],
+                        'screen_id': row[1],
+                        'row': row[2],
+                        'number': row[3],
+                        'type': row[4],
+                        'created_at': row[5]
+                    }
+                    for row in result
+                ]
+
+        return jsonify({'seats': seats}), 200
+
+    except Exception as e:
+        print(f"Fehler: {e}")
+        return jsonify({'error': 'Fehler beim Abrufen der Sitze'}), 500
 
 
 
