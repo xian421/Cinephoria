@@ -27,7 +27,7 @@
   .seat {
     width: 30px;
     height: 30px;
-    background-color: #000000;
+    background-color: #2b6802;
     border-radius: 5px;
     cursor: pointer;
   }
