@@ -1,50 +1,91 @@
 <script>
     import { onMount } from "svelte";
+    import { navigate } from "svelte-routing";
   
-    let seats = []; // Sitze aus dem Backend
-    let screenId = 1; // Standard screen_id
-    let error = ""; // Fehlermeldungen
+    let isAdmin = false;
+    let seats = [];
+    let screenId = 1; // Default-ID
+    let error = "";
   
-    // Funktion zum Abrufen der Sitze
-    async function fetchSeats() {
+    const fetchSeats = async () => {
+      const token = document.cookie.split("; ").reduce((acc, cookie) => {
+        const [key, value] = cookie.split("=");
+        if (key === "token") acc = value;
+        return acc;
+      }, "");
+  
+      if (!token) {
+        console.error("Kein Token gefunden.");
+        navigate("/");
+        return;
+      }
+  
       try {
         const response = await fetch(`http://127.0.0.1:5000/seats?screen_id=${screenId}`, {
           headers: {
-            Authorization: `Bearer ${document.cookie.split("=")[1]}`, // Token aus Cookie
+            Authorization: `Bearer ${token}`,
           },
         });
   
         if (!response.ok) {
-          throw new Error("Fehler beim Abrufen der Sitze");
+          if (response.status === 401) {
+            error = "Du bist nicht autorisiert.";
+          } else {
+            error = "Fehler beim Abrufen der Sitze.";
+          }
+          return;
         }
+  
         const data = await response.json();
         seats = data.seats;
       } catch (err) {
-        error = err.message;
+        error = "Verbindungsfehler. Bitte überprüfe deine Internetverbindung.";
       }
-    }
+    };
   
-    // Daten beim Laden der Seite abrufen
-    onMount(fetchSeats);
+    const checkAdminStatus = () => {
+      const token = document.cookie.split("; ").find(row => row.startsWith("token="))?.split("=")[1];
+      if (token) {
+        try {
+          const payload = JSON.parse(atob(token.split(".")[1]));
+          isAdmin = payload.role === "admin";
+        } catch (error) {
+          console.error("Fehler beim Überprüfen des Tokens:", error);
+          isAdmin = false;
+        }
+      }
+    };
+  
+    onMount(() => {
+      checkAdminStatus();
+      if (isAdmin) {
+        fetchSeats();
+      } else {
+        navigate("/"); // Weiterleitung zur Startseite
+      }
+    });
   </script>
   
-  <!-- Anzeige -->
   <main>
-    <h1>Kinositze für Screen {screenId}</h1>
-    {#if error}
-      <p class="error">{error}</p>
-    {:else if seats.length === 0}
-      <p>Lade Sitze...</p>
+    {#if isAdmin}
+      <h1>Kinositze für Screen {screenId}</h1>
+      {#if error}
+        <p class="error">{error}</p>
+      {:else if seats.length === 0}
+        <p>Lade Sitze...</p>
+      {:else}
+        <div class="seat-grid">
+          {#each seats as seat}
+            <div class="seat-card {seat.type}">
+              <p>Reihe: {seat.row}</p>
+              <p>Sitz: {seat.number}</p>
+              <p>Typ: {seat.type}</p>
+            </div>
+          {/each}
+        </div>
+      {/if}
     {:else}
-      <div class="seat-grid">
-        {#each seats as seat}
-          <div class="seat-card {seat.type}">
-            <p>Reihe: {seat.row}</p>
-            <p>Sitz: {seat.number}</p>
-            <p>Typ: {seat.type}</p>
-          </div>
-        {/each}
-      </div>
+      <p>Du hast keinen Zugriff auf diese Seite.</p>
     {/if}
   </main>
   
