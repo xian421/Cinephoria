@@ -21,11 +21,13 @@
       }
   
       try {
-        const response = await fetch(`http://127.0.0.1:5000/seats?screen_id=${screenId}`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
+        const response = await fetch(`https://cinephoria-backend-c53f94f0a255.herokuapp.com/seats?screen_id=${screenId}`, {
+         headers: {
+         Authorization: `Bearer ${token}`,
+        },
         });
+
+        
   
         if (!response.ok) {
           if (response.status === 401) {
