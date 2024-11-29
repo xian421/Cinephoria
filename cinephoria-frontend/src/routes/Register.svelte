@@ -76,6 +76,7 @@
   
     .form-group {
       margin-bottom: 1rem;
+      color: blue;
     }
   
     .form-group label {
