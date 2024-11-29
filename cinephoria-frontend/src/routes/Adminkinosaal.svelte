@@ -38,7 +38,7 @@
 
 <div class="admin-page">
     {#each screens as screen}
-      <Link to="/adminseats/{screen.id}">
+    <Link to={`/adminseats/${screen.id}`}>
         <div class="card">
           <div class="image-container">
             <img src="/cinema-hall.webp" alt="Kinosaal" />
