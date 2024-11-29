@@ -1,44 +1,42 @@
+<!-- adminkinosaal.svelte -->
 <script>
     import { onMount } from "svelte";
     import { Link } from "svelte-routing";
-
   
     let screens = [];
-
+  
     const getTokenFromCookies = () => {
-    const cookies = document.cookie.split("; ").reduce((acc, cookie) => {
-      const [key, value] = cookie.split("=");
-      acc[key] = value;
-      return acc;
-    }, {});
-    return cookies.token || '';
-  };
-
+      const cookies = document.cookie.split("; ").reduce((acc, cookie) => {
+        const [key, value] = cookie.split("=");
+        acc[key] = value;
+        return acc;
+      }, {});
+      return cookies.token || '';
+    };
   
-  onMount(async () => {
-    const token = getTokenFromCookies();
-    try {
-      const response = await fetch("https://cinephoria-backend-c53f94f0a255.herokuapp.com/screens", {
-        headers: {
-          'Authorization': `Bearer ${token}`
+    onMount(async () => {
+      const token = getTokenFromCookies();
+      try {
+        const response = await fetch("https://cinephoria-backend-c53f94f0a255.herokuapp.com/screens", {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+        const data = await response.json();
+        if (response.ok) {
+          screens = data.screens;
+        } else {
+          console.error("Fehler beim Laden der Kinosäle:", data.error);
         }
-      });
-      const data = await response.json();
-      if (response.ok) {
-        screens = data.screens;
-      } else {
-        console.error("Fehler beim Laden der Kinosäle:", data.error);
+      } catch (error) {
+        console.error("Fehler beim Laden der Kinosäle:", error);
       }
-    } catch (error) {
-      console.error("Fehler beim Laden der Kinosäle:", error);
-    }
-  });
-</script>
+    });
+  </script>
   
-
-<div class="admin-page">
+  <div class="admin-page">
     {#each screens as screen}
-    <Link to={`/adminseats/${screen.id}`}>
+      <Link to={`/adminseats/${screen.id}`}>
         <div class="card">
           <div class="image-container">
             <img src="/cinema-hall.webp" alt="Kinosaal" />
@@ -49,14 +47,15 @@
               <p>Kapazität: {screen.capacity}</p>
               <p>Typ: {screen.type || "Standard"}</p>
               <p>Erstellt: {new Date(screen.created_at).toLocaleDateString()}</p>
+            </div>
+          </div>
         </div>
-      </div>
-    </div>
-  </Link>
-  {/each}
-</div>
+      </Link>
+    {/each}
+  </div>
+  
 
-
+  
 
 <style>
 .admin-page {

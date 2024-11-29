@@ -1,22 +1,25 @@
+<!-- adminseats.svelte -->
 <script>
-  import { onMount } from "svelte";
-  import { navigate } from "svelte-routing";
-  import { useParams } from "svelte-routing";
+    export let screenId; // screenId wird von der Route übergeben
+  
+    import { onMount } from "svelte";
+    import { navigate } from "svelte-routing";
   
     let isAdmin = false;
     let seats = [];
     let error = "";
   
-
-    const params = useParams();
-    let screenId = params.screenId;
-
-    const fetchSeats = async () => {
-      const token = document.cookie.split("; ").reduce((acc, cookie) => {
+    const getTokenFromCookies = () => {
+      const cookies = document.cookie.split("; ").reduce((acc, cookie) => {
         const [key, value] = cookie.split("=");
-        if (key === "token") acc = value;
+        acc[key] = value;
         return acc;
-      }, "");
+      }, {});
+      return cookies.token || '';
+    };
+  
+    const fetchSeats = async () => {
+      const token = getTokenFromCookies();
   
       if (!token) {
         console.error("Kein Token gefunden.");
@@ -26,12 +29,10 @@
   
       try {
         const response = await fetch(`https://cinephoria-backend-c53f94f0a255.herokuapp.com/seats?screen_id=${screenId}`, {
-         headers: {
-         Authorization: `Bearer ${token}`,
-        },
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
         });
-
-        
   
         if (!response.ok) {
           if (response.status === 401) {
@@ -50,7 +51,7 @@
     };
   
     const checkAdminStatus = () => {
-      const token = document.cookie.split("; ").find(row => row.startsWith("token="))?.split("=")[1];
+      const token = getTokenFromCookies();
       if (token) {
         try {
           const payload = JSON.parse(atob(token.split(".")[1]));
@@ -59,6 +60,8 @@
           console.error("Fehler beim Überprüfen des Tokens:", error);
           isAdmin = false;
         }
+      } else {
+        isAdmin = false;
       }
     };
   
@@ -95,6 +98,7 @@
     {/if}
   </main>
   
+
   <style>
     main {
       padding: 20px;
