@@ -25,6 +25,7 @@
         const data = await response.json();
         if (response.ok) {
           screens = data.screens;
+          console.log('Screens data:', screens); // Fügen Sie diese Zeile hinzu
         } else {
           console.error("Fehler beim Laden der Kinosäle:", data.error);
         }
