@@ -612,7 +612,7 @@
     <Route path="/register" component={Register} />
     <Route path="/forgot-password" component={Forgotpassword} />
     <Route path="/adminkinosaal" component={isAdmin ? Adminkinosaal : Unauthorized} />
-    <Route path="/adminseats" component={isAdmin ? Adminseats : Unauthorized} />
+    <Route path="/adminseats/:screen_id" component={isAdmin ? Adminseats : Unauthorized} />
     <Route path="/beschreibung/:id" component={Beschreibung} />
   </div>
 

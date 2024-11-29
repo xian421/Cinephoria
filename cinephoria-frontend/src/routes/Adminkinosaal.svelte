@@ -1,5 +1,7 @@
 <script>
     import { onMount } from "svelte";
+    import { Link } from "svelte-routing";
+
   
     let screens = [];
 
@@ -33,22 +35,25 @@
   });
 </script>
   
+
 <div class="admin-page">
     {#each screens as screen}
-      <div class="card">
-        <div class="image-container">
+      <Link to="/adminseats/{screen.id}">
+        <div class="card">
+          <div class="image-container">
             <img src="/cinema-hall.webp" alt="Kinosaal" />
-            <h3 class="card-name">{screen.name}</h3> <!-- Name bleibt im Bild -->
-        </div>        
-        <div class="card-overlay">
-          <div class="card-info">
-            <p>Kapazität: {screen.capacity}</p>
-            <p>Typ: {screen.type || "Standard"}</p>
-            <p>Erstellt: {new Date(screen.created_at).toLocaleDateString()}</p>
+            <h3 class="card-name">{screen.name}</h3>
           </div>
+          <div class="card-overlay">
+            <div class="card-info">
+              <p>Kapazität: {screen.capacity}</p>
+              <p>Typ: {screen.type || "Standard"}</p>
+              <p>Erstellt: {new Date(screen.created_at).toLocaleDateString()}</p>
         </div>
       </div>
-    {/each}
+    </div>
+  </Link>
+  {/each}
 </div>
 
 

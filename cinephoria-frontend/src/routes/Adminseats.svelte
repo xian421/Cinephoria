@@ -1,12 +1,16 @@
 <script>
-    import { onMount } from "svelte";
-    import { navigate } from "svelte-routing";
+  import { onMount } from "svelte";
+  import { navigate } from "svelte-routing";
+  import { useParams } from "svelte-routing";
   
     let isAdmin = false;
     let seats = [];
-    let screenId = 1; // Default-ID
     let error = "";
   
+
+    const params = useParams();
+    let screenId = params.screenId;
+
     const fetchSeats = async () => {
       const token = document.cookie.split("; ").reduce((acc, cookie) => {
         const [key, value] = cookie.split("=");
