@@ -220,15 +220,15 @@
           logout={logout} 
           isLoginOpen={isLoginOpen} 
           isProfileDropdownOpen={isProfileDropdownOpen} 
-          email={email} 
-          password={password} 
+          bind:email={email} 
+          bind:password={password} 
           handleLogin={handleLogin} 
           initials={initials} 
           isLoggedIn={isLoggedIn}
       />
 
       <!-- Routen -->
-      <div>
+      <div use:onPopState={handleRouteChange}>
           <Route path="/" component={Home} />
           <Route path="/nowplaying" component={NowPlaying} />
           <Route path="/upcoming" component={Upcoming} />

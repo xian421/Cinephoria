@@ -12,6 +12,11 @@
     export let handleLogin;
     export let initials;
     export let isLoggedIn;
+
+    // Optional: Debugging-Log
+    console.log('Navbar received logout:', logout);
+    console.log('Navbar received email:', email);
+    console.log('Navbar received password:', password);
 </script>
 
 <style>
@@ -220,8 +225,6 @@
     }
   </style>
 
-
-
 <nav>
     <!-- Logo -->
     <a href="/" class="logo" on:click={() => navigate('/')}>
@@ -291,3 +294,4 @@
         </div>
     {/if}
 </nav>
+
