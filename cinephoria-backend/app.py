@@ -8,7 +8,13 @@ import datetime
 from functools import wraps
 
 app = Flask(__name__)
-CORS(app, origins=["https://cinephoria-theta.vercel.app"])
+
+
+CORS(app, origins=[
+    "https://cinephoria-theta.vercel.app",
+    "http://localhost:5173"
+])
+
 
 # Datenbankkonfiguration
 DATABASE_URL = os.getenv('DATABASE_URL')
