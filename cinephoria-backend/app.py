@@ -329,5 +329,120 @@ def register():
         print(f"Fehler bei der Registrierung: {e}")
         return jsonify({'error': 'Ein Fehler ist aufgetreten'}), 500
 
+
+@app.route('/seats', methods=['POST'])
+@admin_required
+def create_seat():
+    data = request.get_json()
+    screen_id = data.get('screen_id')
+    row = data.get('row')
+    number = data.get('number')
+    seat_type = data.get('type', 'standard')
+
+    if not screen_id or not row or not number:
+        return jsonify({'error': 'screen_id, row und number sind erforderlich'}), 400
+
+    try:
+        with psycopg2.connect(DATABASE_URL) as conn:
+            with conn.cursor() as cursor:
+                # Überprüfe, ob der Sitz bereits existiert
+                cursor.execute("""
+                    SELECT seat_id FROM seats
+                    WHERE screen_id = %s AND row = %s AND number = %s
+                """, (screen_id, row, number))
+                existing_seat = cursor.fetchone()
+                if existing_seat:
+                    return jsonify({'error': 'Sitz existiert bereits'}), 400
+
+                cursor.execute("""
+                    INSERT INTO seats (screen_id, row, number, type)
+                    VALUES (%s, %s, %s, %s)
+                    RETURNING seat_id
+                """, (screen_id, row, number, seat_type))
+                seat_id = cursor.fetchone()[0]
+
+        return jsonify({'message': 'Sitz erstellt', 'seat_id': seat_id}), 201
+
+    except Exception as e:
+        print(f"Fehler beim Erstellen des Sitzes: {e}")
+        return jsonify({'error': 'Fehler beim Erstellen des Sitzes'}), 500
+
+@app.route('/seats/<int:seat_id>', methods=['PUT'])
+@admin_required
+def update_seat(seat_id):
+    data = request.get_json()
+    exists = data.get('exists')
+    seat_type = data.get('type', 'standard')
+
+    if exists is None:
+        return jsonify({'error': 'exists ist erforderlich'}), 400
+
+    try:
+        with psycopg2.connect(DATABASE_URL) as conn:
+            with conn.cursor() as cursor:
+                if exists:
+                    # Aktualisiere den Sitztyp
+                    cursor.execute("""
+                        UPDATE seats
+                        SET type = %s
+                        WHERE seat_id = %s
+                    """, (seat_type, seat_id))
+                else:
+                    # Entferne den Sitz (optional: lösche ihn aus der Datenbank)
+                    cursor.execute("""
+                        DELETE FROM seats
+                        WHERE seat_id = %s
+                    """, (seat_id,))
+        
+        return jsonify({'message': 'Sitz aktualisiert'}), 200
+
+    except Exception as e:
+        print(f"Fehler beim Aktualisieren des Sitzes: {e}")
+        return jsonify({'error': 'Fehler beim Aktualisieren des Sitzes'}), 500
+
+@app.route('/seats', methods=['GET'])
+def get_seats():
+    screen_id = request.args.get('screen_id')
+    if not screen_id:
+        return jsonify({'error': 'screen_id ist erforderlich'}), 400
+
+    try:
+        with psycopg2.connect(DATABASE_URL) as conn:
+            with conn.cursor() as cursor:
+                cursor.execute("""
+                    SELECT seat_id, screen_id, row, number, type
+                    FROM seats
+                    WHERE screen_id = %s
+                """, (screen_id,))
+                seats = cursor.fetchall()
+                seats_list = [
+                    {
+                        'seat_id': seat[0],
+                        'screen_id': seat[1],
+                        'row': seat[2],
+                        'number': seat[3],
+                        'type': seat[4]
+                    } for seat in seats
+                ]
+
+        return jsonify({'seats': seats_list}), 200
+
+    except Exception as e:
+        print(f"Fehler beim Abrufen der Sitze: {e}")
+        return jsonify({'error': 'Fehler beim Abrufen der Sitze'}), 500
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 if __name__ == '__main__':
     app.run(debug=True)
