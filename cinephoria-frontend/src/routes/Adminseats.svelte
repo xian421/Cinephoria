@@ -57,6 +57,9 @@
             {/each}
         </div>
     {/if}
+
+
+    <button on:click={() => navigate('/adminkinosaal')}>Zurück zu Überblick der Kinosäle</button>
 </main>
 
 
