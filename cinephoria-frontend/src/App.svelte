@@ -105,6 +105,8 @@
           });
 
           const data = await response.json();
+          console.log('Login Response:', data);  // Debugging-Log
+
 
           if (response.ok) {
               // Login erfolgreich
@@ -202,6 +204,7 @@
               });
 
               const data = await response.json();
+              console.log('Validate Token Response:', data);
 
               if (response.ok) {
                   // Token ist gültig, aktualisiere den Store mit den Benutzerdaten
