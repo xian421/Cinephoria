@@ -1,4 +1,7 @@
 // src/services/api.js
+import { get } from 'svelte/store';
+import { authStore } from '../stores/authStore'; 
+
 const API_BASE_URL = 'https://cinephoria-backend-c53f94f0a255.herokuapp.com';
 
 export const login = async (email, password) => {
@@ -53,10 +56,9 @@ export const fetchScreens = async (token) => {
     return data;
 };
 
-
 export async function fetchSeats(screen_id, token) {
     try {
-        const response = await fetch(`${API_BASE_URL}/seats?&screen_id=${screen_id}`, {
+        const response = await fetch(`${API_BASE_URL}/seats?screen_id=${screen_id}`, {
             method: 'GET',
             headers: {
                 'Authorization': `Bearer ${token}`,
@@ -76,14 +78,52 @@ export async function fetchSeats(screen_id, token) {
     }
 }
 
+// Funktion zum Erstellen eines neuen Sitzes
+export const createSeat = async (screen_id, row, number, type = 'standard') => {
+    try {
+        const token = get(authStore).token;
+        const response = await fetch(`${API_BASE_URL}/seats`, { // POST zum Erstellen eines Sitzes
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ screen_id, row, number, type }),
+        });
 
+        const data = await response.json();
 
+        if (!response.ok) {
+            throw new Error(data.error || 'Fehler beim Erstellen des Sitzes');
+        }
 
+        return data;
+    } catch (error) {
+        console.error('Error creating seat:', error);
+        throw error;
+    }
+};
 
+// Funktion zum Löschen eines Sitzes
+export const deleteSeat = async (seatId) => {
+    try {
+        const token = get(authStore).token;
+        const response = await fetch(`${API_BASE_URL}/seats/${seatId}`, { // DELETE zum Löschen eines Sitzes
+            method: 'DELETE',
+            headers: {
+                'Authorization': `Bearer ${token}`
+            },
+        });
 
+        const data = await response.json();
 
+        if (!response.ok) {
+            throw new Error(data.error || 'Fehler beim Löschen des Sitzes');
+        }
 
-
-
-
-
+        return data;
+    } catch (error) {
+        console.error('Error deleting seat:', error);
+        throw error;
+    }
+};
