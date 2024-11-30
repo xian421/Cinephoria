@@ -1,68 +1,116 @@
 <!-- Adminkinosaal.svelte -->
 <script>
     import { onMount } from "svelte";
-    import { Link } from "svelte-routing";
-  
-    let screens = [];
-  
-    const getTokenFromCookies = () => {
-      const cookies = document.cookie.split("; ").reduce((acc, cookie) => {
-        const [key, value] = cookie.split("=");
-        acc[key] = value;
-        return acc;
-      }, {});
-      return cookies.token || '';
-    };
-  
-    onMount(async () => {
-      const token = getTokenFromCookies();
-      try {
-        await new Promise(resolve => setTimeout(resolve, 50)); 
-        const response = await fetch("https://cinephoria-backend-c53f94f0a255.herokuapp.com/screens", {
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
-        });
-        const data = await response.json();
-        if (response.ok) {
-          screens = data.screens;
-          console.log('Screens data:', screens); // Fügen Sie diese Zeile hinzu
-        } else {
-          console.error("Fehler beim Laden der Kinosäle:", data.error);
-        }
-      } catch (error) {
-        console.error("Fehler beim Laden der Kinosäle:", error);
-      }
-    });
-  </script>
-  
-  <div class="admin-page">
-    {#each screens as screen}
-    <Link to={`/adminseats/${screen.screen_id}`}>
-        <div class="card">
-          <div class="image-container">
-            <img src="/cinema-hall.webp" alt="Kinosaal" />
-            <h3 class="card-name">{screen.name}</h3>
-          </div>
-          <div class="card-overlay">
-            <div class="card-info">
-              <p>Kapazität: {screen.capacity}</p>
-              <p>Typ: {screen.type || "Standard"}</p>
-              <p>Erstellt: {new Date(screen.created_at).toLocaleDateString()}</p>
-            </div>
-          </div>
-        </div>
-      </Link>
-    {/each}
-  </div>
-  
+    import { Link, navigate } from "svelte-routing";
+    import { authStore } from '../stores/authStore.js'; // Pfad ggf. anpassen
+    import Swal from 'sweetalert2';
 
-  
+    let screens = [];
+    let isAdmin = false;
+    let isLoggedIn = false;
+
+    // Abonnieren des authStore
+    authStore.subscribe(value => {
+        isLoggedIn = value.isLoggedIn;
+        isAdmin = value.isAdmin;
+    });
+
+    onMount(async () => {
+        if (!isLoggedIn) {
+            Swal.fire({
+                title: "Nicht autorisiert",
+                text: "Bitte loggen Sie sich ein.",
+                icon: "error",
+                confirmButtonText: "OK",
+            });
+            navigate('/unauthorized');
+            return;
+        }
+
+        if (!isAdmin) {
+            Swal.fire({
+                title: "Zugriff verweigert",
+                text: "Sie haben keine Admin-Rechte.",
+                icon: "error",
+                confirmButtonText: "OK",
+            });
+            navigate('/unauthorized');
+            return;
+        }
+
+        const token = localStorage.getItem('token');
+        if (!token) {
+            Swal.fire({
+                title: "Token fehlt",
+                text: "Bitte loggen Sie sich ein.",
+                icon: "error",
+                confirmButtonText: "OK",
+            });
+            navigate('/login'); // Oder den entsprechenden Login-Pfad
+            return;
+        }
+
+        try {
+            const response = await fetch("https://cinephoria-backend-c53f94f0a255.herokuapp.com/screens", {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+            const data = await response.json();
+            if (response.ok) {
+                screens = data.screens;
+                console.log('Screens data:', screens);
+            } else {
+                console.error("Fehler beim Laden der Kinosäle:", data.error);
+                Swal.fire({
+                    title: "Fehler",
+                    text: data.error,
+                    icon: "error",
+                    confirmButtonText: "OK",
+                });
+                navigate('/unauthorized'); // Oder einen anderen geeigneten Pfad
+            }
+        } catch (error) {
+            console.error("Fehler beim Laden der Kinosäle:", error);
+            Swal.fire({
+                title: "Fehler",
+                text: "Ein Fehler ist aufgetreten. Bitte versuche es erneut.",
+                icon: "error",
+                confirmButtonText: "OK",
+            });
+            navigate('/unauthorized'); // Oder einen anderen geeigneten Pfad
+        }
+    });
+</script>
+
+<div class="admin-page">
+    {#if screens.length > 0}
+        {#each screens as screen}
+            <Link to={`/adminseats/${screen.screen_id}`}>
+                <div class="card">
+                    <div class="image-container">
+                        <img src="/cinema-hall.webp" alt="Kinosaal" />
+                        <h3 class="card-name">{screen.name}</h3>
+                    </div>
+                    <div class="card-overlay">
+                        <div class="card-info">
+                            <p>Kapazität: {screen.capacity}</p>
+                            <p>Typ: {screen.type || "Standard"}</p>
+                            <p>Erstellt: {new Date(screen.created_at).toLocaleDateString()}</p>
+                        </div>
+                    </div>
+                </div>
+            </Link>
+        {/each}
+    {:else}
+        <p>Keine Kinosäle gefunden.</p>
+    {/if}
+</div>
 
 <style>
 .admin-page {
     display: grid;
-    grid-template-columns: repeat(2, 1fr); /* Zwei Karten nebeneinander */
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); /* Responsiv: Karten passen sich an */
     gap: 20px;
     padding: 20px;
 }
@@ -75,6 +123,11 @@
     color: white;
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
     text-align: center; /* Zentriert den Text */
+    transition: transform 0.3s ease;
+}
+
+.card:hover {
+    transform: scale(1.05);
 }
 
 .card img {
@@ -138,5 +191,4 @@
     height: 100%;
     object-fit: cover;
 }
-
 </style>

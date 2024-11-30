@@ -20,7 +20,7 @@
   import Unauthorized from "./routes/Unauthorized.svelte";
 
   // Import von Svelte Stores
-  import { writable } from 'svelte/store';
+  import { authStore } from './stores/authStore.js'; // Pfad ggf. anpassen
 
   // Exportierte Eigenschaften
   export let url = ""; // Für Server-Side Rendering (SSR)
@@ -30,15 +30,6 @@
 
   // State-Variablen
   let currentPath = ""; // Aktuelle Route
-
-  // Authentifizierungs-Status (Svelte Store)
-  const authStore = writable({
-    isLoggedIn: !!localStorage.getItem('token'),
-    userFirstName: '',
-    userLastName: '',
-    initials: '',
-    isAdmin: false,
-  });
 
   // Login-Formular
   let email = "";
@@ -56,28 +47,28 @@
   let initials;
 
   authStore.subscribe(value => {
-    isLoggedIn = value.isLoggedIn;
-    isAdmin = value.isAdmin;
-    userFirstName = value.userFirstName;
-    userLastName = value.userLastName;
-    initials = value.initials;
+      isLoggedIn = value.isLoggedIn;
+      isAdmin = value.isAdmin;
+      userFirstName = value.userFirstName;
+      userLastName = value.userLastName;
+      initials = value.initials;
   });
 
   // Navigationsfunktionen
   const handleRouteChange = () => {
-    currentPath = window.location.pathname;
+      currentPath = window.location.pathname;
   };
 
   if (typeof window !== "undefined") {
-    window.addEventListener("popstate", handleRouteChange);
-    handleRouteChange();
+      window.addEventListener("popstate", handleRouteChange);
+      handleRouteChange();
   }
 
   const scrollToTop = () => {
-    window.scrollTo({
-      top: 0,
-      behavior: "smooth"
-    });
+      window.scrollTo({
+          top: 0,
+          behavior: "smooth"
+      });
   };
 
   // Dropdown-Funktionen
@@ -85,166 +76,166 @@
   let isProfileDropdownOpen = false;
 
   const toggleLoginDropdown = () => {
-    isLoginOpen = !isLoginOpen;
+      isLoginOpen = !isLoginOpen;
   };
 
   const toggleProfileMenu = () => {
-    isProfileDropdownOpen = !isProfileDropdownOpen;
+      isProfileDropdownOpen = !isProfileDropdownOpen;
   };
 
   // Authentifizierungsfunktionen
   const handleLogin = async () => {
-    if (!email || !password) {
-      Swal.fire({
-        title: "Fehler",
-        text: "Bitte E-Mail und Passwort eingeben!",
-        icon: "error",
-        confirmButtonText: "OK",
-      });
-      return;
-    }
-
-    try {
-      const response = await fetch("https://cinephoria-backend-c53f94f0a255.herokuapp.com/login", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ email, password }),
-      });
-
-      const data = await response.json();
-
-      if (response.ok) {
-        // Login erfolgreich
-        email = "";
-        password = "";
-
-        // Speichere das Token in localStorage
-        localStorage.setItem('token', data.token);
-
-        // Setze Benutzerdaten im Store
-        authStore.update(current => ({
-          ...current,
-          isLoggedIn: true,
-          userFirstName: data.first_name,
-          userLastName: data.last_name,
-          initials: data.initials,
-          isAdmin: data.role === 'admin', // Setze Admin-Status basierend auf der Rolle
-        }));
-
-        Swal.fire({
-          title: "Erfolgreich eingeloggt!",
-          text: "Willkommen zurück!",
-          icon: "success",
-          timer: 1500,
-          showConfirmButton: false,
-        });
-      } else {
-        Swal.fire({
-          title: "Fehler",
-          text: data.error,
-          icon: "error",
-          confirmButtonText: "OK",
-        });
+      if (!email || !password) {
+          Swal.fire({
+              title: "Fehler",
+              text: "Bitte E-Mail und Passwort eingeben!",
+              icon: "error",
+              confirmButtonText: "OK",
+          });
+          return;
       }
-    } catch (error) {
-      console.error("Fehler beim Login:", error);
-      Swal.fire({
-        title: "Fehler",
-        text: "Ein Fehler ist aufgetreten. Bitte versuche es erneut.",
-        icon: "error",
-        confirmButtonText: "OK",
-      });
-    }
+
+      try {
+          const response = await fetch("https://cinephoria-backend-c53f94f0a255.herokuapp.com/login", {
+              method: "POST",
+              headers: {
+                  "Content-Type": "application/json",
+              },
+              body: JSON.stringify({ email, password }),
+          });
+
+          const data = await response.json();
+
+          if (response.ok) {
+              // Login erfolgreich
+              email = "";
+              password = "";
+
+              // Speichere das Token in localStorage
+              localStorage.setItem('token', data.token);
+
+              // Setze Benutzerdaten im Store
+              authStore.update(current => ({
+                  ...current,
+                  isLoggedIn: true,
+                  userFirstName: data.first_name,
+                  userLastName: data.last_name,
+                  initials: data.initials,
+                  isAdmin: data.role === 'admin', // Setze Admin-Status basierend auf der Rolle
+              }));
+
+              Swal.fire({
+                  title: "Erfolgreich eingeloggt!",
+                  text: "Willkommen zurück!",
+                  icon: "success",
+                  timer: 1500,
+                  showConfirmButton: false,
+              });
+          } else {
+              Swal.fire({
+                  title: "Fehler",
+                  text: data.error,
+                  icon: "error",
+                  confirmButtonText: "OK",
+              });
+          }
+      } catch (error) {
+          console.error("Fehler beim Login:", error);
+          Swal.fire({
+              title: "Fehler",
+              text: "Ein Fehler ist aufgetreten. Bitte versuche es erneut.",
+              icon: "error",
+              confirmButtonText: "OK",
+          });
+      }
   };
 
   const logout = () => {
-    // Token aus localStorage entfernen
-    localStorage.removeItem('token');
+      // Token aus localStorage entfernen
+      localStorage.removeItem('token');
 
-    // Benutzer-Status zurücksetzen
-    authStore.set({
-      isLoggedIn: false,
-      userFirstName: '',
-      userLastName: '',
-      initials: '',
-      isAdmin: false,
-    });
-
-    Swal.fire({
-      title: "Abgemeldet",
-      text: "Du wurdest erfolgreich abgemeldet.",
-      icon: "success",
-      timer: 1500,
-      showConfirmButton: false,
-    });
-
-    navigate('/');
-  };
-  
-  // Lifecycle-Methode
-  onMount(async () => {
-    // Kontaktinformationen laden
-    try {
-      const responseKontakt = await fetch(KONTAKT_URL);
-      const data = await responseKontakt.json();
-      kontakt = data.cinemas;
-
-      if (kontakt && kontakt.length > 0) {
-        firstCinema = kontakt[0];
-      }
-    } catch (error) {
-      console.error('Fehler beim Laden des Kontakts: ', error);
-    }
-
-    // Überprüfen des Authentifizierungsstatus beim Laden der App
-    const token = localStorage.getItem('token');
-    if (token) {
-      try {
-        const response = await fetch("https://cinephoria-backend-c53f94f0a255.herokuapp.com/validate-token", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${token}`
-          },
-        });
-
-        const data = await response.json();
-
-        if (response.ok) {
-          // Token ist gültig, aktualisiere den Store mit den Benutzerdaten
-          authStore.update(current => ({
-            ...current,
-            isLoggedIn: true,
-            userFirstName: data.first_name,
-            userLastName: data.last_name,
-            initials: data.initials,
-            isAdmin: data.role === 'admin',
-          }));
-        } else {
-          // Ungültiges Token, entferne es aus localStorage
-          localStorage.removeItem('token');
-          authStore.set({
-            isLoggedIn: false,
-            userFirstName: '',
-            userLastName: '',
-            initials: '',
-            isAdmin: false,
-          });
-        }
-      } catch (error) {
-        console.error("Fehler beim Validieren des Tokens:", error);
-        localStorage.removeItem('token');
-        authStore.set({
+      // Benutzer-Status zurücksetzen
+      authStore.set({
           isLoggedIn: false,
           userFirstName: '',
           userLastName: '',
           initials: '',
           isAdmin: false,
-        });
+      });
+
+      Swal.fire({
+          title: "Abgemeldet",
+          text: "Du wurdest erfolgreich abgemeldet.",
+          icon: "success",
+          timer: 1500,
+          showConfirmButton: false,
+      });
+
+      navigate('/');
+  };
+
+  // Lifecycle-Methode
+  onMount(async () => {
+      // Kontaktinformationen laden
+      try {
+          const responseKontakt = await fetch(KONTAKT_URL);
+          const data = await responseKontakt.json();
+          kontakt = data.cinemas;
+
+          if (kontakt && kontakt.length > 0) {
+              firstCinema = kontakt[0];
+          }
+      } catch (error) {
+          console.error('Fehler beim Laden des Kontakts: ', error);
       }
-    }
+
+      // Überprüfen des Authentifizierungsstatus beim Laden der App
+      const token = localStorage.getItem('token');
+      if (token) {
+          try {
+              const response = await fetch("https://cinephoria-backend-c53f94f0a255.herokuapp.com/validate-token", {
+                  method: "POST",
+                  headers: {
+                      "Content-Type": "application/json",
+                      "Authorization": `Bearer ${token}`
+                  },
+              });
+
+              const data = await response.json();
+
+              if (response.ok) {
+                  // Token ist gültig, aktualisiere den Store mit den Benutzerdaten
+                  authStore.update(current => ({
+                      ...current,
+                      isLoggedIn: true,
+                      userFirstName: data.first_name,
+                      userLastName: data.last_name,
+                      initials: data.initials,
+                      isAdmin: data.role === 'admin',
+                  }));
+              } else {
+                  // Ungültiges Token, entferne es aus localStorage
+                  localStorage.removeItem('token');
+                  authStore.set({
+                      isLoggedIn: false,
+                      userFirstName: '',
+                      userLastName: '',
+                      initials: '',
+                      isAdmin: false,
+                  });
+              }
+          } catch (error) {
+              console.error("Fehler beim Validieren des Tokens:", error);
+              localStorage.removeItem('token');
+              authStore.set({
+                  isLoggedIn: false,
+                  userFirstName: '',
+                  userLastName: '',
+                  initials: '',
+                  isAdmin: false,
+              });
+          }
+      }
   });
 </script>
 
@@ -566,155 +557,155 @@
 <Router {url}>
   <!-- Navbar -->
   <nav>
-    <!-- Logo -->
-    <a href="/" class="logo" on:click={() => navigate('/')}>
-      <img src="/Logo.png" alt="Logo" />
-    </a>
+      <!-- Logo -->
+      <a href="/" class="logo" on:click={() => navigate('/')}>
+          <img src="/Logo.png" alt="Logo" />
+      </a>
 
-    <!-- Navigationsbuttons -->
-    <button
-      class="{currentPath === '/' ? 'active' : ''}"
-      on:click={() => navigate('/')}
-    >
-      Alle Filme
-    </button>
-    <button
-      class="{currentPath === '/nowplaying' ? 'active' : ''}"
-      on:click={() => navigate('/nowplaying')}
-    >
-      Programm
-    </button>
-    <button
-      class="{currentPath === '/upcoming' ? 'active' : ''}"
-      on:click={() => navigate('/upcoming')}
-    >
-      Upcoming
-    </button>
-    <button
-      class="{currentPath === '/sitzplan' ? 'active' : ''}"
-      on:click={() => navigate('/sitzplan')}
-    >
-      Sitzplan
-    </button>
+      <!-- Navigationsbuttons -->
+      <button
+          class="{currentPath === '/' ? 'active' : ''}"
+          on:click={() => navigate('/')}
+      >
+          Alle Filme
+      </button>
+      <button
+          class="{currentPath === '/nowplaying' ? 'active' : ''}"
+          on:click={() => navigate('/nowplaying')}
+      >
+          Programm
+      </button>
+      <button
+          class="{currentPath === '/upcoming' ? 'active' : ''}"
+          on:click={() => navigate('/upcoming')}
+      >
+          Upcoming
+      </button>
+      <button
+          class="{currentPath === '/sitzplan' ? 'active' : ''}"
+          on:click={() => navigate('/sitzplan')}
+      >
+          Sitzplan
+      </button>
 
-    <!-- Benutzerbereich -->
-    {#if isLoggedIn}
-      <!-- Profil-Dropdown -->
-      <div class="profile-dropdown-container {isProfileDropdownOpen ? 'open' : ''}">
-        <div class="profile-container" on:click={toggleProfileMenu}>
-          <div class="profile-initials">{initials}</div>
-        </div>
-        <div class="profile-dropdown-menu">
-          <ul>
-            <li on:click={() => navigate('/profil')}>Profil anzeigen</li>
-            <li on:click={() => navigate('/einstellungen')}>Einstellungen</li>
-            <li on:click={logout}>Abmelden</li>
-          </ul>
-        </div>
-      </div>
-    {:else}
-      <!-- Login-Dropdown -->
-      <div class="dropdown-container {isLoginOpen ? 'open' : ''}">
-        <button on:click={toggleLoginDropdown}>Login</button>
-        <div class="dropdown-menu">
-          <form on:submit|preventDefault={handleLogin}>
-            <input type="email" placeholder="E-Mail" bind:value={email} required />
-            <input type="password" placeholder="Passwort" bind:value={password} required />
-            <button type="submit">Einloggen</button>
-            <div style="display: flex; justify-content: space-between; gap: 10px; margin-top: 10px;">
-              <button type="button" on:click={() => navigate('/register')} style="background: none; border: none; color: #007bff; cursor: pointer;">
-                Stattdessen Registrieren
-              </button>
-              <button type="button" on:click={() => navigate('/forgot-password')} style="background: none; border: none; color: #007bff; cursor: pointer;">
-                Passwort vergessen?
-              </button>
-            </div>
-          </form>
-        </div>
-      </div>
-    {/if}
+      <!-- Benutzerbereich -->
+      {#if isLoggedIn}
+          <!-- Profil-Dropdown -->
+          <div class="profile-dropdown-container {isProfileDropdownOpen ? 'open' : ''}">
+              <div class="profile-container" on:click={toggleProfileMenu}>
+                  <div class="profile-initials">{initials}</div>
+              </div>
+              <div class="profile-dropdown-menu">
+                  <ul>
+                      <li on:click={() => navigate('/profil')}>Profil anzeigen</li>
+                      <li on:click={() => navigate('/einstellungen')}>Einstellungen</li>
+                      <li on:click={logout}>Abmelden</li>
+                  </ul>
+              </div>
+          </div>
+      {:else}
+          <!-- Login-Dropdown -->
+          <div class="dropdown-container {isLoginOpen ? 'open' : ''}">
+              <button on:click={toggleLoginDropdown}>Login</button>
+              <div class="dropdown-menu">
+                  <form on:submit|preventDefault={handleLogin}>
+                      <input type="email" placeholder="E-Mail" bind:value={email} required />
+                      <input type="password" placeholder="Passwort" bind:value={password} required />
+                      <button type="submit">Einloggen</button>
+                      <div style="display: flex; justify-content: space-between; gap: 10px; margin-top: 10px;">
+                          <button type="button" on:click={() => navigate('/register')} style="background: none; border: none; color: #007bff; cursor: pointer;">
+                              Stattdessen Registrieren
+                          </button>
+                          <button type="button" on:click={() => navigate('/forgot-password')} style="background: none; border: none; color: #007bff; cursor: pointer;">
+                              Passwort vergessen?
+                          </button>
+                      </div>
+                  </form>
+              </div>
+          </div>
+      {/if}
   </nav>
 
   <!-- Routen -->
   <div>
-    <Route path="/" component={Home} />
-    <Route path="/nowplaying" component={NowPlaying} />
-    <Route path="/upcoming" component={Upcoming} />
-    <Route path="*" component={NotFound} />
-    <Route path="/test" component={Test} />
-    <Route path="/sitzplan" component={Sitzplan} />
-    <Route path="/register" component={Register} />
-    <Route path="/forgot-password" component={Forgotpassword} />
-    <!-- Admin-Routen -->
-    <Route path="/adminkinosaal" component={Adminkinosaal} />
-    <Route path="/adminseats/:screenId" component={Adminseats} />
-    <Route path="/beschreibung/:id" component={Beschreibung} />
-    <Route path="/unauthorized" component={Unauthorized} />
-    <!-- Weitere Routen, wie z.B. Profil oder Einstellungen -->
+      <Route path="/" component={Home} />
+      <Route path="/nowplaying" component={NowPlaying} />
+      <Route path="/upcoming" component={Upcoming} />
+      <Route path="*" component={NotFound} />
+      <Route path="/test" component={Test} />
+      <Route path="/sitzplan" component={Sitzplan} />
+      <Route path="/register" component={Register} />
+      <Route path="/forgot-password" component={Forgotpassword} />
+      <!-- Admin-Routen -->
+      <Route path="/adminkinosaal" component={Adminkinosaal} />
+      <Route path="/adminseats/:screenId" component={Adminseats} />
+      <Route path="/beschreibung/:id" component={Beschreibung} />
+      <Route path="/unauthorized" component={Unauthorized} />
+      <!-- Weitere Routen, wie z.B. Profil oder Einstellungen -->
   </div>
 
   <!-- Footer -->
   <footer>
-    <!-- Interaktive Buttons -->
-    <div class="footer-buttons">
-      <button on:click={() => Swal.fire({
-        title: "Kontakt",
-        icon: "info",
-        html: `
-          <h2>${firstCinema.name}</h2>
-          <p>Standort: ${firstCinema.location}<br />
-          Telefax: ${firstCinema.contact_number}<br />
-        `,
-        confirmButtonText: "Schließen"
-      })}>
-        Kontakt
-      </button>
-      <button on:click={() => Swal.fire({
-        title: "Impressum",
-        icon: "info",
-        html: `
-          <p>Max Mustermann<br />
-          Musterweg 111<br />
-          Hausnummer 44<br />
-          90210 Musterstadt</p>
-          <h2>Kontakt</h2>
-          <p>Telefon: +49 (0) 123 44 55 66<br />
-          Telefax: +49 (0) 123 44 55 99<br />
-          E-Mail: mustermann@musterfirma.de</p>
-        `,
-        confirmButtonText: "Schließen"
-      })}>
-        Impressum
-      </button>
-      <button on:click={() => alert("Datenschutz anzeigen!")}>
-        Datenschutz
-      </button>
-    </div>
+      <!-- Interaktive Buttons -->
+      <div class="footer-buttons">
+          <button on:click={() => Swal.fire({
+              title: "Kontakt",
+              icon: "info",
+              html: `
+                  <h2>${firstCinema.name}</h2>
+                  <p>Standort: ${firstCinema.location}<br />
+                  Telefax: ${firstCinema.contact_number}<br />
+              `,
+              confirmButtonText: "Schließen"
+          })}>
+              Kontakt
+          </button>
+          <button on:click={() => Swal.fire({
+              title: "Impressum",
+              icon: "info",
+              html: `
+                  <p>Max Mustermann<br />
+                  Musterweg 111<br />
+                  Hausnummer 44<br />
+                  90210 Musterstadt</p>
+                  <h2>Kontakt</h2>
+                  <p>Telefon: +49 (0) 123 44 55 66<br />
+                  Telefax: +49 (0) 123 44 55 99<br />
+                  E-Mail: mustermann@musterfirma.de</p>
+              `,
+              confirmButtonText: "Schließen"
+          })}>
+              Impressum
+          </button>
+          <button on:click={() => alert("Datenschutz anzeigen!")}>
+              Datenschutz
+          </button>
+      </div>
 
-    <!-- Social-Media-Icons -->
-    <div class="social-icons">
-      <a href="https://facebook.com" target="_blank" aria-label="Facebook">
-        <img src="/facebook.png" alt="Facebook" />
-      </a>
-      <a href="https://twitter.com" target="_blank" aria-label="Twitter">
-        <img src="/twitter.png" alt="Twitter" />
-      </a>
-      <a href="https://instagram.com" target="_blank" aria-label="Instagram">
-        <img src="/instagram.png" alt="Instagram" />
-      </a>
-      <a href="https://linkedin.com" target="_blank" aria-label="LinkedIn">
-        <img src="/linked.png" alt="LinkedIn" />
-      </a>
-    </div>
+      <!-- Social-Media-Icons -->
+      <div class="social-icons">
+          <a href="https://facebook.com" target="_blank" aria-label="Facebook">
+              <img src="/facebook.png" alt="Facebook" />
+          </a>
+          <a href="https://twitter.com" target="_blank" aria-label="Twitter">
+              <img src="/twitter.png" alt="Twitter" />
+          </a>
+          <a href="https://instagram.com" target="_blank" aria-label="Instagram">
+              <img src="/instagram.png" alt="Instagram" />
+          </a>
+          <a href="https://linkedin.com" target="_blank" aria-label="LinkedIn">
+              <img src="/linked.png" alt="LinkedIn" />
+          </a>
+      </div>
 
-    <!-- Scroll-to-Top Button -->
-    <button class="scroll-to-top" on:click={scrollToTop}>
-      Nach oben
-    </button>
+      <!-- Scroll-to-Top Button -->
+      <button class="scroll-to-top" on:click={scrollToTop}>
+          Nach oben
+      </button>
 
-    <!-- Footer-Text -->
-    <p class="footer-text">
-      © 2024 Cinephoria. Alle Rechte vorbehalten.
-    </p>
+      <!-- Footer-Text -->
+      <p class="footer-text">
+          © 2024 Cinephoria. Alle Rechte vorbehalten.
+      </p>
   </footer>
 </Router>
