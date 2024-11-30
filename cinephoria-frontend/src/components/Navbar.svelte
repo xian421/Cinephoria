@@ -13,217 +13,151 @@
     export let initials;
     export let isLoggedIn;
 
-    // Optional: Debugging-Log
-    console.log('Navbar received logout:', logout);
-    console.log('Navbar received email:', email);
-    console.log('Navbar received password:', password);
+    
 </script>
 
 <style>
     /* Navbar-Stile */
     nav {
-      display: flex;
-      align-items: center;
-      justify-content: space-around;
-      background: #ffffff;
-      padding: 1rem;
-      border-radius: 12px;
-      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
-      position: sticky;
-      top: 0;
-      z-index: 1000;
+        display: flex;
+        align-items: center;
+        justify-content: space-around;
+        background: #ffffff;
+        padding: 1rem;
+        border-radius: 12px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+        position: sticky;
+        top: 0;
+        z-index: 1000;
     }
-  
-    /* Logo-Stile */
+
     .logo {
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-      text-decoration: none;
-      color: white;
-      font-size: 1.2rem;
-      font-weight: bold;
-      transition: transform 0.4s ease;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        text-decoration: none;
+        color: white;
+        font-size: 1.2rem;
+        font-weight: bold;
+        transition: transform 0.4s ease;
     }
-  
+
     .logo:hover {
-      transform: scale(1.25);
+        transform: scale(1.25);
     }
-  
+
     .logo img {
-      height: 60px;
-      width: auto;
-      object-fit: contain;
+        height: 60px;
+        width: auto;
+        object-fit: contain;
     }
-  
-    /* Button-Stile */
+
     button {
-      font-size: 1.2rem;
-      font-weight: bold;
-      color: rgb(0, 0, 0);
-      background: #ffffff;
-      border: 2px solid transparent;
-      border-radius: 12px;
-      padding: 1rem 2rem;
-      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-      cursor: pointer;
-      transition: all 0.3s ease;
-      min-width: 160px;
-      text-align: center;
+        font-size: 1.2rem;
+        font-weight: bold;
+        color: rgb(0, 0, 0);
+        background: #ffffff;
+        border: 2px solid transparent;
+        border-radius: 12px;
+        padding: 1rem 2rem;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        cursor: pointer;
+        transition: all 0.3s ease;
+        min-width: 160px;
+        text-align: center;
     }
-  
+
     button:hover {
-      border-color: #1abc9c;
-      transform: scale(1.1);
+        border-color: #1abc9c;
+        transform: scale(1.1);
     }
-  
+
     button.active {
-      color: rgb(0, 0, 0);
-      border-color: rgb(21, 151, 112);
-      transform: scale(1.05);
+        color: rgb(0, 0, 0);
+        border-color: rgb(21, 151, 112);
+        transform: scale(1.05);
     }
-  
-    
-  
-    /* Login-Dropdown-Stile */
-    .dropdown-container {
-      position: relative;
-    }
-  
-    .dropdown-menu {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      position: absolute;
-      top: calc(100% + 10px);
-      right: 0;
-      background: #ffffff;
-      padding: 1rem 20px;
-      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
-      border-radius: 12px;
-      z-index: 1000;
-      width: 300px;
-      transform: scaleY(0);
-      transform-origin: top;
-      transition: transform 0.3s ease-in-out;
-    }
-  
-    .dropdown-container.open .dropdown-menu {
-      transform: scaleY(1);
-    }
-  
-    .dropdown-menu input {
-      width: calc(100% - 16px);
-      padding: 0.8rem;
-      margin: 0.5rem 0;
-      border: 1px solid #ccc;
-      border-radius: 8px;
-      font-size: 1rem;
-      box-sizing: border-box;
-    }
-  
-    .dropdown-menu input:focus {
-      outline: none;
-      border-color: #1abc9c;
-      box-shadow: 0 0 4px rgba(26, 188, 156, 0.5);
-    }
-  
-    .dropdown-menu button {
-      width: 100%;
-      background: #3498db;
-      color: #ffffff;
-      font-size: 1rem;
-      font-weight: bold;
-      padding: 0.8rem;
-      border: none;
-      border-radius: 12px;
-      cursor: pointer;
-      transition: all 0.3s ease;
-    }
-  
-    .dropdown-menu button:hover {
-      background: #24b497;
-    }
-  
+
     /* Profil-Dropdown-Stile */
     .profile-dropdown-container {
-      position: relative;
+        position: relative;
     }
-  
+
     .profile-dropdown-menu {
-      display: flex;
-      flex-direction: column;
-      align-items: flex-start;
-      justify-content: flex-start;
-      position: absolute;
-      top: calc(100% + 10px);
-      right: 0;
-      background: #ffffff;
-      padding: 1rem;
-      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
-      border-radius: 12px;
-      z-index: 1000;
-      width: 200px;
-      transform: scaleY(0);
-      transform-origin: top;
-      transition: transform 0.3s ease-in-out;
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        position: absolute;
+        top: calc(100% + 10px);
+        right: 0;
+        background: rgba(255, 255, 255, 0.95);
+        padding: 1rem;
+        box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+        border-radius: 12px;
+        z-index: 1000;
+        width: 220px;
+        opacity: 0;
+        transform: translateY(-10px);
+        pointer-events: none;
+        transition: opacity 0.3s ease, transform 0.3s ease;
     }
-  
+
     .profile-dropdown-container.open .profile-dropdown-menu {
-      transform: scaleY(1);
+        opacity: 1;
+        transform: translateY(0);
+        pointer-events: auto;
     }
-  
+
     .profile-dropdown-menu ul {
-      list-style: none;
-      padding: 0;
-      margin: 0;
-      width: 100%;
+        list-style: none;
+        padding: 0;
+        margin: 0;
+        width: 100%;
     }
-  
+
     .profile-dropdown-menu li {
-      padding: 0.8rem;
-      font-size: 1rem;
-      color: #333;
-      cursor: pointer;
-      transition: background-color 0.3s ease;
-      width: 100%;
-      text-align: left;
+        padding: 0.8rem;
+        font-size: 1rem;
+        color: #333;
+        cursor: pointer;
+        border-radius: 8px;
+        transition: background-color 0.3s ease, transform 0.3s ease;
     }
-  
+
     .profile-dropdown-menu li:hover {
-      background-color: #f0f0f0;
-      border-radius: 8px;
+        background-color: #f9f9f9;
+        transform: translateX(5px);
     }
-  
+
     .profile-container {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      cursor: pointer;
-      font-size: 1rem;
-      font-weight: bold;
-      color: black;
-      transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        cursor: pointer;
+        font-size: 1rem;
+        font-weight: bold;
+        color: black;
+        transition: transform 0.3s ease;
     }
-  
+
     .profile-container:hover {
-      transform: scale(1.1);
+        transform: scale(1.1);
     }
-  
+
     .profile-initials {
-      width: 50px;
-      height: 50px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      border-radius: 50%;
-      background-color: red;
-      color: white;
-      font-size: 20px;
-      font-weight: bold;
+        width: 50px;
+        height: 50px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #1abc9c, #3498db);
+        color: white;
+        font-size: 20px;
+        font-weight: bold;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
     }
-  </style>
+</style>
 
 <nav>
     <!-- Logo -->
@@ -261,8 +195,13 @@
     {#if isLoggedIn}
         <!-- Profil-Dropdown -->
         <div class="profile-dropdown-container {isProfileDropdownOpen ? 'open' : ''}">
-            <button type="button" class="profile-container" on:click={toggleProfileMenu} on:keydown={(e) => e.key === 'Enter' && toggleProfileMenu()} aria-haspopup="true" aria-expanded={isProfileDropdownOpen}>
-                <div class="profile-initials">{initials}</div>
+            <button
+                type="button"
+                class="profile-container"
+                on:click={toggleProfileMenu}
+                aria-label="Profil-Optionen anzeigen"
+            >
+                <div class="profile-initials">{initials || 'NA'}</div>
             </button>
             <div class="profile-dropdown-menu">
                 <ul>
@@ -281,17 +220,8 @@
                     <input type="email" placeholder="E-Mail" bind:value={email} required />
                     <input type="password" placeholder="Passwort" bind:value={password} required />
                     <button type="submit">Einloggen</button>
-                    <div style="display: flex; justify-content: space-between; gap: 10px; margin-top: 10px;">
-                        <button type="button" on:click={() => navigate('/register')} style="background: none; border: none; color: #007bff; cursor: pointer;">
-                            Stattdessen Registrieren
-                        </button>
-                        <button type="button" on:click={() => navigate('/forgot-password')} style="background: none; border: none; color: #007bff; cursor: pointer;">
-                            Passwort vergessen?
-                        </button>
-                    </div>
                 </form>
             </div>
         </div>
     {/if}
 </nav>
-
