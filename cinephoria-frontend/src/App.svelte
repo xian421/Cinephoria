@@ -1,7 +1,4 @@
 <script>
-  import './global.css'; // Import der globalen CSS-Datei
-
-  // Import von Abhängigkeiten
   import { Router, Route, navigate } from "svelte-routing";
   import { onMount } from 'svelte';
   import Swal from 'sweetalert2';
@@ -21,7 +18,7 @@
   import Unauthorized from "./routes/Unauthorized.svelte";
 
   // Import von Svelte Stores
-  import { authStore } from './stores/authStore.js'; // Pfad ggf. anpassen
+  import { authStore } from './stores/authStore.js';
 
   // Import der ProtectedRoute Komponente
   import ProtectedRoute from './components/ProtectedRoute.svelte';
@@ -33,13 +30,9 @@
   const KONTAKT_URL = 'https://cinephoria-backend-c53f94f0a255.herokuapp.com/cinemas';
 
   // State-Variablen
-  let currentPath = ""; // Aktuelle Route
-
-  // Login-Formular
+  let currentPath = "";
   let email = "";
   let password = "";
-
-  // Kontaktinformationen
   let kontakt = [];
   let firstCinema = {};
 
@@ -107,21 +100,16 @@
           console.log('Login Response:', data);  // Debugging-Log
 
           if (response.ok) {
-              // Login erfolgreich
               email = "";
               password = "";
-
-              // Speichere das Token in localStorage
               localStorage.setItem('token', data.token);
-
-              // Setze Benutzerdaten im Store
               authStore.update(current => ({
                   ...current,
                   isLoggedIn: true,
                   userFirstName: data.first_name,
                   userLastName: data.last_name,
                   initials: data.initials,
-                  isAdmin: data.role.toLowerCase() === 'admin', // Setze Admin-Status basierend auf der Rolle
+                  isAdmin: data.role.toLowerCase() === 'admin',
               }));
 
               Swal.fire({
@@ -151,10 +139,7 @@
   };
 
   const logout = () => {
-      // Token aus localStorage entfernen
       localStorage.removeItem('token');
-
-      // Benutzer-Status zurücksetzen
       authStore.set({
           isLoggedIn: false,
           userFirstName: '',
@@ -176,7 +161,6 @@
 
   // Lifecycle-Methode
   onMount(async () => {
-      // Kontaktinformationen laden
       try {
           const responseKontakt = await fetch(KONTAKT_URL);
           const data = await responseKontakt.json();
@@ -189,7 +173,6 @@
           console.error('Fehler beim Laden des Kontakts: ', error);
       }
 
-      // Überprüfen des Authentifizierungsstatus beim Laden der App
       const token = localStorage.getItem('token');
       if (token) {
           try {
@@ -202,10 +185,9 @@
               });
 
               const data = await response.json();
-              console.log('Validate Token Response:', data); // Debugging-Log
+              console.log('Validate Token Response:', data);
 
               if (response.ok) {
-                  // Token ist gültig, aktualisiere den Store mit den Benutzerdaten
                   authStore.update(current => ({
                       ...current,
                       isLoggedIn: true,
@@ -215,7 +197,6 @@
                       isAdmin: data.role.toLowerCase() === 'admin',
                   }));
               } else {
-                  // Ungültiges Token, entferne es aus localStorage
                   localStorage.removeItem('token');
                   authStore.set({
                       isLoggedIn: false,
@@ -238,7 +219,6 @@
           }
       }
 
-      // Setze den Ladezustand auf false, nachdem die Authentifizierung abgeschlossen ist
       isLoading = false;
   });
 </script>
@@ -642,6 +622,7 @@
           <Route path="/sitzplan" component={Sitzplan} />
           <Route path="/register" component={Register} />
           <Route path="/forgot-password" component={Forgotpassword} />
+          
           <!-- Geschützte Admin-Routen mit ProtectedRoute -->
           <Route path="/adminkinosaal" component={ProtectedRoute} admin={true}>
               <Adminkinosaal />
@@ -649,9 +630,10 @@
           <Route path="/adminseats/:screenId" component={ProtectedRoute} admin={true}>
               <Adminseats />
           </Route>
+          
           <Route path="/beschreibung/:id" component={Beschreibung} />
           <Route path="/unauthorized" component={Unauthorized} />
-          <!-- Weitere Routen, wie z.B. Profil oder Einstellungen -->
+          <!-- Weitere Routen -->
       </div>
 
       <!-- Footer -->

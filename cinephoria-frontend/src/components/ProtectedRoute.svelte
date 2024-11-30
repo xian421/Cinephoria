@@ -4,12 +4,8 @@
     import { authStore } from '../stores/authStore.js';
     import { onMount } from 'svelte';
     import Swal from 'sweetalert2';
-    import { createEventDispatcher } from 'svelte';
+    export let admin = false;
 
-    export let component; // Die zu rendernde Komponente
-    export let admin = false; // Ob Admin-Rechte erforderlich sind
-
-    // Reaktive Zuweisung der Store-Werte
     $: isLoggedIn = $authStore.isLoggedIn;
     $: isAdmin = $authStore.isAdmin;
 
@@ -35,5 +31,5 @@
 </script>
 
 {#if isLoggedIn && (!admin || isAdmin)}
-    <svelte:component this={component} />
+    <slot />
 {/if}
