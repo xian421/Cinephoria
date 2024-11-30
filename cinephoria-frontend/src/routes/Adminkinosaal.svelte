@@ -17,6 +17,7 @@
     onMount(async () => {
       const token = getTokenFromCookies();
       try {
+        TimeRanges.sleep(50);
         const response = await fetch("https://cinephoria-backend-c53f94f0a255.herokuapp.com/screens", {
           headers: {
             'Authorization': `Bearer ${token}`
