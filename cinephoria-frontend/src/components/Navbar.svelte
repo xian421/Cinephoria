@@ -24,9 +24,9 @@
     nav {
       display: flex;
       align-items: center;
-      justify-content: space-between;
+      justify-content: space-around;
       background: #ffffff;
-      padding: 1rem 2rem;
+      padding: 1rem;
       border-radius: 12px;
       box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
       position: sticky;
@@ -40,14 +40,14 @@
       align-items: center;
       gap: 0.5rem;
       text-decoration: none;
-      color: #333;
-      font-size: 1.5rem;
+      color: white;
+      font-size: 1.2rem;
       font-weight: bold;
       transition: transform 0.4s ease;
     }
   
     .logo:hover {
-      transform: scale(1.05);
+      transform: scale(1.25);
     }
   
     .logo img {
@@ -56,69 +56,63 @@
       object-fit: contain;
     }
   
-    /* Navigationsbuttons */
-    .nav-buttons {
-      display: flex;
-      gap: 1rem;
-    }
-
-    button.nav-button {
-      font-size: 1rem;
+    /* Button-Stile */
+    button {
+      font-size: 1.2rem;
       font-weight: bold;
-      color: #333;
+      color: rgb(0, 0, 0);
       background: #ffffff;
       border: 2px solid transparent;
-      border-radius: 8px;
-      padding: 0.5rem 1rem;
+      border-radius: 12px;
+      padding: 1rem 2rem;
       box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
       cursor: pointer;
       transition: all 0.3s ease;
-      min-width: 120px;
+      min-width: 160px;
       text-align: center;
     }
   
-    button.nav-button:hover {
+    button:hover {
       border-color: #1abc9c;
+      transform: scale(1.1);
+    }
+  
+    button.active {
+      color: rgb(0, 0, 0);
+      border-color: rgb(21, 151, 112);
       transform: scale(1.05);
     }
   
-    button.nav-button.active {
-      color: #1abc9c;
-      border-color: #1abc9c;
-      transform: scale(1.05);
-    }
-  
-    /* Dropdown-Stile */
+    /* Login-Dropdown-Stile */
     .dropdown-container {
       position: relative;
     }
   
-    .dropdown-menu, .profile-dropdown-menu {
+    .dropdown-menu {
       display: flex;
       flex-direction: column;
-      align-items: flex-start;
+      align-items: center;
       justify-content: center;
       position: absolute;
       top: calc(100% + 10px);
       right: 0;
       background: #ffffff;
-      padding: 1rem;
+      padding: 1rem 20px;
       box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
       border-radius: 12px;
       z-index: 1000;
-      width: 200px;
+      width: 300px;
       transform: scaleY(0);
       transform-origin: top;
       transition: transform 0.3s ease-in-out;
     }
   
-    .dropdown-container.open .dropdown-menu,
-    .profile-dropdown-container.open .profile-dropdown-menu {
+    .dropdown-container.open .dropdown-menu {
       transform: scaleY(1);
     }
   
     .dropdown-menu input {
-      width: 100%;
+      width: calc(100% - 16px);
       padding: 0.8rem;
       margin: 0.5rem 0;
       border: 1px solid #ccc;
@@ -133,7 +127,7 @@
       box-shadow: 0 0 4px rgba(26, 188, 156, 0.5);
     }
   
-    .dropdown-menu button.submit-button {
+    .dropdown-menu button {
       width: 100%;
       background: #3498db;
       color: #ffffff;
@@ -144,31 +138,62 @@
       border-radius: 12px;
       cursor: pointer;
       transition: all 0.3s ease;
-      margin-top: 0.5rem;
     }
   
-    .dropdown-menu button.submit-button:hover {
+    .dropdown-menu button:hover {
       background: #24b497;
     }
   
-    .dropdown-menu .secondary-buttons {
+    /* Profil-Dropdown-Stile */
+    .profile-dropdown-container {
+      position: relative;
+    }
+  
+    .profile-dropdown-menu {
       display: flex;
-      justify-content: space-between;
-      gap: 10px;
-      margin-top: 0.5rem;
+      flex-direction: column;
+      align-items: flex-start;
+      justify-content: flex-start;
+      position: absolute;
+      top: calc(100% + 10px);
+      right: 0;
+      background: #ffffff;
+      padding: 1rem;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+      border-radius: 12px;
+      z-index: 1000;
+      width: 200px;
+      transform: scaleY(0);
+      transform-origin: top;
+      transition: transform 0.3s ease-in-out;
+    }
+  
+    .profile-dropdown-container.open .profile-dropdown-menu {
+      transform: scaleY(1);
+    }
+  
+    .profile-dropdown-menu ul {
+      list-style: none;
+      padding: 0;
+      margin: 0;
       width: 100%;
     }
   
-    .dropdown-menu .secondary-buttons button {
-      background: none;
-      border: none;
-      color: #007bff;
+    .profile-dropdown-menu li {
+      padding: 0.8rem;
+      font-size: 1rem;
+      color: #333;
       cursor: pointer;
-      font-size: 0.9rem;
-      padding: 0;
+      transition: background-color 0.3s ease;
+      width: 100%;
+      text-align: left;
     }
   
-    /* Profil-Dropdown-Stile */
+    .profile-dropdown-menu li:hover {
+      background-color: #f0f0f0;
+      border-radius: 8px;
+    }
+  
     .profile-container {
       display: flex;
       align-items: center;
@@ -176,11 +201,8 @@
       cursor: pointer;
       font-size: 1rem;
       font-weight: bold;
-      color: #333;
+      color: black;
       transition: all 0.3s ease;
-      background: none;
-      border: none;
-      padding: 0;
     }
   
     .profile-container:hover {
@@ -194,34 +216,36 @@
       align-items: center;
       justify-content: center;
       border-radius: 50%;
-      background-color: #e74c3c; /* Rotes Design */
+      background-color: red;
       color: white;
-      font-size: 1rem;
+      font-size: 20px;
       font-weight: bold;
     }
-  
-    .profile-dropdown-menu ul {
-      list-style: none;
+
+    /* Zusätzliche Styles für die Dropdown-Buttons */
+    .profile-dropdown-menu button.dropdown-item {
+      background: none;
+      border: none;
       padding: 0;
       margin: 0;
-      width: 100%;
-    }
-  
-    .profile-dropdown-menu li {
-      width: 100%;
-      padding: 0.8rem;
       font-size: 1rem;
       color: #333;
       cursor: pointer;
-      transition: background-color 0.3s ease;
-      border: none;
-      background: none;
+      width: 100%;
       text-align: left;
     }
-  
-    .profile-dropdown-menu li:hover {
+
+    .profile-dropdown-menu button.dropdown-item:hover {
       background-color: #f0f0f0;
       border-radius: 8px;
+    }
+
+    /* Fokus-Stile für bessere Zugänglichkeit */
+    button:focus, 
+    .profile-dropdown-menu button.dropdown-item:focus, 
+    .dropdown-menu button:focus {
+      outline: 2px solid #1abc9c;
+      outline-offset: 2px;
     }
 </style>
 
@@ -232,61 +256,120 @@
     </a>
 
     <!-- Navigationsbuttons -->
-    <div class="nav-buttons">
-        <button
-            class="nav-button {currentPath === '/' ? 'active' : ''}"
-            on:click={() => navigate('/')}
-        >
-            Alle Filme
-        </button>
-        <button
-            class="nav-button {currentPath === '/nowplaying' ? 'active' : ''}"
-            on:click={() => navigate('/nowplaying')}
-        >
-            Programm
-        </button>
-        <button
-            class="nav-button {currentPath === '/upcoming' ? 'active' : ''}"
-            on:click={() => navigate('/upcoming')}
-        >
-            Upcoming
-        </button>
-        <button
-            class="nav-button {currentPath === '/sitzplan' ? 'active' : ''}"
-            on:click={() => navigate('/sitzplan')}
-        >
-            Sitzplan
-        </button>
-    </div>
+    <button
+        class="{currentPath === '/' ? 'active' : ''}"
+        on:click={() => navigate('/')}
+    >
+        Alle Filme
+    </button>
+    <button
+        class="{currentPath === '/nowplaying' ? 'active' : ''}"
+        on:click={() => navigate('/nowplaying')}
+    >
+        Programm
+    </button>
+    <button
+        class="{currentPath === '/upcoming' ? 'active' : ''}"
+        on:click={() => navigate('/upcoming')}
+    >
+        Upcoming
+    </button>
+    <button
+        class="{currentPath === '/sitzplan' ? 'active' : ''}"
+        on:click={() => navigate('/sitzplan')}
+    >
+        Sitzplan
+    </button>
 
     <!-- Benutzerbereich -->
     {#if isLoggedIn}
         <!-- Profil-Dropdown -->
-        <div class="dropdown-container profile-dropdown-container {isProfileDropdownOpen ? 'open' : ''}">
+        <div class="profile-dropdown-container {isProfileDropdownOpen ? 'open' : ''}">
             <!-- Verwende einen Button für die Profil-Initialen -->
-            <button class="profile-container" on:click={toggleProfileMenu} aria-haspopup="true" aria-expanded={isProfileDropdownOpen}>
-                <div class="profile-initials" aria-label="Benutzerprofil">{initials}</div>
+            <button 
+                class="profile-container" 
+                on:click={toggleProfileMenu} 
+                aria-haspopup="true" 
+                aria-expanded={isProfileDropdownOpen}
+            >
+                <div class="profile-initials">{initials}</div>
             </button>
             <div class="profile-dropdown-menu">
                 <ul>
-                    <li><button on:click={() => navigate('/profil')}>Profil anzeigen</button></li>
-                    <li><button on:click={() => navigate('/einstellungen')}>Einstellungen</button></li>
-                    <li><button on:click={logout}>Abmelden</button></li>
+                    <li>
+                        <button 
+                            on:click={() => navigate('/profil')} 
+                            class="dropdown-item"
+                            aria-label="Profil anzeigen"
+                        >
+                            Profil anzeigen
+                        </button>
+                    </li>
+                    <li>
+                        <button 
+                            on:click={() => navigate('/einstellungen')} 
+                            class="dropdown-item"
+                            aria-label="Einstellungen"
+                        >
+                            Einstellungen
+                        </button>
+                    </li>
+                    <li>
+                        <button 
+                            on:click={logout} 
+                            class="dropdown-item"
+                            aria-label="Abmelden"
+                        >
+                            Abmelden
+                        </button>
+                    </li>
                 </ul>
             </div>
         </div>
     {:else}
         <!-- Login-Dropdown -->
         <div class="dropdown-container {isLoginOpen ? 'open' : ''}">
-            <button on:click={toggleLoginDropdown} aria-haspopup="true" aria-expanded={isLoginOpen}>Login</button>
+            <button 
+                on:click={toggleLoginDropdown} 
+                aria-haspopup="true" 
+                aria-expanded={isLoginOpen}
+            >
+                Login
+            </button>
             <div class="dropdown-menu">
                 <form on:submit|preventDefault={handleLogin}>
-                    <input type="email" placeholder="E-Mail" bind:value={email} required aria-label="E-Mail" />
-                    <input type="password" placeholder="Passwort" bind:value={password} required aria-label="Passwort" />
-                    <button type="submit" class="submit-button">Einloggen</button>
-                    <div class="secondary-buttons">
-                        <button type="button" on:click={() => navigate('/register')}>Stattdessen Registrieren</button>
-                        <button type="button" on:click={() => navigate('/forgot-password')}>Passwort vergessen?</button>
+                    <input 
+                        type="email" 
+                        placeholder="E-Mail" 
+                        bind:value={email} 
+                        required 
+                        aria-label="E-Mail" 
+                    />
+                    <input 
+                        type="password" 
+                        placeholder="Passwort" 
+                        bind:value={password} 
+                        required 
+                        aria-label="Passwort" 
+                    />
+                    <button type="submit">Einloggen</button>
+                    <div style="display: flex; justify-content: space-between; gap: 10px; margin-top: 10px;">
+                        <button 
+                            type="button" 
+                            on:click={() => navigate('/register')} 
+                            style="background: none; border: none; color: #007bff; cursor: pointer;"
+                            aria-label="Stattdessen Registrieren"
+                        >
+                            Stattdessen Registrieren
+                        </button>
+                        <button 
+                            type="button" 
+                            on:click={() => navigate('/forgot-password')} 
+                            style="background: none; border: none; color: #007bff; cursor: pointer;"
+                            aria-label="Passwort vergessen"
+                        >
+                            Passwort vergessen?
+                        </button>
                     </div>
                 </form>
             </div>
