@@ -83,6 +83,8 @@
       transform: scale(1.05);
     }
   
+    
+  
     /* Login-Dropdown-Stile */
     .dropdown-container {
       position: relative;
@@ -221,33 +223,7 @@
       font-size: 20px;
       font-weight: bold;
     }
-
-    /* Zusätzliche Styles für die Dropdown-Buttons */
-    .profile-dropdown-menu button.dropdown-item {
-      background: none;
-      border: none;
-      padding: 0;
-      margin: 0;
-      font-size: 1rem;
-      color: #333;
-      cursor: pointer;
-      width: 100%;
-      text-align: left;
-    }
-
-    .profile-dropdown-menu button.dropdown-item:hover {
-      background-color: #f0f0f0;
-      border-radius: 8px;
-    }
-
-    /* Fokus-Stile für bessere Zugänglichkeit */
-    button:focus, 
-    .profile-dropdown-menu button.dropdown-item:focus, 
-    .dropdown-menu button:focus {
-      outline: 2px solid #1abc9c;
-      outline-offset: 2px;
-    }
-</style>
+  </style>
 
 <nav>
     <!-- Logo -->
@@ -285,89 +261,31 @@
     {#if isLoggedIn}
         <!-- Profil-Dropdown -->
         <div class="profile-dropdown-container {isProfileDropdownOpen ? 'open' : ''}">
-            <!-- Verwende einen Button für die Profil-Initialen -->
-            <button 
-                class="profile-container" 
-                on:click={toggleProfileMenu} 
-                aria-haspopup="true" 
-                aria-expanded={isProfileDropdownOpen}
-            >
+            <div class="profile-container" on:click={toggleProfileMenu}>
                 <div class="profile-initials">{initials}</div>
-            </button>
+            </div>
             <div class="profile-dropdown-menu">
                 <ul>
-                    <li>
-                        <button 
-                            on:click={() => navigate('/profil')} 
-                            class="dropdown-item"
-                            aria-label="Profil anzeigen"
-                        >
-                            Profil anzeigen
-                        </button>
-                    </li>
-                    <li>
-                        <button 
-                            on:click={() => navigate('/einstellungen')} 
-                            class="dropdown-item"
-                            aria-label="Einstellungen"
-                        >
-                            Einstellungen
-                        </button>
-                    </li>
-                    <li>
-                        <button 
-                            on:click={logout} 
-                            class="dropdown-item"
-                            aria-label="Abmelden"
-                        >
-                            Abmelden
-                        </button>
-                    </li>
+                    <li on:click={() => navigate('/profil')}>Profil anzeigen</li>
+                    <li on:click={() => navigate('/einstellungen')}>Einstellungen</li>
+                    <li on:click={logout}>Abmelden</li>
                 </ul>
             </div>
         </div>
     {:else}
         <!-- Login-Dropdown -->
         <div class="dropdown-container {isLoginOpen ? 'open' : ''}">
-            <button 
-                on:click={toggleLoginDropdown} 
-                aria-haspopup="true" 
-                aria-expanded={isLoginOpen}
-            >
-                Login
-            </button>
+            <button on:click={toggleLoginDropdown}>Login</button>
             <div class="dropdown-menu">
                 <form on:submit|preventDefault={handleLogin}>
-                    <input 
-                        type="email" 
-                        placeholder="E-Mail" 
-                        bind:value={email} 
-                        required 
-                        aria-label="E-Mail" 
-                    />
-                    <input 
-                        type="password" 
-                        placeholder="Passwort" 
-                        bind:value={password} 
-                        required 
-                        aria-label="Passwort" 
-                    />
+                    <input type="email" placeholder="E-Mail" bind:value={email} required />
+                    <input type="password" placeholder="Passwort" bind:value={password} required />
                     <button type="submit">Einloggen</button>
                     <div style="display: flex; justify-content: space-between; gap: 10px; margin-top: 10px;">
-                        <button 
-                            type="button" 
-                            on:click={() => navigate('/register')} 
-                            style="background: none; border: none; color: #007bff; cursor: pointer;"
-                            aria-label="Stattdessen Registrieren"
-                        >
+                        <button type="button" on:click={() => navigate('/register')} style="background: none; border: none; color: #007bff; cursor: pointer;">
                             Stattdessen Registrieren
                         </button>
-                        <button 
-                            type="button" 
-                            on:click={() => navigate('/forgot-password')} 
-                            style="background: none; border: none; color: #007bff; cursor: pointer;"
-                            aria-label="Passwort vergessen"
-                        >
+                        <button type="button" on:click={() => navigate('/forgot-password')} style="background: none; border: none; color: #007bff; cursor: pointer;">
                             Passwort vergessen?
                         </button>
                     </div>
@@ -376,3 +294,4 @@
         </div>
     {/if}
 </nav>
+
