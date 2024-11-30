@@ -53,4 +53,37 @@ export const fetchScreens = async (token) => {
     return data;
 };
 
-// Weitere API-Aufrufe hier...
+
+export async function fetchSeats(screen_id, token) {
+    try {
+        const response = await fetch(`${API_BASE_URL}/seats?&screen_id=${screen_id}`, {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json',
+            },
+        });
+
+        if (!response.ok) {
+            throw new Error('Fehler beim Abrufen der Sitze');
+        }
+
+        const data = await response.json();
+        return data; // Stelle sicher, dass data das Feld 'seats' enthält
+    } catch (error) {
+        console.error('Error fetching seats:', error);
+        throw error;
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+

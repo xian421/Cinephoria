@@ -27,18 +27,12 @@
   import Navbar from './components/Navbar.svelte';
   import Footer from './components/Footer.svelte';
 
-  // Exportierte Eigenschaften
-  export let url = ""; // Für Server-Side Rendering (SSR)
-
-  // Konstanten
-  const KONTAKT_URL = 'https://cinephoria-backend-c53f94f0a255.herokuapp.com/cinemas';
-
   // State-Variablen
   let currentPath = "";
   let email = "";
   let password = "";
   let kontakt = [];
-  let firstCinema = {};
+  let firstCinema = "";
 
   // Reaktive Zuweisung der Store-Werte
   $: isLoggedIn = $authStore.isLoggedIn;
@@ -51,15 +45,12 @@
   // Ladezustand
   let isLoading = true;
 
-  // Navigationsfunktionen
-  const handleRouteChange = () => {
-      currentPath = window.location.pathname;
-  };
-
   // Event-Listener für Popstate (Browser-Zurück-Button)
   if (typeof window !== "undefined") {
-      window.addEventListener("popstate", handleRouteChange);
-      handleRouteChange();
+      window.addEventListener("popstate", () => {
+          currentPath = window.location.pathname;
+          scrollToTop();
+      });
   }
 
   const scrollToTop = () => {
@@ -171,10 +162,10 @@
           console.error('Fehler beim Laden des Kontakts: ', error);
       }
 
-      const token = localStorage.getItem('token');
-      if (token) {
+      const storedToken = localStorage.getItem('token');
+      if (storedToken) {
           try {
-              const data = await validateToken(token);
+              const data = await validateToken(storedToken);
               console.log('Validate Token Response:', data);
 
               // Da validateToken keine isValid zurückgibt, setze den Auth-Zustand direkt
@@ -184,7 +175,7 @@
                   userLastName: data.last_name,
                   initials: data.initials,
                   isAdmin: data.role.toLowerCase() === 'admin',
-                  token: token,
+                  token: storedToken,
               }));
           } catch (error) {
               console.error("Fehler beim Validieren des Tokens:", error);
@@ -207,7 +198,7 @@
 {#if isLoading}
   <p>Loading...</p>
 {:else}
-  <Router {url}>
+  <Router>
       <Navbar 
           currentPath={currentPath} 
           toggleLoginDropdown={toggleLoginDropdown} 
@@ -223,33 +214,40 @@
       />
 
       <!-- Routen -->
-      <div>
-          <Route path="/" component={Home} />
-          <Route path="/nowplaying" component={NowPlaying} />
-          <Route path="/upcoming" component={Upcoming} />
-          <Route path="*" component={NotFound} />
-          <Route path="/test" component={Test} />
-          <Route path="/sitzplan" component={Sitzplan} />
-          <Route path="/register" component={Register} />
-          <Route path="/forgot-password" component={Forgotpassword} />
+      <Route path="/" component={Home} />
+      <Route path="/nowplaying" component={NowPlaying} />
+      <Route path="/upcoming" component={Upcoming} />
+      <Route path="/sitzplan" component={Sitzplan} />
+      <Route path="/register" component={Register} />
+      <Route path="/forgot-password" component={Forgotpassword} />
 
-          <!-- Geschützte Admin-Routen mit ProtectedRoute -->
-          <Route path="/adminkinosaal" let:params>
-              <ProtectedRoute admin={true}>
-                  <Adminkinosaal />
-              </ProtectedRoute>
-          </Route>
-          <Route path="/adminseats/:screenId" let:params>
-              <ProtectedRoute admin={true}>
-                  <Adminseats />
-              </ProtectedRoute>
-          </Route>
+      <!-- Geschützte Admin-Routen mit ProtectedRoute -->
+      <Route path="/adminkinosaal" let:params>
+          <ProtectedRoute admin={true}>
+              <Adminkinosaal />
+          </ProtectedRoute>
+      </Route>
+      <Route path="/adminseats/:screenId" let:params>
+          <ProtectedRoute admin={true}>
+              <Adminseats screenId={params.screenId} />
+          </ProtectedRoute>
+      </Route>
 
-          <Route path="/beschreibung/:id" component={Beschreibung} />
-          <Route path="/unauthorized" component={Unauthorized} />
-          <!-- Weitere Routen -->
-      </div>
+      <Route path="/beschreibung/:id" component={Beschreibung} />
+      <Route path="/unauthorized" component={Unauthorized} />
+      <Route path="*" component={NotFound} />
 
       <Footer firstCinema={firstCinema} />
   </Router>
 {/if}
+
+<style>
+  /* Optional: Füge einige globale Styles hinzu */
+  body {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: Arial, sans-serif;
+      background-color: #f9f9f9;
+  }
+</style>
