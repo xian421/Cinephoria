@@ -1,7 +1,7 @@
 <!-- src/routes/Adminkinosaal.svelte -->
 <script>
     import { onMount } from "svelte";
-    import { Link, navigate } from "svelte-routing";
+    import { Link } from "svelte-routing";
     import { fetchScreens } from '../services/api.js'; // Importiere die fetchScreens Funktion aus api.js
     import Swal from 'sweetalert2';
     import { authStore } from '../stores/authStore.js';

@@ -177,26 +177,15 @@
               const data = await validateToken(token);
               console.log('Validate Token Response:', data);
 
-              if (data.isValid) { // Annahme, dass das Backend ein Feld 'isValid' zurückgibt
-                  updateAuth(current => ({
-                      isLoggedIn: true,
-                      userFirstName: data.first_name,
-                      userLastName: data.last_name,
-                      initials: data.initials,
-                      isAdmin: data.role.toLowerCase() === 'admin',
-                      token: token,
-                  }));
-              } else {
-                  localStorage.removeItem('token');
-                  setAuth({
-                      isLoggedIn: false,
-                      userFirstName: '',
-                      userLastName: '',
-                      initials: '',
-                      isAdmin: false,
-                      token: null,
-                  });
-              }
+              // Da validateToken keine isValid zurückgibt, setze den Auth-Zustand direkt
+              updateAuth(current => ({
+                  isLoggedIn: true,
+                  userFirstName: data.first_name,
+                  userLastName: data.last_name,
+                  initials: data.initials,
+                  isAdmin: data.role.toLowerCase() === 'admin',
+                  token: token,
+              }));
           } catch (error) {
               console.error("Fehler beim Validieren des Tokens:", error);
               localStorage.removeItem('token');
