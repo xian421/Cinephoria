@@ -5,15 +5,20 @@
     import { authStore } from '../stores/authStore.js'; // Pfad ggf. anpassen
     import Swal from 'sweetalert2';
 
-    let screens = [];
-    let isAdmin = false;
-    let isLoggedIn = false;
+    // Importieren des Stores als reaktiver Wert
+    import { get } from 'svelte/store';
+    
+    // Reaktive Zuweisung
+    let isLoggedIn;
+    let isAdmin;
 
     // Abonnieren des authStore
     authStore.subscribe(value => {
         isLoggedIn = value.isLoggedIn;
         isAdmin = value.isAdmin;
     });
+
+    let screens = [];
 
     onMount(async () => {
         if (!isLoggedIn) {
@@ -114,7 +119,7 @@
     gap: 20px;
     padding: 20px;
 }
-  
+
 .card {
     position: relative;
     background: #333; /* Fallback-Farbe */
@@ -165,15 +170,15 @@
     opacity: 0;
     transition: opacity 0.3s ease-in-out;
 }
-  
+
 .card:hover .card-overlay {
     opacity: 1;
 }
-  
+
 .card-info {
     text-align: center;
 }
-  
+
 .card-info p {
     margin: 5px 0;
     font-size: 1rem;

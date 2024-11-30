@@ -39,13 +39,17 @@
   let kontakt = [];
   let firstCinema = {};
 
-  // Abonnieren des Stores
+  // Authentifizierungs-Status
   let isLoggedIn;
   let isAdmin;
   let userFirstName;
   let userLastName;
   let initials;
 
+  // Ladezustand
+  let isLoading = true;
+
+  // Abonnieren des Stores
   authStore.subscribe(value => {
       isLoggedIn = value.isLoggedIn;
       isAdmin = value.isAdmin;
@@ -107,7 +111,6 @@
           const data = await response.json();
           console.log('Login Response:', data);  // Debugging-Log
 
-
           if (response.ok) {
               // Login erfolgreich
               email = "";
@@ -123,7 +126,7 @@
                   userFirstName: data.first_name,
                   userLastName: data.last_name,
                   initials: data.initials,
-                  isAdmin: data.role === 'admin', // Setze Admin-Status basierend auf der Rolle
+                  isAdmin: data.role.toLowerCase() === 'admin', // Setze Admin-Status basierend auf der Rolle
               }));
 
               Swal.fire({
@@ -204,7 +207,7 @@
               });
 
               const data = await response.json();
-              console.log('Validate Token Response:', data);
+              console.log('Validate Token Response:', data); // Debugging-Log
 
               if (response.ok) {
                   // Token ist gültig, aktualisiere den Store mit den Benutzerdaten
@@ -214,7 +217,7 @@
                       userFirstName: data.first_name,
                       userLastName: data.last_name,
                       initials: data.initials,
-                      isAdmin: data.role === 'admin',
+                      isAdmin: data.role.toLowerCase() === 'admin',
                   }));
               } else {
                   // Ungültiges Token, entferne es aus localStorage
@@ -239,9 +242,11 @@
               });
           }
       }
+
+      // Setze den Ladezustand auf false, nachdem die Authentifizierung abgeschlossen ist
+      isLoading = false;
   });
 </script>
-
 
 <style>
   /* Navbar-Stile */
@@ -557,158 +562,165 @@
   }
 </style>
 
-<Router {url}>
-  <!-- Navbar -->
-  <nav>
-      <!-- Logo -->
-      <a href="/" class="logo" on:click={() => navigate('/')}>
-          <img src="/Logo.png" alt="Logo" />
-      </a>
+{#if isLoading}
+  <p>Loading...</p>
+{:else}
+  <Router {url}>
+      <!-- Navbar -->
+      <nav>
+          <!-- Logo -->
+          <a href="/" class="logo" on:click={() => navigate('/')}>
+              <img src="/Logo.png" alt="Logo" />
+          </a>
 
-      <!-- Navigationsbuttons -->
-      <button
-          class="{currentPath === '/' ? 'active' : ''}"
-          on:click={() => navigate('/')}
-      >
-          Alle Filme
-      </button>
-      <button
-          class="{currentPath === '/nowplaying' ? 'active' : ''}"
-          on:click={() => navigate('/nowplaying')}
-      >
-          Programm
-      </button>
-      <button
-          class="{currentPath === '/upcoming' ? 'active' : ''}"
-          on:click={() => navigate('/upcoming')}
-      >
-          Upcoming
-      </button>
-      <button
-          class="{currentPath === '/sitzplan' ? 'active' : ''}"
-          on:click={() => navigate('/sitzplan')}
-      >
-          Sitzplan
-      </button>
-
-      <!-- Benutzerbereich -->
-      {#if isLoggedIn}
-          <!-- Profil-Dropdown -->
-          <div class="profile-dropdown-container {isProfileDropdownOpen ? 'open' : ''}">
-              <div class="profile-container" on:click={toggleProfileMenu}>
-                  <div class="profile-initials">{initials}</div>
-              </div>
-              <div class="profile-dropdown-menu">
-                  <ul>
-                      <li on:click={() => navigate('/profil')}>Profil anzeigen</li>
-                      <li on:click={() => navigate('/einstellungen')}>Einstellungen</li>
-                      <li on:click={logout}>Abmelden</li>
-                  </ul>
-              </div>
-          </div>
-      {:else}
-          <!-- Login-Dropdown -->
-          <div class="dropdown-container {isLoginOpen ? 'open' : ''}">
-              <button on:click={toggleLoginDropdown}>Login</button>
-              <div class="dropdown-menu">
-                  <form on:submit|preventDefault={handleLogin}>
-                      <input type="email" placeholder="E-Mail" bind:value={email} required />
-                      <input type="password" placeholder="Passwort" bind:value={password} required />
-                      <button type="submit">Einloggen</button>
-                      <div style="display: flex; justify-content: space-between; gap: 10px; margin-top: 10px;">
-                          <button type="button" on:click={() => navigate('/register')} style="background: none; border: none; color: #007bff; cursor: pointer;">
-                              Stattdessen Registrieren
-                          </button>
-                          <button type="button" on:click={() => navigate('/forgot-password')} style="background: none; border: none; color: #007bff; cursor: pointer;">
-                              Passwort vergessen?
-                          </button>
-                      </div>
-                  </form>
-              </div>
-          </div>
-      {/if}
-  </nav>
-
-  <!-- Routen -->
-  <div>
-      <Route path="/" component={Home} />
-      <Route path="/nowplaying" component={NowPlaying} />
-      <Route path="/upcoming" component={Upcoming} />
-      <Route path="*" component={NotFound} />
-      <Route path="/test" component={Test} />
-      <Route path="/sitzplan" component={Sitzplan} />
-      <Route path="/register" component={Register} />
-      <Route path="/forgot-password" component={Forgotpassword} />
-      <!-- Admin-Routen -->
-      <Route path="/adminkinosaal" component={Adminkinosaal} />
-      <Route path="/adminseats/:screenId" component={Adminseats} />
-      <Route path="/beschreibung/:id" component={Beschreibung} />
-      <Route path="/unauthorized" component={Unauthorized} />
-      <!-- Weitere Routen, wie z.B. Profil oder Einstellungen -->
-  </div>
-
-  <!-- Footer -->
-  <footer>
-      <!-- Interaktive Buttons -->
-      <div class="footer-buttons">
-          <button on:click={() => Swal.fire({
-              title: "Kontakt",
-              icon: "info",
-              html: `
-                  <h2>${firstCinema.name}</h2>
-                  <p>Standort: ${firstCinema.location}<br />
-                  Telefax: ${firstCinema.contact_number}<br />
-              `,
-              confirmButtonText: "Schließen"
-          })}>
-              Kontakt
+          <!-- Navigationsbuttons -->
+          <button
+              class="{currentPath === '/' ? 'active' : ''}"
+              on:click={() => navigate('/')}
+          >
+              Alle Filme
           </button>
-          <button on:click={() => Swal.fire({
-              title: "Impressum",
-              icon: "info",
-              html: `
-                  <p>Max Mustermann<br />
-                  Musterweg 111<br />
-                  Hausnummer 44<br />
-                  90210 Musterstadt</p>
-                  <h2>Kontakt</h2>
-                  <p>Telefon: +49 (0) 123 44 55 66<br />
-                  Telefax: +49 (0) 123 44 55 99<br />
-                  E-Mail: mustermann@musterfirma.de</p>
-              `,
-              confirmButtonText: "Schließen"
-          })}>
-              Impressum
+          <button
+              class="{currentPath === '/nowplaying' ? 'active' : ''}"
+              on:click={() => navigate('/nowplaying')}
+          >
+              Programm
           </button>
-          <button on:click={() => alert("Datenschutz anzeigen!")}>
-              Datenschutz
+          <button
+              class="{currentPath === '/upcoming' ? 'active' : ''}"
+              on:click={() => navigate('/upcoming')}
+          >
+              Upcoming
           </button>
+          <button
+              class="{currentPath === '/sitzplan' ? 'active' : ''}"
+              on:click={() => navigate('/sitzplan')}
+          >
+              Sitzplan
+          </button>
+
+          <!-- Benutzerbereich -->
+          {#if isLoggedIn}
+              <!-- Profil-Dropdown -->
+              <div class="profile-dropdown-container {isProfileDropdownOpen ? 'open' : ''}">
+                  <div class="profile-container" on:click={toggleProfileMenu}>
+                      <div class="profile-initials">{initials}</div>
+                  </div>
+                  <div class="profile-dropdown-menu">
+                      <ul>
+                          <li on:click={() => navigate('/profil')}>Profil anzeigen</li>
+                          <li on:click={() => navigate('/einstellungen')}>Einstellungen</li>
+                          <li on:click={logout}>Abmelden</li>
+                      </ul>
+                  </div>
+              </div>
+          {:else}
+              <!-- Login-Dropdown -->
+              <div class="dropdown-container {isLoginOpen ? 'open' : ''}">
+                  <button on:click={toggleLoginDropdown}>Login</button>
+                  <div class="dropdown-menu">
+                      <form on:submit|preventDefault={handleLogin}>
+                          <input type="email" placeholder="E-Mail" bind:value={email} required />
+                          <input type="password" placeholder="Passwort" bind:value={password} required />
+                          <button type="submit">Einloggen</button>
+                          <div style="display: flex; justify-content: space-between; gap: 10px; margin-top: 10px;">
+                              <button type="button" on:click={() => navigate('/register')} style="background: none; border: none; color: #007bff; cursor: pointer;">
+                                  Stattdessen Registrieren
+                              </button>
+                              <button type="button" on:click={() => navigate('/forgot-password')} style="background: none; border: none; color: #007bff; cursor: pointer;">
+                                  Passwort vergessen?
+                              </button>
+                          </div>
+                      </form>
+                  </div>
+              </div>
+          {/if}
+      </nav>
+
+      <!-- Routen -->
+      <div>
+          <Route path="/" component={Home} />
+          <Route path="/nowplaying" component={NowPlaying} />
+          <Route path="/upcoming" component={Upcoming} />
+          <Route path="*" component={NotFound} />
+          <Route path="/test" component={Test} />
+          <Route path="/sitzplan" component={Sitzplan} />
+          <Route path="/register" component={Register} />
+          <Route path="/forgot-password" component={Forgotpassword} />
+          <!-- Admin-Routen -->
+          <Route path="/adminkinosaal" component={Adminkinosaal} />
+          <Route path="/adminseats/:screenId" component={Adminseats} />
+          <Route path="/beschreibung/:id" component={Beschreibung} />
+          <Route path="/unauthorized" component={Unauthorized} />
+          <!-- Weitere Routen, wie z.B. Profil oder Einstellungen -->
       </div>
 
-      <!-- Social-Media-Icons -->
-      <div class="social-icons">
-          <a href="https://facebook.com" target="_blank" aria-label="Facebook">
-              <img src="/facebook.png" alt="Facebook" />
-          </a>
-          <a href="https://twitter.com" target="_blank" aria-label="Twitter">
-              <img src="/twitter.png" alt="Twitter" />
-          </a>
-          <a href="https://instagram.com" target="_blank" aria-label="Instagram">
-              <img src="/instagram.png" alt="Instagram" />
-          </a>
-          <a href="https://linkedin.com" target="_blank" aria-label="LinkedIn">
-              <img src="/linked.png" alt="LinkedIn" />
-          </a>
-      </div>
+      <!-- Footer -->
+      <footer>
+          <!-- Interaktive Buttons -->
+          <div class="footer-buttons">
+              <button on:click={() => Swal.fire({
+                  title: "Kontakt",
+                  icon: "info",
+                  html: `
+                      <h2>${firstCinema.name}</h2>
+                      <p>Standort: ${firstCinema.location}<br />
+                      Telefax: ${firstCinema.contact_number}<br />
+                  `,
+                  confirmButtonText: "Schließen"
+              })}>
+                  Kontakt
+              </button>
+              <button on:click={() => Swal.fire({
+                  title: "Impressum",
+                  icon: "info",
+                  html: `
+                      <p>Max Mustermann<br />
+                      Musterweg 111<br />
+                      Hausnummer 44<br />
+                      90210 Musterstadt</p>
+                      <h2>Kontakt</h2>
+                      <p>Telefon: +49 (0) 123 44 55 66<br />
+                      Telefax: +49 (0) 123 44 55 99<br />
+                      E-Mail: mustermann@musterfirma.de</p>
+                  `,
+                  confirmButtonText: "Schließen"
+              })}>
+                  Impressum
+              </button>
+              <button on:click={() => alert("Datenschutz anzeigen!")}>
+                  Datenschutz
+              </button>
+          </div>
 
-      <!-- Scroll-to-Top Button -->
-      <button class="scroll-to-top" on:click={scrollToTop}>
-          Nach oben
-      </button>
+          <!-- Social-Media-Icons -->
+          <div class="social-icons">
+              <a href="https://facebook.com" target="_blank" aria-label="Facebook">
+                  <img src="/facebook.png" alt="Facebook" />
+              </a>
+              <a href="https://twitter.com" target="_blank" aria-label="Twitter">
+                  <img src="/twitter.png" alt="Twitter" />
+              </a>
+              <a href="https://instagram.com" target="_blank" aria-label="Instagram">
+                  <img src="/instagram.png" alt="Instagram" />
+              </a>
+              <a href="https://linkedin.com" target="_blank" aria-label="LinkedIn">
+                  <img src="/linked.png" alt="LinkedIn" />
+              </a>
+          </div>
 
-      <!-- Footer-Text -->
-      <p class="footer-text">
-          © 2024 Cinephoria. Alle Rechte vorbehalten.
-      </p>
-  </footer>
-</Router>
+          <!-- Scroll-to-Top Button -->
+          <button class="scroll-to-top" on:click={scrollToTop}>
+              Nach oben
+          </button>
+
+          <!-- Footer-Text -->
+          <p class="footer-text">
+              © 2024 Cinephoria. Alle Rechte vorbehalten.
+          </p>
+      </footer>
+  </Router>
+{/if}
+
+
+
