@@ -5,44 +5,13 @@
     import { authStore } from '../stores/authStore.js'; // Pfad ggf. anpassen
     import Swal from 'sweetalert2';
 
-    // Importieren des Stores als reaktiver Wert
-    import { get } from 'svelte/store';
-    
-    // Reaktive Zuweisung
-    let isLoggedIn;
-    let isAdmin;
-
-    // Abonnieren des authStore
-    authStore.subscribe(value => {
-        isLoggedIn = value.isLoggedIn;
-        isAdmin = value.isAdmin;
-    });
+    // Reaktive Zuweisung der Store-Werte
+    $: isLoggedIn = $authStore.isLoggedIn;
+    $: isAdmin = $authStore.isAdmin;
 
     let screens = [];
 
     onMount(async () => {
-        if (!isLoggedIn) {
-            Swal.fire({
-                title: "Nicht autorisiert",
-                text: "Bitte loggen Sie sich ein.",
-                icon: "error",
-                confirmButtonText: "OK",
-            });
-            navigate('/unauthorized');
-            return;
-        }
-
-        if (!isAdmin) {
-            Swal.fire({
-                title: "Zugriff verweigert",
-                text: "Sie haben keine Admin-Rechte.",
-                icon: "error",
-                confirmButtonText: "OK",
-            });
-            navigate('/unauthorized');
-            return;
-        }
-
         const token = localStorage.getItem('token');
         if (!token) {
             Swal.fire({
@@ -115,19 +84,19 @@
 <style>
 .admin-page {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); /* Responsiv: Karten passen sich an */
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
     gap: 20px;
     padding: 20px;
 }
 
 .card {
     position: relative;
-    background: #333; /* Fallback-Farbe */
+    background: #333;
     border-radius: 12px;
     overflow: hidden;
     color: white;
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-    text-align: center; /* Zentriert den Text */
+    text-align: center;
     transition: transform 0.3s ease;
 }
 
@@ -143,14 +112,14 @@
 
 .card-name {
     position: absolute;
-    bottom: 10px; /* Am unteren Rand des Bildes */
+    bottom: 10px;
     left: 50%;
     transform: translateX(-50%);
     font-size: 1.5rem;
     font-weight: bold;
-    color: white; /* Sichtbarer Text auf dunklem Hintergrund */
-    text-shadow: 0px 0px 10px rgba(0, 0, 0, 0.8); /* Schatten für bessere Lesbarkeit */
-    background: rgba(0, 0, 0, 0.5); /* Halbtransparenter Hintergrund */
+    color: white;
+    text-shadow: 0px 0px 10px rgba(0, 0, 0, 0.8);
+    background: rgba(0, 0, 0, 0.5);
     padding: 5px 10px;
     border-radius: 8px;
 }
@@ -161,7 +130,7 @@
     left: 0;
     right: 0;
     bottom: 0;
-    background: rgba(0, 0, 0, 0.5); /* Halbtransparentes Overlay */
+    background: rgba(0, 0, 0, 0.5);
     display: flex;
     flex-direction: column;
     justify-content: center;
@@ -185,9 +154,9 @@
 }
 
 .image-container {
-    position: relative; /* Macht das Element relativ für das absolute Positionieren */
+    position: relative;
     width: 100%;
-    aspect-ratio: 16 / 9; /* Seitenverhältnis von 16:9 */
+    aspect-ratio: 16 / 9;
     overflow: hidden;
 }
 

@@ -1,5 +1,6 @@
-<!-- Front end: App.svelte -->
 <script>
+  import './global.css'; // Import der globalen CSS-Datei
+
   // Import von Abhängigkeiten
   import { Router, Route, navigate } from "svelte-routing";
   import { onMount } from 'svelte';
@@ -22,6 +23,9 @@
   // Import von Svelte Stores
   import { authStore } from './stores/authStore.js'; // Pfad ggf. anpassen
 
+  // Import der ProtectedRoute Komponente
+  import ProtectedRoute from './components/ProtectedRoute.svelte';
+
   // Exportierte Eigenschaften
   export let url = ""; // Für Server-Side Rendering (SSR)
 
@@ -39,24 +43,15 @@
   let kontakt = [];
   let firstCinema = {};
 
-  // Authentifizierungs-Status
-  let isLoggedIn;
-  let isAdmin;
-  let userFirstName;
-  let userLastName;
-  let initials;
+  // Reaktive Zuweisung der Store-Werte
+  $: isLoggedIn = $authStore.isLoggedIn;
+  $: isAdmin = $authStore.isAdmin;
+  $: userFirstName = $authStore.userFirstName;
+  $: userLastName = $authStore.userLastName;
+  $: initials = $authStore.initials;
 
   // Ladezustand
   let isLoading = true;
-
-  // Abonnieren des Stores
-  authStore.subscribe(value => {
-      isLoggedIn = value.isLoggedIn;
-      isAdmin = value.isAdmin;
-      userFirstName = value.userFirstName;
-      userLastName = value.userLastName;
-      initials = value.initials;
-  });
 
   // Navigationsfunktionen
   const handleRouteChange = () => {
@@ -647,9 +642,13 @@
           <Route path="/sitzplan" component={Sitzplan} />
           <Route path="/register" component={Register} />
           <Route path="/forgot-password" component={Forgotpassword} />
-          <!-- Admin-Routen -->
-          <Route path="/adminkinosaal" component={Adminkinosaal} />
-          <Route path="/adminseats/:screenId" component={Adminseats} />
+          <!-- Geschützte Admin-Routen mit ProtectedRoute -->
+          <Route path="/adminkinosaal" component={ProtectedRoute} admin={true}>
+              <Adminkinosaal />
+          </Route>
+          <Route path="/adminseats/:screenId" component={ProtectedRoute} admin={true}>
+              <Adminseats />
+          </Route>
           <Route path="/beschreibung/:id" component={Beschreibung} />
           <Route path="/unauthorized" component={Unauthorized} />
           <!-- Weitere Routen, wie z.B. Profil oder Einstellungen -->
@@ -721,6 +720,3 @@
       </footer>
   </Router>
 {/if}
-
-
-
