@@ -262,42 +262,8 @@ def get_screens():
         print(f"Fehler: {e}")
         return jsonify({'error': 'Fehler beim Abrufen der Kinosäle'}), 500
 
-@app.route('/seats', methods=['GET'])
-@admin_required
-def get_seats():
-    screen_id = request.args.get('screen_id', type=int)  # screen_id als Filter
-    if not screen_id:
-        return jsonify({'error': 'screen_id ist erforderlich'}), 400
 
-    try:
-        with psycopg2.connect(DATABASE_URL) as conn:
-            with conn.cursor() as cursor:
-                query = """
-                    SELECT seat_id, screen_id, row, number, type, created_at
-                    FROM seats
-                    WHERE screen_id = %s
-                    ORDER BY row, number
-                """
-                cursor.execute(query, (screen_id,))
-                result = cursor.fetchall()
 
-                seats = [
-                    {
-                        'seat_id': row[0],
-                        'screen_id': row[1],
-                        'row': row[2],
-                        'number': row[3],
-                        'type': row[4],
-                        'created_at': row[5]
-                    }
-                    for row in result
-                ]
-
-        return jsonify({'seats': seats}), 200
-
-    except Exception as e:
-        print(f"Fehler: {e}")
-        return jsonify({'error': 'Fehler beim Abrufen der Sitze'}), 500
 
 @app.route('/register', methods=['POST'])
 def register():
@@ -330,6 +296,49 @@ def register():
         return jsonify({'error': 'Ein Fehler ist aufgetreten'}), 500
 
 
+##############################################################################################################
+##############################################################################################################
+##############################################################################################################
+##############################################################################################################
+# @app.route('/seats', methods=['GET'])
+# @admin_required
+# def get_seats():
+#     screen_id = request.args.get('screen_id', type=int)
+#     if not screen_id:
+#         return jsonify({'error': 'screen_id ist erforderlich'}), 400
+
+#     try:
+#         with psycopg2.connect(DATABASE_URL) as conn:
+#             with conn.cursor() as cursor:
+#                 query = """
+#                     SELECT seat_id, screen_id, row, number, type, created_at
+#                     FROM seats
+#                     WHERE screen_id = %s
+#                     ORDER BY row, number
+#                 """
+#                 cursor.execute(query, (screen_id,))
+#                 result = cursor.fetchall()
+
+#                 seats = [
+#                     {
+#                         'seat_id': row[0],
+#                         'screen_id': row[1],
+#                         'row': row[2],
+#                         'number': row[3],
+#                         'type': row[4],
+#                         'created_at': row[5]
+#                     }
+#                     for row in result
+#                 ]
+
+#         return jsonify({'seats': seats}), 200
+
+#     except Exception as e:
+#         print(f"Fehler: {e}")
+#         return jsonify({'error': 'Fehler beim Abrufen der Sitze'}), 500
+
+
+
 @app.route('/seats', methods=['POST'])
 @admin_required
 def create_seat():
@@ -345,7 +354,6 @@ def create_seat():
     try:
         with psycopg2.connect(DATABASE_URL) as conn:
             with conn.cursor() as cursor:
-                # Überprüfe, ob der Sitz bereits existiert
                 cursor.execute("""
                     SELECT seat_id FROM seats
                     WHERE screen_id = %s AND row = %s AND number = %s
@@ -367,38 +375,24 @@ def create_seat():
         print(f"Fehler beim Erstellen des Sitzes: {e}")
         return jsonify({'error': 'Fehler beim Erstellen des Sitzes'}), 500
 
-@app.route('/seats/<int:seat_id>', methods=['PUT'])
+@app.route('/seats/<int:seat_id>', methods=['DELETE'])
 @admin_required
-def update_seat(seat_id):
-    data = request.get_json()
-    exists = data.get('exists')
-    seat_type = data.get('type', 'standard')
-
-    if exists is None:
-        return jsonify({'error': 'exists ist erforderlich'}), 400
-
+def delete_seat(seat_id):
     try:
         with psycopg2.connect(DATABASE_URL) as conn:
             with conn.cursor() as cursor:
-                if exists:
-                    # Aktualisiere den Sitztyp
-                    cursor.execute("""
-                        UPDATE seats
-                        SET type = %s
-                        WHERE seat_id = %s
-                    """, (seat_type, seat_id))
-                else:
-                    # Entferne den Sitz (optional: lösche ihn aus der Datenbank)
-                    cursor.execute("""
-                        DELETE FROM seats
-                        WHERE seat_id = %s
-                    """, (seat_id,))
-        
-        return jsonify({'message': 'Sitz aktualisiert'}), 200
+                cursor.execute("""
+                    DELETE FROM seats
+                    WHERE seat_id = %s
+                """, (seat_id,))
+                if cursor.rowcount == 0:
+                    return jsonify({'error': 'Sitz nicht gefunden'}), 404
+
+        return jsonify({'message': 'Sitz gelöscht'}), 200
 
     except Exception as e:
-        print(f"Fehler beim Aktualisieren des Sitzes: {e}")
-        return jsonify({'error': 'Fehler beim Aktualisieren des Sitzes'}), 500
+        print(f"Fehler beim Löschen des Sitzes: {e}")
+        return jsonify({'error': 'Fehler beim Löschen des Sitzes'}), 500
 
 @app.route('/seats', methods=['GET'])
 def get_seats():
@@ -430,19 +424,6 @@ def get_seats():
     except Exception as e:
         print(f"Fehler beim Abrufen der Sitze: {e}")
         return jsonify({'error': 'Fehler beim Abrufen der Sitze'}), 500
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 if __name__ == '__main__':
     app.run(debug=True)
