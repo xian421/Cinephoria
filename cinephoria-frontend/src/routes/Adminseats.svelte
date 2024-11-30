@@ -20,7 +20,7 @@
   
     const fetchSeats = async () => {
       var token = getTokenFromCookies();
-      time.sleep(50);
+      await new Promise(resolve => setTimeout(resolve, 50));  // 50ms delay
       token = getTokenFromCookies();
   
       if (!token) {
