@@ -261,14 +261,14 @@
     {#if isLoggedIn}
         <!-- Profil-Dropdown -->
         <div class="profile-dropdown-container {isProfileDropdownOpen ? 'open' : ''}">
-            <div class="profile-container" on:click={toggleProfileMenu}>
+            <button type="button" class="profile-container" on:click={toggleProfileMenu} on:keydown={(e) => e.key === 'Enter' && toggleProfileMenu()} aria-haspopup="true" aria-expanded={isProfileDropdownOpen}>
                 <div class="profile-initials">{initials}</div>
-            </div>
+            </button>
             <div class="profile-dropdown-menu">
                 <ul>
-                    <li on:click={() => navigate('/profil')}>Profil anzeigen</li>
-                    <li on:click={() => navigate('/einstellungen')}>Einstellungen</li>
-                    <li on:click={logout}>Abmelden</li>
+                    <li><button type="button" on:click={() => navigate('/profil')}>Profil anzeigen</button></li>
+                    <li><button type="button" on:click={() => navigate('/einstellungen')}>Einstellungen</button></li>
+                    <li><button type="button" on:click={logout}>Abmelden</button></li>
                 </ul>
             </div>
         </div>

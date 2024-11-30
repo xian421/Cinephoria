@@ -16,7 +16,7 @@
                 icon: "error",
                 confirmButtonText: "OK",
             });
-            navigate('/login');
+            navigate('/unauthorized');
         } else if (admin && !isAdmin) {
             Swal.fire({
                 title: "Zugriff verweigert",

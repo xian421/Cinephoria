@@ -82,28 +82,6 @@
     line-height: 1.6;
   }
 
-  .schedule {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
-    gap: 1rem;
-  }
-
-  .schedule-button {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    padding: 0.8rem;
-    border-radius: 8px;
-    background: #f0f0f0;
-    font-size: 1rem;
-    font-weight: bold;
-    cursor: pointer;
-    transition: background 0.3s ease;
-  }
-
-  .schedule-button:hover {
-    background: #d4d4d4;
-  }
 
   .highlight {
     font-weight: bold;
