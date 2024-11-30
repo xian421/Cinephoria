@@ -7,6 +7,7 @@ const initialState = {
     userLastName: '',
     initials: '',
     isAdmin: false,
+    token: null, // Neuer Eintrag für den Token
 };
 
 const authStore = writable(initialState);

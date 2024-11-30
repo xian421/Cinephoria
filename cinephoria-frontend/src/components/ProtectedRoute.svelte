@@ -6,8 +6,7 @@
     import Swal from 'sweetalert2';
     export let admin = false;
 
-    $: isLoggedIn = $authStore.isLoggedIn;
-    $: isAdmin = $authStore.isAdmin;
+    $: ({ isLoggedIn, isAdmin } = $authStore);
 
     onMount(() => {
         if (!isLoggedIn) {
@@ -17,7 +16,7 @@
                 icon: "error",
                 confirmButtonText: "OK",
             });
-            navigate('/unauthorized');
+            navigate('/login');
         } else if (admin && !isAdmin) {
             Swal.fire({
                 title: "Zugriff verweigert",

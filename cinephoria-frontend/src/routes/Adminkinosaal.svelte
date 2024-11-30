@@ -1,16 +1,18 @@
-<!-- Adminkinosaal.svelte -->
+<!-- src/routes/Adminkinosaal.svelte -->
 <script>
     import { onMount } from "svelte";
     import { Link, navigate } from "svelte-routing";
-    import { authStore } from '../stores/authStore.js'; // Pfad ggf. anpassen
+    import { fetchScreens } from '../services/api.js'; // Importiere die fetchScreens Funktion aus api.js
     import Swal from 'sweetalert2';
-
-    // Reaktive Zuweisung der Store-Werte
+    import { authStore } from '../stores/authStore.js';
+    import { get } from 'svelte/store';
 
     let screens = [];
 
     onMount(async () => {
-        const token = localStorage.getItem('token');
+        const auth = get(authStore);
+        const token = auth.token;
+
         if (!token) {
             Swal.fire({
                 title: "Token fehlt",
@@ -23,20 +25,15 @@
         }
 
         try {
-            const response = await fetch("https://cinephoria-backend-c53f94f0a255.herokuapp.com/screens", {
-                headers: {
-                    'Authorization': `Bearer ${token}`
-                }
-            });
-            const data = await response.json();
-            if (response.ok) {
+            const data = await fetchScreens(token);
+            if (data.screens) {
                 screens = data.screens;
                 console.log('Screens data:', screens);
             } else {
                 console.error("Fehler beim Laden der Kinosäle:", data.error);
                 Swal.fire({
                     title: "Fehler",
-                    text: data.error,
+                    text: data.error || "Fehler beim Laden der Kinosäle.",
                     icon: "error",
                     confirmButtonText: "OK",
                 });

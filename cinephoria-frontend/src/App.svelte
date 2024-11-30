@@ -46,6 +46,7 @@
   $: userFirstName = $authStore.userFirstName;
   $: userLastName = $authStore.userLastName;
   $: initials = $authStore.initials;
+  $: token = $authStore.token;
 
   // Ladezustand
   let isLoading = true;
@@ -106,6 +107,7 @@
                   userLastName: data.last_name,
                   initials: data.initials,
                   isAdmin: data.role.toLowerCase() === 'admin',
+                  token: data.token, // Token im Store speichern
               }));
 
               Swal.fire({
@@ -142,6 +144,7 @@
           userLastName: '',
           initials: '',
           isAdmin: false,
+          token: null,
       });
 
       Swal.fire({
@@ -181,6 +184,7 @@
                       userLastName: data.last_name,
                       initials: data.initials,
                       isAdmin: data.role.toLowerCase() === 'admin',
+                      token: token,
                   }));
               } else {
                   localStorage.removeItem('token');
@@ -190,6 +194,7 @@
                       userLastName: '',
                       initials: '',
                       isAdmin: false,
+                      token: null,
                   });
               }
           } catch (error) {
@@ -201,6 +206,7 @@
                   userLastName: '',
                   initials: '',
                   isAdmin: false,
+                  token: null,
               });
           }
       }
@@ -228,7 +234,7 @@
       />
 
       <!-- Routen -->
-      <div use:onPopState={handleRouteChange}>
+      <div>
           <Route path="/" component={Home} />
           <Route path="/nowplaying" component={NowPlaying} />
           <Route path="/upcoming" component={Upcoming} />

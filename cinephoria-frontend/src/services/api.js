@@ -9,7 +9,11 @@ export const login = async (email, password) => {
         },
         body: JSON.stringify({ email, password }),
     });
-    return response.json();
+    const data = await response.json();
+    if (!response.ok) {
+        throw new Error(data.error || 'Ein unbekannter Fehler ist aufgetreten.');
+    }
+    return data;
 };
 
 export const validateToken = async (token) => {
@@ -20,12 +24,20 @@ export const validateToken = async (token) => {
             "Authorization": `Bearer ${token}`
         },
     });
-    return response.json();
+    const data = await response.json();
+    if (!response.ok) {
+        throw new Error(data.error || 'Token ist ungültig.');
+    }
+    return data;
 };
 
 export const fetchCinemas = async () => {
     const response = await fetch(`${API_BASE_URL}/cinemas`);
-    return response.json();
+    const data = await response.json();
+    if (!response.ok) {
+        throw new Error(data.error || 'Fehler beim Laden der Kinos.');
+    }
+    return data;
 };
 
 export const fetchScreens = async (token) => {
@@ -34,7 +46,11 @@ export const fetchScreens = async (token) => {
             'Authorization': `Bearer ${token}`
         }
     });
-    return response.json();
+    const data = await response.json();
+    if (!response.ok) {
+        throw new Error(data.error || 'Fehler beim Laden der Kinosäle.');
+    }
+    return data;
 };
 
-
+// Weitere API-Aufrufe hier...
