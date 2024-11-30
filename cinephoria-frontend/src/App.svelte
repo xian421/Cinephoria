@@ -1,6 +1,7 @@
+<!-- Front end: App.svelte -->
 <script>
   // Import von Abhängigkeiten
-  import { Router, Route } from "svelte-routing";
+  import { Router, Route, navigate } from "svelte-routing";
   import { onMount } from 'svelte';
   import Swal from 'sweetalert2';
 
@@ -18,7 +19,10 @@
   import Adminseats from "./routes/Adminseats.svelte";
   import Unauthorized from "./routes/Unauthorized.svelte";
 
-  //Exportierte Eigenschaften
+  // Import von Svelte Stores
+  import { writable } from 'svelte/store';
+
+  // Exportierte Eigenschaften
   export let url = ""; // Für Server-Side Rendering (SSR)
 
   // Konstanten
@@ -26,25 +30,40 @@
 
   // State-Variablen
   let currentPath = ""; // Aktuelle Route
-  let isLoggedIn = false;
-  let isAdmin = false;
-  let isLoginOpen = false;
-  let isProfileDropdownOpen = false;
 
-  //Benutzerdaten
-  let userFirstName = ""; 
-  let userLastName = ""; 
-  let initials = "";
+  // Authentifizierungs-Status (Svelte Store)
+  const authStore = writable({
+    isLoggedIn: !!localStorage.getItem('token'),
+    userFirstName: '',
+    userLastName: '',
+    initials: '',
+    isAdmin: false,
+  });
 
-  //Login-Formular
+  // Login-Formular
   let email = "";
   let password = "";
 
-  //Kontaktinformationen
+  // Kontaktinformationen
   let kontakt = [];
   let firstCinema = {};
 
-  // Navigationsfunktionen 
+  // Abonnieren des Stores
+  let isLoggedIn;
+  let isAdmin;
+  let userFirstName;
+  let userLastName;
+  let initials;
+
+  authStore.subscribe(value => {
+    isLoggedIn = value.isLoggedIn;
+    isAdmin = value.isAdmin;
+    userFirstName = value.userFirstName;
+    userLastName = value.userLastName;
+    initials = value.initials;
+  });
+
+  // Navigationsfunktionen
   const handleRouteChange = () => {
     currentPath = window.location.pathname;
   };
@@ -54,14 +73,6 @@
     handleRouteChange();
   }
 
-  const navigate = (path) => {
-    if (currentPath !== path) {
-      currentPath = path;
-      window.history.pushState({}, "", path);
-      window.dispatchEvent(new PopStateEvent("popstate"));
-    }
-  };
-
   const scrollToTop = () => {
     window.scrollTo({
       top: 0,
@@ -69,7 +80,10 @@
     });
   };
 
-  // Dropdown-Funktionen 
+  // Dropdown-Funktionen
+  let isLoginOpen = false;
+  let isProfileDropdownOpen = false;
+
   const toggleLoginDropdown = () => {
     isLoginOpen = !isLoginOpen;
   };
@@ -105,15 +119,19 @@
         // Login erfolgreich
         email = "";
         password = "";
-        isLoggedIn = true;
 
-        // Speichere das Token in den Cookies
-        document.cookie = `token=${data.token}; path=/; max-age=3600; secure; samesite=strict`;
+        // Speichere das Token in localStorage
+        localStorage.setItem('token', data.token);
 
-        // Setze Benutzerdaten
-        userFirstName = data.first_name;
-        userLastName = data.last_name;
-        initials = data.initials;
+        // Setze Benutzerdaten im Store
+        authStore.update(current => ({
+          ...current,
+          isLoggedIn: true,
+          userFirstName: data.first_name,
+          userLastName: data.last_name,
+          initials: data.initials,
+          isAdmin: data.role === 'admin', // Setze Admin-Status basierend auf der Rolle
+        }));
 
         Swal.fire({
           title: "Erfolgreich eingeloggt!",
@@ -142,15 +160,17 @@
   };
 
   const logout = () => {
-    // Cookie löschen
-    document.cookie = "token=; path=/; max-age=0; secure; samesite=strict";
+    // Token aus localStorage entfernen
+    localStorage.removeItem('token');
 
     // Benutzer-Status zurücksetzen
-    isLoggedIn = false;
-    isAdmin = false;
-    userFirstName = '';
-    userLastName = '';
-    initials = '';
+    authStore.set({
+      isLoggedIn: false,
+      userFirstName: '',
+      userLastName: '',
+      initials: '',
+      isAdmin: false,
+    });
 
     Swal.fire({
       title: "Abgemeldet",
@@ -159,52 +179,13 @@
       timer: 1500,
       showConfirmButton: false,
     });
+
+    navigate('/');
   };
-
-  const checkLoginStatus = () => {
-    const cookies = document.cookie.split("; ").reduce((acc, cookie) => {
-      const [key, value] = cookie.split("=");
-      acc[key] = value;
-      return acc;
-    }, {});
-
-    if (cookies.token) {
-      const token = cookies.token;
-      try {
-        // Token dekodieren
-        const payload = JSON.parse(atob(token.split(".")[1]));
-        isLoggedIn = true;
-        isAdmin = payload.role === "admin";
-
-        // Benutzerdaten aus dem Token extrahieren
-        userFirstName = payload.first_name;
-        userLastName = payload.last_name;
-        initials = payload.initials;
-
-        // Initialen berechnen, falls nicht vorhanden
-        if (!initials && userFirstName && userLastName) {
-          initials = `${userFirstName[0].toUpperCase()}${userLastName[0].toUpperCase()}`;
-        }
-      } catch (error) {
-        console.error("Fehler beim Dekodieren des Tokens:", error);
-        isLoggedIn = false;
-        isAdmin = false;
-        userFirstName = '';
-        userLastName = '';
-        initials = '';
-      }
-    } else {
-      isLoggedIn = false;
-      isAdmin = false;
-      userFirstName = '';
-      userLastName = '';
-      initials = '';
-    }
-  };
-
+  
   // Lifecycle-Methode
   onMount(async () => {
-    checkLoginStatus();
+    // Kontaktinformationen laden
     try {
       const responseKontakt = await fetch(KONTAKT_URL);
       const data = await responseKontakt.json();
@@ -216,8 +197,57 @@
     } catch (error) {
       console.error('Fehler beim Laden des Kontakts: ', error);
     }
+
+    // Überprüfen des Authentifizierungsstatus beim Laden der App
+    const token = localStorage.getItem('token');
+    if (token) {
+      try {
+        const response = await fetch("https://cinephoria-backend-c53f94f0a255.herokuapp.com/validate-token", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${token}`
+          },
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+          // Token ist gültig, aktualisiere den Store mit den Benutzerdaten
+          authStore.update(current => ({
+            ...current,
+            isLoggedIn: true,
+            userFirstName: data.first_name,
+            userLastName: data.last_name,
+            initials: data.initials,
+            isAdmin: data.role === 'admin',
+          }));
+        } else {
+          // Ungültiges Token, entferne es aus localStorage
+          localStorage.removeItem('token');
+          authStore.set({
+            isLoggedIn: false,
+            userFirstName: '',
+            userLastName: '',
+            initials: '',
+            isAdmin: false,
+          });
+        }
+      } catch (error) {
+        console.error("Fehler beim Validieren des Tokens:", error);
+        localStorage.removeItem('token');
+        authStore.set({
+          isLoggedIn: false,
+          userFirstName: '',
+          userLastName: '',
+          initials: '',
+          isAdmin: false,
+        });
+      }
+    }
   });
 </script>
+
 
 <style>
   /* Navbar-Stile */
@@ -576,8 +606,8 @@
         </div>
         <div class="profile-dropdown-menu">
           <ul>
-            <li on:click={() => alert('Profil anzeigen')}>Profil anzeigen</li>
-            <li on:click={() => alert('Einstellungen')}>Einstellungen</li>
+            <li on:click={() => navigate('/profil')}>Profil anzeigen</li>
+            <li on:click={() => navigate('/einstellungen')}>Einstellungen</li>
             <li on:click={logout}>Abmelden</li>
           </ul>
         </div>
@@ -592,8 +622,12 @@
             <input type="password" placeholder="Passwort" bind:value={password} required />
             <button type="submit">Einloggen</button>
             <div style="display: flex; justify-content: space-between; gap: 10px; margin-top: 10px;">
-              <button on:click={() => navigate('/register')} style="background: none; border: none; color: #007bff; cursor: pointer;">Stattdessen Registrieren</button>
-              <button on:click={() => navigate('/forgot-password')} style="background: none; border: none; color: #007bff; cursor: pointer;">Passwort vergessen?</button>
+              <button type="button" on:click={() => navigate('/register')} style="background: none; border: none; color: #007bff; cursor: pointer;">
+                Stattdessen Registrieren
+              </button>
+              <button type="button" on:click={() => navigate('/forgot-password')} style="background: none; border: none; color: #007bff; cursor: pointer;">
+                Passwort vergessen?
+              </button>
             </div>
           </form>
         </div>
@@ -611,9 +645,12 @@
     <Route path="/sitzplan" component={Sitzplan} />
     <Route path="/register" component={Register} />
     <Route path="/forgot-password" component={Forgotpassword} />
-    <Route path="/adminkinosaal" component={isAdmin ? Adminkinosaal : Unauthorized} />
-    <Route path="/adminseats/:screenId" component={isAdmin ? Adminseats : Unauthorized} />
+    <!-- Admin-Routen -->
+    <Route path="/adminkinosaal" component={Adminkinosaal} />
+    <Route path="/adminseats/:screenId" component={Adminseats} />
     <Route path="/beschreibung/:id" component={Beschreibung} />
+    <Route path="/unauthorized" component={Unauthorized} />
+    <!-- Weitere Routen, wie z.B. Profil oder Einstellungen -->
   </div>
 
   <!-- Footer -->

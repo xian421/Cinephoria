@@ -1,4 +1,4 @@
-<!-- adminseats.svelte -->
+<!-- Adminseats.svelte -->
 <script>
     export let screenId; 
   

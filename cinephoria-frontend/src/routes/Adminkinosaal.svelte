@@ -1,4 +1,4 @@
-<!-- adminkinosaal.svelte -->
+<!-- Adminkinosaal.svelte -->
 <script>
     import { onMount } from "svelte";
     import { Link } from "svelte-routing";

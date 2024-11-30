@@ -1,3 +1,4 @@
+import os
 import psycopg2
 from flask import Flask, request, jsonify
 from flask_cors import CORS
@@ -5,8 +6,6 @@ import requests
 import jwt
 import datetime
 from functools import wraps
-import os
-import secrets
 
 app = Flask(__name__)
 CORS(app, origins=["https://cinephoria-theta.vercel.app"])
@@ -19,8 +18,6 @@ connection = psycopg2.connect(DATABASE_URL)
 connection.autocommit = True  # Automatisches Commit für Änderungen
 cursor = connection.cursor()
 
-
-
 # TMDb API-Konfiguration
 TMDB_API_URL = "https://api.themoviedb.org/3/movie"
 TMDB_BEARER_TOKEN = os.getenv('TMDB_BEARER_TOKEN')
@@ -30,31 +27,59 @@ HEADERS = {
     "Authorization": f"Bearer {TMDB_BEARER_TOKEN}"
 }
 
+# SECRET_KEY definieren
+SECRET_KEY = os.getenv('SECRET_KEY')
+if not SECRET_KEY:
+    raise ValueError("SECRET_KEY environment variable is not set")
 
-
-# Middleware für Admin-Zugriff
-def admin_required(f):
+# Middleware für Token-Validierung
+def token_required(f):
     @wraps(f)
-    def decorated_function(*args, **kwargs):
+    def decorated(*args, **kwargs):
         token = request.headers.get('Authorization', '').replace('Bearer ', '')
         if not token:
             return jsonify({'error': 'Token fehlt'}), 401
         try:
             decoded = jwt.decode(token, SECRET_KEY, algorithms=['HS256'])
-            role = decoded.get('role')
-            if role != 'admin':
-                return jsonify({'error': 'Zugriff verweigert - keine Admin-Rechte'}), 403
+            request.user = decoded  # Speichern Sie den Benutzer im Request-Objekt
         except jwt.ExpiredSignatureError:
             return jsonify({'error': 'Token abgelaufen'}), 401
         except jwt.InvalidTokenError:
             return jsonify({'error': 'Ungültiges Token'}), 401
         return f(*args, **kwargs)
-    return decorated_function
+    return decorated
 
+def admin_required(f):
+    @wraps(f)
+    @token_required
+    def decorated(*args, **kwargs):
+        user = request.user
+        if user.get('role') != 'admin':
+            return jsonify({'error': 'Zugriff verweigert - keine Admin-Rechte'}), 403
+        return f(*args, **kwargs)
+    return decorated
 
+# Token Validierung Endpunkt
+@app.route('/validate-token', methods=['POST'])
+def validate_token():
+    token = request.headers.get('Authorization', '').replace('Bearer ', '')
+    if not token:
+        return jsonify({'error': 'Token fehlt'}), 401
+    try:
+        decoded = jwt.decode(token, SECRET_KEY, algorithms=['HS256'])
+        return jsonify({
+            'user_id': decoded['user_id'],
+            'first_name': decoded.get('first_name', ''),
+            'last_name': decoded.get('last_name', ''),
+            'initials': decoded.get('initials', ''),
+            'role': decoded.get('role', '')
+        }), 200
+    except jwt.ExpiredSignatureError:
+        return jsonify({'error': 'Token abgelaufen'}), 401
+    except jwt.InvalidTokenError:
+        return jsonify({'error': 'Ungültiges Token'}), 401
 
-
-
+# Weitere Routen bleiben unverändert
 
 @app.route('/movies/now_playing', methods=['GET'])
 def get_now_playing():
@@ -76,9 +101,6 @@ def get_now_playing():
     # Alle Ergebnisse in ein JSON-Objekt packen
     return jsonify({"results": results})
 
-
-
-
 @app.route('/movies/upcoming', methods=['GET'])
 def get_upcoming():
     url = f"{TMDB_API_URL}/upcoming?language=de-DE&page=1&region=DE"
@@ -87,7 +109,7 @@ def get_upcoming():
         return jsonify(response.json())
     else:
         return jsonify({"error": "Unable to fetch upcoming movies"}), response.status_code
-    
+
 @app.route('/movies/<int:movie_id>', methods=['GET'])
 def get_movie_details(movie_id):
     # URL für die TMDB-API mit der spezifischen Film-ID
@@ -102,7 +124,6 @@ def get_movie_details(movie_id):
     else:
         # Fehler behandeln und Fehlermeldung zurückgeben
         return jsonify({"error": f"Unable to fetch details for movie ID {movie_id}"}), response.status_code
-    
 
 @app.route('/movie/<int:movie_id>/release_dates', methods=['GET'])
 def get_movie_details_richtig(movie_id):
@@ -127,10 +148,6 @@ def get_movie_details_richtig(movie_id):
     else:
         # Fehler behandeln und Fehlermeldung zurückgeben
         return jsonify({"error": f"Unable to fetch details for movie ID {movie_id}"}), response.status_code
-
-
-
-SECRET_KEY = secrets.token_urlsafe(64)
 
 @app.route('/login', methods=['POST'])
 def login():
@@ -159,11 +176,10 @@ def login():
                     initials = f"{vorname[0].upper()}{nachname[0].upper()}"
                     token = jwt.encode({
                         'user_id': user_id,
-                        'email': email,
                         'first_name': vorname,
                         'last_name': nachname,
                         'initials': initials,
-                        'role': role,  # Füge die Rolle hinzu
+                        'role': role,  
                         'exp': datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(hours=1)
                     }, SECRET_KEY, algorithm='HS256')
 
@@ -172,7 +188,8 @@ def login():
                         'token': token,
                         'first_name': vorname,
                         'last_name': nachname,
-                        'initials': initials
+                        'initials': initials,
+                        'role': role
                     }), 200
                 else:
                     return jsonify({'error': 'Ungültige E-Mail oder Passwort'}), 401
@@ -180,8 +197,6 @@ def login():
     except Exception as e:
         print(f"Fehler: {e}")
         return jsonify({'error': 'Fehler bei der Anmeldung'}), 500
-
-
 
 @app.route('/cinemas', methods=['GET'])
 def get_cinemas():
@@ -206,34 +221,6 @@ def get_cinemas():
     except Exception as e:
         print(f"Fehler: {e}")
         return jsonify({'error': 'Fehler beim Abrufen der Kinos'}), 500
-
-
-# @app.route('/hierUrlfürfrontend', methods=['GET']) #url ändern
-# def get_hierName(): #Name ändern
-#     try:
-#         with psycopg2.connect(DATABASE_URL) as conn:  
-#             with conn.cursor() as cursor:            
-#                 cursor.execute("SELECT cinema_id, name, location, contact_number FROM cinema") #SQL Satement
-#                 result = cursor.fetchall()
-
-#                 Waswirdhiergeholt = [  #Name ändern
-#                     {
-#                         'cinema_id': row[0], #Das anpassen
-#                         'name': row[1],
-#                         'location': row[2],
-#                         'contact_number': row[3]
-#                     }
-#                     for row in result
-#                 ]
-
-#         return jsonify({'cinemas': cinemas}), 200 # hier Name
-
-#     except Exception as e:
-#         print(f"Fehler: {e}")
-#         return jsonify({'error': 'Fehler beim Abrufen der Kinos'}), 500 #Fehler anpassen
-
-
-
 
 @app.route('/screens', methods=['GET'])
 @admin_required
@@ -268,9 +255,6 @@ def get_screens():
     except Exception as e:
         print(f"Fehler: {e}")
         return jsonify({'error': 'Fehler beim Abrufen der Kinosäle'}), 500
-
-
-
 
 @app.route('/seats', methods=['GET'])
 @admin_required
@@ -309,11 +293,6 @@ def get_seats():
         print(f"Fehler: {e}")
         return jsonify({'error': 'Fehler beim Abrufen der Sitze'}), 500
 
-
-
-
-
-
 @app.route('/register', methods=['POST'])
 def register():
     data = request.get_json()
@@ -322,7 +301,7 @@ def register():
     email = data.get('email')
     password = data.get('password')
 
-    if not vorname or not nachname or not email or not password:
+    if not vorname and not nachname and not email and not password:
         return jsonify({'error': 'Alle Felder sind erforderlich'}), 400
 
     try:
@@ -343,10 +322,6 @@ def register():
     except Exception as e:
         print(f"Fehler bei der Registrierung: {e}")
         return jsonify({'error': 'Ein Fehler ist aufgetreten'}), 500
-    
-
-
-
 
 if __name__ == '__main__':
     app.run(debug=True)
