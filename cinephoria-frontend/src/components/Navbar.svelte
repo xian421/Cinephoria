@@ -1,10 +1,6 @@
 <!-- src/components/Navbar.svelte -->
 <script>
     import { navigate } from "svelte-routing";
-    import { authStore } from '../stores/authStore.js';
-    import { onMount } from 'svelte';
-    import Swal from 'sweetalert2';
-
     export let currentPath;
     export let toggleLoginDropdown;
     export let toggleProfileMenu;

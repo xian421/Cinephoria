@@ -1,3 +1,4 @@
+<!-- src/App.svelte -->
 <script>
   import { login, validateToken, fetchCinemas } from './services/api.js';
   import { Router, Route, navigate } from "svelte-routing";
@@ -19,7 +20,7 @@
   import Unauthorized from "./routes/Unauthorized.svelte";
 
   // Import von Svelte Stores
-  import { authStore } from './stores/authStore.js';
+  import { authStore, setAuth, updateAuth } from './stores/authStore.js';
 
   // Import der ProtectedRoute Komponente
   import ProtectedRoute from './components/ProtectedRoute.svelte';
@@ -54,6 +55,7 @@
       currentPath = window.location.pathname;
   };
 
+  // Event-Listener für Popstate (Browser-Zurück-Button)
   if (typeof window !== "undefined") {
       window.addEventListener("popstate", handleRouteChange);
       handleRouteChange();
@@ -98,8 +100,7 @@
               email = "";
               password = "";
               localStorage.setItem('token', data.token);
-              authStore.update(current => ({
-                  ...current,
+              updateAuth(current => ({
                   isLoggedIn: true,
                   userFirstName: data.first_name,
                   userLastName: data.last_name,
@@ -117,7 +118,7 @@
           } else {
               Swal.fire({
                   title: "Fehler",
-                  text: data.error,
+                  text: data.error || "Unbekannter Fehler",
                   icon: "error",
                   confirmButtonText: "OK",
               });
@@ -126,13 +127,35 @@
           console.error("Fehler beim Login:", error);
           Swal.fire({
               title: "Fehler",
-              text: "Ein Fehler ist aufgetreten. Bitte versuche es erneut.",
+              text: error.message || "Ein Fehler ist aufgetreten. Bitte versuche es erneut.",
               icon: "error",
               confirmButtonText: "OK",
           });
       }
   };
 
+  const logout = () => {
+      localStorage.removeItem('token');
+      setAuth({
+          isLoggedIn: false,
+          userFirstName: '',
+          userLastName: '',
+          initials: '',
+          isAdmin: false,
+      });
+
+      Swal.fire({
+          title: "Abgemeldet",
+          text: "Du wurdest erfolgreich abgemeldet.",
+          icon: "success",
+          timer: 1500,
+          showConfirmButton: false,
+      });
+
+      navigate('/');
+  };
+
+  // Lifecycle-Methode
   onMount(async () => {
       try {
           const data = await fetchCinemas();
@@ -152,8 +175,7 @@
               console.log('Validate Token Response:', data);
 
               if (data.isValid) { // Annahme, dass das Backend ein Feld 'isValid' zurückgibt
-                  authStore.update(current => ({
-                      ...current,
+                  updateAuth(current => ({
                       isLoggedIn: true,
                       userFirstName: data.first_name,
                       userLastName: data.last_name,
@@ -162,7 +184,7 @@
                   }));
               } else {
                   localStorage.removeItem('token');
-                  authStore.set({
+                  setAuth({
                       isLoggedIn: false,
                       userFirstName: '',
                       userLastName: '',
@@ -173,7 +195,7 @@
           } catch (error) {
               console.error("Fehler beim Validieren des Tokens:", error);
               localStorage.removeItem('token');
-              authStore.set({
+              setAuth({
                   isLoggedIn: false,
                   userFirstName: '',
                   userLastName: '',
@@ -187,23 +209,22 @@
   });
 </script>
 
-
 {#if isLoading}
   <p>Loading...</p>
 {:else}
   <Router {url}>
       <Navbar 
-          {currentPath} 
-          {toggleLoginDropdown} 
-          {toggleProfileMenu} 
-          {logout} 
-          {isLoginOpen} 
-          {isProfileDropdownOpen} 
-          {email} 
-          {password} 
-          {handleLogin} 
-          {initials} 
-          {isLoggedIn}
+          currentPath={currentPath} 
+          toggleLoginDropdown={toggleLoginDropdown} 
+          toggleProfileMenu={toggleProfileMenu} 
+          logout={logout} 
+          isLoginOpen={isLoginOpen} 
+          isProfileDropdownOpen={isProfileDropdownOpen} 
+          email={email} 
+          password={password} 
+          handleLogin={handleLogin} 
+          initials={initials} 
+          isLoggedIn={isLoggedIn}
       />
 
       <!-- Routen -->
@@ -234,6 +255,6 @@
           <!-- Weitere Routen -->
       </div>
 
-      <Footer {firstCinema} />
+      <Footer firstCinema={firstCinema} />
   </Router>
 {/if}
