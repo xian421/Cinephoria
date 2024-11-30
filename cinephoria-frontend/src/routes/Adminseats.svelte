@@ -1,6 +1,6 @@
 <!-- adminseats.svelte -->
 <script>
-    export let screenId; // screenId wird von der Route übergeben
+    export let screenId; 
   
     import { onMount } from "svelte";
     import { navigate } from "svelte-routing";
@@ -19,7 +19,9 @@
     };
   
     const fetchSeats = async () => {
-      const token = getTokenFromCookies();
+      var token = getTokenFromCookies();
+      time.sleep(50);
+      token = getTokenFromCookies();
   
       if (!token) {
         console.error("Kein Token gefunden.");
