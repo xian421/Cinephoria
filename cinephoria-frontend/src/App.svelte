@@ -624,12 +624,16 @@
           <Route path="/forgot-password" component={Forgotpassword} />
           
           <!-- Geschützte Admin-Routen mit ProtectedRoute -->
-          <Route path="/adminkinosaal" component={ProtectedRoute} admin={true}>
-              <Adminkinosaal />
-          </Route>
-          <Route path="/adminseats/:screenId" component={ProtectedRoute} admin={true}>
-              <Adminseats />
-          </Route>
+          <Route path="/adminkinosaal" let:params>
+            <ProtectedRoute admin={true}>
+                <Adminkinosaal />
+            </ProtectedRoute>
+        </Route>
+        <Route path="/adminseats/:screenId" let:params>
+            <ProtectedRoute admin={true}>
+                <Adminseats />
+            </ProtectedRoute>
+        </Route>
           
           <Route path="/beschreibung/:id" component={Beschreibung} />
           <Route path="/unauthorized" component={Unauthorized} />

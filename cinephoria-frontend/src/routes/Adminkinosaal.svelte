@@ -6,8 +6,6 @@
     import Swal from 'sweetalert2';
 
     // Reaktive Zuweisung der Store-Werte
-    $: isLoggedIn = $authStore.isLoggedIn;
-    $: isAdmin = $authStore.isAdmin;
 
     let screens = [];
 
