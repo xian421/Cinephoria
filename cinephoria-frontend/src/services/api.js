@@ -182,3 +182,40 @@ export async function createShowtime(showtimeData, token) {
 
     return await response.json();
 }
+
+export const fetchShowtimes = async (screenId, token) => {
+    const url = screenId 
+        ? `${API_BASE_URL}/showtimes?screen_id=${screenId}` 
+        : `${API_BASE_URL}/showtimes`;
+    const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+        },
+    });
+
+    const data = await response.json();
+    if (!response.ok) {
+        throw new Error(data.error || 'Fehler beim Abrufen der Showtimes');
+    }
+    return data;
+};
+
+// Funktion zum Aktualisieren einer Showtime
+export const updateShowtime = async (showtimeId, showtimeData, token) => {
+    const response = await fetch(`${API_BASE_URL}/showtimes/${showtimeId}`, {
+        method: 'PUT',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify(showtimeData),
+    });
+
+    const data = await response.json();
+    if (!response.ok) {
+        throw new Error(data.error || 'Fehler beim Aktualisieren des Showtimes');
+    }
+    return data;
+};
