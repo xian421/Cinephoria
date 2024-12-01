@@ -10,9 +10,9 @@
   import NowPlaying from "./routes/Nowplaying.svelte";
   import Upcoming from "./routes/Upcoming.svelte";
   import NotFound from "./routes/Notfound.svelte";
-  import Test from "./routes/Test.svelte";
   import Beschreibung from './routes/Beschreibung.svelte';
   import Sitzplan from './routes/Sitzplan.svelte';
+  import Adminshowtime from './routes/Adminshowtime.svelte';
   import Register from './routes/Register.svelte';
   import Forgotpassword from "./routes/Forgotpassword.svelte";
   import Adminkinosaal from "./routes/Adminkinosaal.svelte";
@@ -218,6 +218,7 @@
       <Route path="/nowplaying" component={NowPlaying} />
       <Route path="/upcoming" component={Upcoming} />
       <Route path="/sitzplan" component={Sitzplan} />
+      <Route path="/adminshowtime" component={Adminshowtime} />
       <Route path="/register" component={Register} />
       <Route path="/forgot-password" component={Forgotpassword} />
 
@@ -240,14 +241,3 @@
       <Footer firstCinema={firstCinema} />
   </Router>
 {/if}
-
-<style>
-  /* Optional: Füge einige globale Styles hinzu */
-  body {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-      font-family: Arial, sans-serif;
-      background-color: #f9f9f9;
-  }
-</style>

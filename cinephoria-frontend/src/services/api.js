@@ -130,7 +130,7 @@ export const deleteSeat = async (seatId) => {
 
 
 export async function deleteAllSeats(screenId, token) {
-    const response = await fetch(`/seats?screen_id=${screenId}`, {
+    const response = await fetch(`${API_BASE_URL}/seats?screen_id=${screenId}`, {
         method: 'DELETE',
         headers: {
             'Authorization': `Bearer ${token}`,
@@ -141,6 +141,43 @@ export async function deleteAllSeats(screenId, token) {
     if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.error || 'Fehler beim Löschen aller Sitze');
+    }
+
+    return await response.json();
+}
+
+
+export async function fetchNowPlayingMovies(token) {
+    const response = await fetch(`${API_BASE_URL}/movies/now_playing`, {
+        method: 'GET',
+        headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+        },
+    });
+
+    if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Fehler beim Abrufen der Filme');
+    }
+
+    return await response.json();
+}
+
+
+export async function createShowtime(showtimeData, token) {
+    const response = await fetch(`${API_BASE_URL}/showtimes`, {
+        method: 'POST',
+        headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(showtimeData),
+    });
+
+    if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Fehler beim Erstellen des Showtimes');
     }
 
     return await response.json();
