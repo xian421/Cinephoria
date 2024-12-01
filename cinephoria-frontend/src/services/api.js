@@ -127,3 +127,21 @@ export const deleteSeat = async (seatId) => {
         throw error;
     }
 };
+
+
+export async function deleteAllSeats(screenId, token) {
+    const response = await fetch(`/seats?screen_id=${screenId}`, {
+        method: 'DELETE',
+        headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+        },
+    });
+
+    if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Fehler beim Löschen aller Sitze');
+    }
+
+    return await response.json();
+}
