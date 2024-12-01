@@ -10,10 +10,16 @@ from functools import wraps
 app = Flask(__name__)
 
 
-CORS(app, origins=[
-    "https://cinephoria-theta.vercel.app",
-    "http://localhost:5173"
-])
+CORS(app, resources={
+    r"/*": {
+        "origins": [
+            "https://cinephoria-theta.vercel.app",
+            "http://localhost:5173"
+        ],
+        "methods": ["GET", "POST", "DELETE", "OPTIONS"],
+        "allow_headers": ["Content-Type", "Authorization"]
+    }
+})
 
 
 # Datenbankkonfiguration
@@ -453,6 +459,38 @@ def get_seats():
     except Exception as e:
         print(f"Fehler beim Abrufen der Sitze: {e}")
         return jsonify({'error': 'Fehler beim Abrufen der Sitze'}), 500
+    
+
+@app.route('/showtimes', methods=['POST'])
+@admin_required
+def create_showtime():
+    data = request.get_json()
+    screen_id = data.get('screen_id')
+    movie_id = data.get('movie_id')
+    start_time = data.get('start_time')
+    end_time = data.get('end_time')  # Optional
+
+    if not all([screen_id, movie_id, start_time]):
+        return jsonify({'error': 'Alle erforderlichen Felder müssen ausgefüllt sein'}), 400
+
+    try:
+        with psycopg2.connect(DATABASE_URL) as conn:
+            with conn.cursor() as cursor:
+                cursor.execute("""
+                    INSERT INTO showtimes (movie_id, screen_id, start_time, end_time)
+                    VALUES (%s, %s, %s, %s)
+                    RETURNING showtime_id
+                """, (movie_id, screen_id, start_time, end_time))
+                showtime_id = cursor.fetchone()[0]
+
+        return jsonify({'message': 'Showtime erstellt', 'showtime_id': showtime_id}), 201
+    except Exception as e:
+        print(f"Fehler beim Erstellen des Showtimes: {e}")
+        return jsonify({'error': 'Fehler beim Erstellen des Showtimes'}), 500
+
+
+
+
 
 if __name__ == '__main__':
     app.run(debug=True)
