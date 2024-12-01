@@ -393,6 +393,27 @@ def delete_seat(seat_id):
     except Exception as e:
         print(f"Fehler beim Löschen des Sitzes: {e}")
         return jsonify({'error': 'Fehler beim Löschen des Sitzes'}), 500
+    
+
+##############################################################################################################
+
+
+@app.route('/seats', methods=['DELETE'])
+@admin_required
+def delete_all_seats():
+    try:
+        with psycopg2.connect(DATABASE_URL) as conn:
+            with conn.cursor() as cursor:
+                cursor.execute("DELETE FROM seats")
+                return jsonify({'message': 'Alle Sitze gelöscht'}), 200
+    except Exception as e:
+        print(f"Fehler beim Löschen aller Sitze: {e}")
+        return jsonify({'error': 'Fehler beim Löschen aller Sitze'}), 500
+
+
+
+
+    ##############################################################################################################
 
 @app.route('/seats', methods=['GET'])
 def get_seats():
