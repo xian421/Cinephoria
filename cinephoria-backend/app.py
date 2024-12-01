@@ -302,48 +302,6 @@ def register():
         return jsonify({'error': 'Ein Fehler ist aufgetreten'}), 500
 
 
-##############################################################################################################
-##############################################################################################################
-##############################################################################################################
-##############################################################################################################
-# @app.route('/seats', methods=['GET'])
-# @admin_required
-# def get_seats():
-#     screen_id = request.args.get('screen_id', type=int)
-#     if not screen_id:
-#         return jsonify({'error': 'screen_id ist erforderlich'}), 400
-
-#     try:
-#         with psycopg2.connect(DATABASE_URL) as conn:
-#             with conn.cursor() as cursor:
-#                 query = """
-#                     SELECT seat_id, screen_id, row, number, type, created_at
-#                     FROM seats
-#                     WHERE screen_id = %s
-#                     ORDER BY row, number
-#                 """
-#                 cursor.execute(query, (screen_id,))
-#                 result = cursor.fetchall()
-
-#                 seats = [
-#                     {
-#                         'seat_id': row[0],
-#                         'screen_id': row[1],
-#                         'row': row[2],
-#                         'number': row[3],
-#                         'type': row[4],
-#                         'created_at': row[5]
-#                     }
-#                     for row in result
-#                 ]
-
-#         return jsonify({'seats': seats}), 200
-
-#     except Exception as e:
-#         print(f"Fehler: {e}")
-#         return jsonify({'error': 'Fehler beim Abrufen der Sitze'}), 500
-
-
 
 @app.route('/seats', methods=['POST'])
 @admin_required
@@ -488,6 +446,72 @@ def create_showtime():
         print(f"Fehler beim Erstellen des Showtimes: {e}")
         return jsonify({'error': 'Fehler beim Erstellen des Showtimes'}), 500
 
+
+
+@app.route('/showtimes', methods=['GET'])
+def get_showtimes():
+    screen_id = request.args.get('screen_id')  # Optional: Filter nach Screen
+    try:
+        with psycopg2.connect(DATABASE_URL) as conn:
+            with conn.cursor() as cursor:
+                if screen_id:
+                    cursor.execute("""
+                        SELECT showtime_id, movie_id, screen_id, start_time, end_time
+                        FROM showtimes
+                        WHERE screen_id = %s
+                        ORDER BY start_time
+                    """, (screen_id,))
+                else:
+                    cursor.execute("""
+                        SELECT showtime_id, movie_id, screen_id, start_time, end_time
+                        FROM showtimes
+                        ORDER BY start_time
+                    """)
+                showtimes = cursor.fetchall()
+                # Strukturieren der Daten als Liste von Dictionaries
+                showtimes_list = [{
+                    'showtime_id': row[0],
+                    'movie_id': row[1],
+                    'screen_id': row[2],
+                    'start_time': row[3].isoformat(),
+                    'end_time': row[4].isoformat() if row[4] else None
+                } for row in showtimes]
+        return jsonify({'showtimes': showtimes_list}), 200
+    except Exception as e:
+        print(f"Fehler beim Abrufen der Showtimes: {e}")
+        return jsonify({'error': 'Fehler beim Abrufen der Showtimes'}), 500
+
+
+
+@app.route('/showtimes/<int:showtime_id>', methods=['PUT'])
+@admin_required
+def update_showtime(showtime_id):
+    data = request.get_json()
+    screen_id = data.get('screen_id')
+    movie_id = data.get('movie_id')
+    start_time = data.get('start_time')
+    end_time = data.get('end_time')  # Optional
+
+    if not all([screen_id, movie_id, start_time]):
+        return jsonify({'error': 'Alle erforderlichen Felder müssen ausgefüllt sein'}), 400
+
+    try:
+        with psycopg2.connect(DATABASE_URL) as conn:
+            with conn.cursor() as cursor:
+                cursor.execute("""
+                    UPDATE showtimes
+                    SET movie_id = %s,
+                        screen_id = %s,
+                        start_time = %s,
+                        end_time = %s
+                    WHERE showtime_id = %s
+                """, (movie_id, screen_id, start_time, end_time, showtime_id))
+                if cursor.rowcount == 0:
+                    return jsonify({'error': 'Showtime nicht gefunden'}), 404
+        return jsonify({'message': 'Showtime aktualisiert'}), 200
+    except Exception as e:
+        print(f"Fehler beim Aktualisieren des Showtimes: {e}")
+        return jsonify({'error': 'Fehler beim Aktualisieren des Showtimes'}), 500
 
 
 
