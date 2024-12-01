@@ -1,14 +1,20 @@
+<!-- src/routes/NowPlaying.svelte -->
 <script>
   import { onMount } from 'svelte';
   import { navigate } from 'svelte-routing';
+  import Swal from 'sweetalert2';
+  import { fetchNowPlayingMovies, fetchShowtimesPublic } from '../services/api.js';
 
-  export let isOpen = false;
-  export let movie = null; // Filmobjekt
-  export let onClose = () => {};
-
+  // State-Variablen
   let nowPlayingMovies = [];
+  let showtimes = [];
   let groupedMovies = {};
 
+  // Variablen für Lade- und Fehlerzustände
+  let loading = true;
+  let error = "";
+  let isOpen = false;
+  // Mapping für Wochentage
   const daysOfWeekMap = {
     0: "Sonntag",
     1: "Montag",
@@ -19,9 +25,9 @@
     6: "Samstag",
   };
 
-  const API_URL = 'https://cinephoria-backend-c53f94f0a255.herokuapp.com/movies/now_playing';
   const IMAGE_BASE_URL = 'https://image.tmdb.org/t/p/w500';
 
+  // Funktion zur Datumsformatierung
   function formatDate(dateString) {
     const date = new Date(dateString);
     const day = String(date.getDate()).padStart(2, '0');
@@ -30,53 +36,86 @@
     return `${day}.${month}.${year}`;
   }
 
-  function loadMovies(data) {
-    const savedMovies = JSON.parse(localStorage.getItem('moviesWithDates'));
-    if (savedMovies && savedMovies.length === data.length) {
-      return savedMovies;
-    } else {
-      const updatedMovies = data.map(movie => {
-        const randomOffset = Math.floor(Math.random() * 7);
-        const date = new Date();
-        date.setDate(date.getDate() + randomOffset);
-        return {
-          ...movie,
-          showDate: date.toISOString().split('T')[0],
-        };
-      });
-      localStorage.setItem('moviesWithDates', JSON.stringify(updatedMovies));
-      return updatedMovies;
-    }
-  }
-
-  function groupMoviesByDate(movies) {
-    return movies.reduce((acc, movie) => {
-      const date = movie.showDate;
-      if (!acc[date]) {
-        acc[date] = [];
+  // Gruppiert Showtimes den entsprechenden Filmen zu
+  function groupMoviesWithShowtimes(movies, showtimes) {
+    const showtimesMap = showtimes.reduce((acc, showtime) => {
+      if (!acc[showtime.movie_id]) {
+        acc[showtime.movie_id] = [];
       }
-      acc[date].push(movie);
+      acc[showtime.movie_id].push(showtime);
       return acc;
     }, {});
+
+    return movies.map(movie => ({
+      ...movie,
+      showtimes: showtimesMap[movie.id] || []
+    }));
   }
 
+  // Gruppiert Filme mit Showtimes nach Datum
+  function groupMoviesByDate(moviesWithShowtimes) {
+    const grouped = {};
+
+    moviesWithShowtimes.forEach(movie => {
+        movie.showtimes.forEach(showtime => {
+            const date = showtime.start_time.split('T')[0];
+            if (!grouped[date]) {
+                grouped[date] = [];
+            }
+            grouped[date].push({
+                ...movie,
+                showtime
+            });
+        });
+    });
+
+    // Sortiere die Showtimes innerhalb jedes Datums nach der Startzeit
+    for (const date in grouped) {
+        grouped[date].sort((a, b) => new Date(a.showtime.start_time) - new Date(b.showtime.start_time));
+    }
+
+    return grouped;
+}
+
+  // Daten beim Mounten der Komponente laden
   onMount(async () => {
     try {
-      const response = await fetch(API_URL);
-      const data = await response.json();
-      nowPlayingMovies = loadMovies(data.results);
-      groupedMovies = groupMoviesByDate(nowPlayingMovies);
+      // Lade jetzt laufende Filme und Showtimes gleichzeitig
+      const [moviesData, showtimesData] = await Promise.all([
+        fetchNowPlayingMovies(),
+        fetchShowtimesPublic()
+      ]);
+
+      nowPlayingMovies = moviesData.results;
+      showtimes = showtimesData.showtimes;
+
+      // Gruppiere Filme mit ihren Showtimes
+      const moviesWithShowtimes = groupMoviesWithShowtimes(nowPlayingMovies, showtimes);
+
+      // Gruppiere die Filme nach Datum
+      groupedMovies = groupMoviesByDate(moviesWithShowtimes);
     } catch (error) {
-      console.error('Fehler beim Laden der Filme:', error);
+      console.error('Fehler beim Laden der Filme oder Showtimes:', error);
+      error = "Es gab ein Problem beim Laden der Daten. Bitte versuche es später erneut.";
+      Swal.fire({
+        title: "Fehler",
+        text: error,
+        icon: "error",
+        confirmButtonText: "OK",
+      });
+    } finally {
+      loading = false;
     }
   });
 
+  // Navigation zur Film-Beschreibung
   function navigateToDescription(movie) {
     console.log('Navigiere zu Beschreibung mit ID:', movie.id);
     navigate(`/beschreibung/${movie.id}`);
   }
 </script>
 
+<!-- Popup für Filmdetails -->
 {#if isOpen && movie}
   <div class="popup-overlay" on:click={onClose}>
     <div class="popup-content" on:click|stopPropagation>
@@ -90,47 +129,49 @@
   </div>
 {/if}
 
-
 <main>
-  <h1>Aktuelles Kinoprogramm im CINEPHORIA</h1>
+  {#if loading}
+    <p>Lade Daten...</p>
+  {:else if error}
+    <p class="error">{error}</p>
+  {:else}
+    <h1>Aktuelles Kinoprogramm im CINEPHORIA</h1>
 
-  {#each Object.keys(groupedMovies).sort((a, b) => new Date(a) - new Date(b)) as dateKey}
-    <section>
-      <div class="day-header">
-        <h2>
-          {daysOfWeekMap[new Date(dateKey).getDay()] || "Unbekannter Tag"}, {formatDate(dateKey)}
-        </h2>
-      </div>
-      <div class="movies-container">
-        {#each groupedMovies[dateKey] as movie}
-          <article class="movie-card">
-            <button
-              class="movie-button"
-              on:click={() => navigateToDescription(movie)}
-              aria-label="Details zu {movie.title} anzeigen"
-            >
-              <div class="movie-image-container">
-                <img src="{IMAGE_BASE_URL}{movie.poster_path}" alt="{movie.title}" />
-                <div class="movie-hover-overlay">
-                  <span class="movie-title">{movie.title}</span>
+    {#each Object.keys(groupedMovies).sort((a, b) => new Date(a) - new Date(b)) as dateKey}
+      <section>
+        <div class="day-header">
+          <h2>
+            {daysOfWeekMap[new Date(dateKey).getDay()] || "Unbekannter Tag"}, {formatDate(dateKey)}
+          </h2>
+        </div>
+        <div class="movies-container">
+          {#each groupedMovies[dateKey] as { showtime, ...movie }}
+            <article class="movie-card">
+              <button
+                class="movie-button"
+                on:click={() => navigateToDescription(movie)}
+                aria-label="Details zu {movie.title} anzeigen"
+              >
+                <div class="movie-image-container">
+                  <img src="{IMAGE_BASE_URL}{movie.poster_path}" alt="{movie.title}" />
+                  <div class="movie-hover-overlay">
+                    <span class="movie-title">{movie.title}</span>
+                    <span class="showtime-info">
+                      {new Date(showtime.start_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    </span>
+                  </div>
                 </div>
-              </div>
-            </button>
-          </article>
-        {/each}
-      </div>
-    </section>
-  {/each}
+              </button>
+            </article>
+          {/each}
+        </div>
+      </section>
+    {/each}
+  {/if}
 </main>
 
-
-
 <style>
-  :global(body) {
-    margin: 0;
-    font-family: Arial, sans-serif;
-    background-color: #eeeded;
-  }
+  /* Bestehende Stile */
 
   h1 {
     text-align: center;
@@ -180,6 +221,7 @@
     overflow: hidden;
     transition: transform 0.2s ease, box-shadow 0.2s ease;
     cursor: pointer;
+    position: relative; /* Für die Positionierung des Hover-Overlays */
   }
 
   .movie-card:hover {
@@ -206,48 +248,48 @@
   }
 
   .movie-hover-overlay {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  background-color: rgba(0, 0, 0, 0.6);
-  opacity: 0;
-  transition: opacity 0.3s linear;
-  padding: 10px;
-  box-sizing: border-box;
-}
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background-color: rgba(0, 0, 0, 0.6);
+    opacity: 0;
+    transition: opacity 0.3s linear;
+    padding: 10px;
+    box-sizing: border-box;
+  }
 
-.movie-hover-overlay::after {
-  content: "Tickets";
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  width: 100%;
-  background-color: rgba(52, 152, 219, 0.9);
-  color: white;
-  text-align: center;
-  font-size: 1rem;
-  font-weight: bold;
-  padding: 5px 0;
-  box-sizing: border-box;
-  opacity: 0;
-  transform: translateY(100%);
-  transition: opacity 0.3s, transform 0.3s;
-}
+  .movie-hover-overlay::after {
+    content: "Tickets";
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    background-color: rgba(52, 152, 219, 0.9);
+    color: white;
+    text-align: center;
+    font-size: 1rem;
+    font-weight: bold;
+    padding: 5px 0;
+    box-sizing: border-box;
+    opacity: 0;
+    transform: translateY(100%);
+    transition: opacity 0.3s, transform 0.3s;
+  }
 
-.movie-image-container:hover .movie-hover-overlay::after {
-  opacity: 1;
-  transform: translateY(0);
-}
+  .movie-image-container:hover .movie-hover-overlay::after {
+    opacity: 1;
+    transform: translateY(0);
+  }
 
-.movie-image-container:hover .movie-hover-overlay {
-  opacity: 1;
-}
+  .movie-image-container:hover .movie-hover-overlay {
+    opacity: 1;
+  }
 
   .movie-title {
     color: #fff;
@@ -259,6 +301,17 @@
     line-height: 1.2; /* Abstände zwischen Zeilen */
   }
 
+  .showtime-info {
+    color: #fff;
+    font-size: 0.9rem;
+    margin-top: 5px;
+    text-align: center;
+    background-color: rgba(0, 0, 0, 0.6);
+    padding: 2px 5px;
+    border-radius: 4px;
+    margin-top: 5px;
+  }
+
   .movie-button {
     background: none;
     border: none;
@@ -268,7 +321,6 @@
     text-align: left;
     cursor: pointer;
   }
-
 
   .popup-overlay {
     position: fixed;
@@ -324,5 +376,13 @@
 
   .close-button:hover {
     color: red;
+  }
+
+  /* Zusätzliche Stile für die Fehleranzeige */
+  .error {
+    color: red;
+    text-align: center;
+    font-weight: bold;
+    margin-top: 20px;
   }
 </style>

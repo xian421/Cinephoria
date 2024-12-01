@@ -147,22 +147,20 @@ export async function deleteAllSeats(screenId, token) {
 }
 
 
-export async function fetchNowPlayingMovies(token) {
+export const fetchNowPlayingMovies = async () => {
     const response = await fetch(`${API_BASE_URL}/movies/now_playing`, {
         method: 'GET',
         headers: {
-            'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json',
         },
     });
 
+    const data = await response.json();
     if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Fehler beim Abrufen der Filme');
+        throw new Error(data.error || 'Fehler beim Abrufen der Filme');
     }
-
-    return await response.json();
-}
+    return data;
+};
 
 
 export async function createShowtime(showtimeData, token) {
@@ -216,6 +214,27 @@ export const updateShowtime = async (showtimeId, showtimeData, token) => {
     const data = await response.json();
     if (!response.ok) {
         throw new Error(data.error || 'Fehler beim Aktualisieren des Showtimes');
+    }
+    return data;
+};
+
+
+export const fetchShowtimesPublic = async (screenId = null) => {
+    let url = `${API_BASE_URL}/showtimes`;
+    if (screenId) {
+        url += `?screen_id=${screenId}`;
+    }
+
+    const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+    });
+
+    const data = await response.json();
+    if (!response.ok) {
+        throw new Error(data.error || 'Fehler beim Abrufen der Showtimes');
     }
     return data;
 };
