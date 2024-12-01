@@ -235,7 +235,7 @@ def get_cinemas():
         return jsonify({'error': 'Fehler beim Abrufen der Kinos'}), 500
 
 @app.route('/screens', methods=['GET'])
-@admin_required
+#@admin_required
 def get_screens():
     cinema_id = request.args.get('cinema_id', default=1, type=int)  # Standardwert: 1
     try:
