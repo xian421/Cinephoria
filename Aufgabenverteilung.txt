@@ -1,5 +1,8 @@
 Hi Jungs anbei die Aufgaben die noch offen sind, gerne weitere Ideen und Anregungen wie wir mit reinnehmen könnten aufnehmen:
 
+
+
+
 Backend:
 -> Chatbot 
 -> Ticketsystem
@@ -8,6 +11,12 @@ Backend:
 
 
 Frontend:
+- nowplaying: Schon vergangene nicht mehr Anzeigen (nach Enddatum)
+- Beschreibung: Zeit auswählen und mit klick zum Sitzplan kommen
+
+
+
+
 -> Seite etwas schöner machen
 -> Werbung
 -> Interaktives Video/ Intro für Kino 
