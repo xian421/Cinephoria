@@ -16,7 +16,7 @@ CORS(app, resources={
             "https://cinephoria-theta.vercel.app",
             "http://localhost:5173"
         ],
-        "methods": ["GET", "POST", "DELETE", "OPTIONS"],
+        "methods": ["GET", "POST", "DELETE", "OPTIONS", "PUT"],
         "allow_headers": ["Content-Type", "Authorization"]
     }
 })
