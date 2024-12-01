@@ -401,15 +401,23 @@ def delete_seat(seat_id):
 @app.route('/seats', methods=['DELETE'])
 @admin_required
 def delete_all_seats():
+    screen_id = request.args.get('screen_id')
+    if not screen_id:
+        return jsonify({'error': 'Screen ID ist erforderlich'}), 400
+
     try:
         with psycopg2.connect(DATABASE_URL) as conn:
             with conn.cursor() as cursor:
-                cursor.execute("DELETE FROM seats")
-                return jsonify({'message': 'Alle Sitze gelöscht'}), 200
+                cursor.execute("""
+                    DELETE FROM seats
+                    WHERE screen_id = %s
+                """, (screen_id,))
+                # rowcount kann ignoriert werden, da wir alle Sitze löschen
+
+        return jsonify({'message': 'Alle Sitze gelöscht'}), 200
     except Exception as e:
         print(f"Fehler beim Löschen aller Sitze: {e}")
         return jsonify({'error': 'Fehler beim Löschen aller Sitze'}), 500
-
 
 
 
