@@ -1,7 +1,7 @@
 <!-- src/routes/Adminseats.svelte -->
 <script>
     import { onMount } from "svelte";
-    import { fetchSeats, createSeat, deleteSeat } from '../services/api.js';
+    import { fetchSeats, createSeat, deleteAllSeats } from '../services/api.js';
     import { navigate } from "svelte-routing";
     import { get } from 'svelte/store';
     import { authStore } from '../stores/authStore.js';
@@ -117,14 +117,7 @@
             });
 
             // Lösche alle bestehenden Sitze für den Screen
-            const data = await fetchSeats(screenId, token);
-            if (data && data.seats) {
-                for (const seat of data.seats) {
-                    if (seat.seat_id) {
-                        await deleteSeat(seat.seat_id, token);
-                    }
-                }
-            }
+            await deleteAllSeats(screenId, token);
 
             // Erstelle alle aktiven Sitze aus dem aktuellen Grid
             let selectedSeats = [];
@@ -371,6 +364,8 @@
             <button on:click={removeColumn} disabled={!editMode || grid[0].length <= 1}>Spalte entfernen</button>
             <button on:click={logSelectedSeats}>Ausgewählte Sitze anzeigen</button>
         </div>
+        <p> LEINWAND <br>
+   _____________________________________ </p>
 
         <div class="grid-container">
             <!-- Spaltennummern -->
