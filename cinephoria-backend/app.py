@@ -599,6 +599,54 @@ def create_booking():
         return jsonify({'error': 'Fehler beim Erstellen der Buchung'}), 500
 
 
+@app.route('/showtimes/<int:showtime_id>/seats', methods=['GET'])
+@token_required  # Optional: Falls nur authentifizierte Benutzer Sitzplätze abrufen dürfen
+def get_seats_for_showtime(showtime_id):
+    try:
+        with psycopg2.connect(DATABASE_URL) as conn:
+            with conn.cursor() as cursor:
+                # Ermitteln des Kinosaals für die Showtime
+                cursor.execute("""
+                    SELECT screen_id FROM showtimes WHERE showtime_id = %s
+                """, (showtime_id,))
+                screen = cursor.fetchone()
+                if not screen:
+                    return jsonify({'error': 'Showtime nicht gefunden'}), 404
+                screen_id = screen[0]
+                
+                # Abrufen aller Sitzplätze für den Kinosaal
+                cursor.execute("""
+                    SELECT seat_id, row, number, type FROM seats
+                    WHERE screen_id = %s
+                    ORDER BY row, number
+                """, (screen_id,))
+                seats = cursor.fetchall()
+                
+                # Abrufen aller bereits gebuchten Sitzplätze für die Showtime
+                cursor.execute("""
+                    SELECT bs.seat_id FROM booking_seats bs
+                    JOIN bookings b ON bs.booking_id = b.booking_id
+                    WHERE b.showtime_id = %s AND b.payment_status = 'completed'
+                """, (showtime_id,))
+                booked_seat_ids = {row[0] for row in cursor.fetchall()}
+                
+                # Strukturieren der Sitzplatzdaten
+                seats_list = []
+                for seat in seats:
+                    seat_id, row, number, seat_type = seat
+                    status = 'unavailable' if seat_id in booked_seat_ids else 'available'
+                    seats_list.append({
+                        'seat_id': seat_id,
+                        'row': row,
+                        'number': number,
+                        'type': seat_type,
+                        'status': status
+                    })
+                
+        return jsonify({'seats': seats_list}), 200
+    except Exception as e:
+        print(f"Fehler beim Abrufen der Sitzplätze: {e}")
+        return jsonify({'error': 'Fehler beim Abrufen der Sitzplätze'}), 500
 
 
 
