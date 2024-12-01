@@ -451,22 +451,26 @@ def create_showtime():
 @app.route('/showtimes', methods=['GET'])
 def get_showtimes():
     screen_id = request.args.get('screen_id')  # Optional: Filter nach Screen
+    movie_id = request.args.get('movie_id')    # Optional: Filter nach Movie
     try:
         with psycopg2.connect(DATABASE_URL) as conn:
             with conn.cursor() as cursor:
+                query = """
+                    SELECT showtime_id, movie_id, screen_id, start_time, end_time
+                    FROM showtimes
+                """
+                params = []
+                conditions = []
                 if screen_id:
-                    cursor.execute("""
-                        SELECT showtime_id, movie_id, screen_id, start_time, end_time
-                        FROM showtimes
-                        WHERE screen_id = %s
-                        ORDER BY start_time
-                    """, (screen_id,))
-                else:
-                    cursor.execute("""
-                        SELECT showtime_id, movie_id, screen_id, start_time, end_time
-                        FROM showtimes
-                        ORDER BY start_time
-                    """)
+                    conditions.append("screen_id = %s")
+                    params.append(screen_id)
+                if movie_id:
+                    conditions.append("movie_id = %s")
+                    params.append(movie_id)
+                if conditions:
+                    query += " WHERE " + " AND ".join(conditions)
+                query += " ORDER BY start_time"
+                cursor.execute(query, tuple(params))
                 showtimes = cursor.fetchall()
                 # Strukturieren der Daten als Liste von Dictionaries
                 showtimes_list = [{
@@ -480,6 +484,7 @@ def get_showtimes():
     except Exception as e:
         print(f"Fehler beim Abrufen der Showtimes: {e}")
         return jsonify({'error': 'Fehler beim Abrufen der Showtimes'}), 500
+
 
 
 
