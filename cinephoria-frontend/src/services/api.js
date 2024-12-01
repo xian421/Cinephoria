@@ -238,3 +238,53 @@ export const fetchShowtimesPublic = async (screenId = null) => {
     }
     return data;
 };
+
+
+export const fetchMovieDetails = async (movie_ID) => {
+    const response = await fetch(`${API_BASE_URL}/movies/${movie_ID}`, {
+        method: 'GET',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+    });
+
+    const data = await response.json();
+    if (!response.ok) {
+        throw new Error(data.error || 'Fehler beim Abrufen des Films');
+    }
+    return data;
+};
+
+
+
+export const fetchMovieFSK = async (movie_id) => {
+    const response = await fetch(`${API_BASE_URL}/movie/${movie_id}/release_dates`, {
+        method: 'GET',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+    });
+    const data = await response.json();
+    if (!response.ok) {
+        throw new Error(data.error || 'Fehler beim Abrufen des FSK');
+    }
+    return data;
+};
+
+
+export const fetchShowtimesByMovie = async (movieId) => {
+    const url = `${API_BASE_URL}/showtimes?movie_id=${movieId}`;
+
+    const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+    });
+
+    const data = await response.json();
+    if (!response.ok) {
+        throw new Error(data.error || 'Fehler beim Abrufen der Showtimes');
+    }
+    return data;
+};

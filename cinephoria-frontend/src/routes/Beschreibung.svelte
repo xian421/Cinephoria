@@ -1,13 +1,28 @@
+<!-- src/routes/Beschreibung.svelte -->
 <script>
-  export let id; // ID wird von der Route übergeben
   import { onMount } from 'svelte';
+  import { navigate } from 'svelte-routing';
+  import Swal from 'sweetalert2';
+  import { fetchMovieDetails, fetchMovieFSK, fetchShowtimesByMovie, fetchScreens } from '../services/api.js';
+  import { get } from 'svelte/store';
+  import { authStore } from '../stores/authStore'; 
   import "@fortawesome/fontawesome-free/css/all.min.css";
 
-  let moviefsk = {};  // Initialisierung von moviefsk
+  
+  export let id; // ID wird von der Route übergeben
+
+  let moviefsk = {};  
   let movieDetails = {};
+  let showtimes = [];
+  let screens = {}; // Map von screen_id zu screen_details
   const IMAGE_BASE_URL = 'https://image.tmdb.org/t/p/w500';
   let isLoading = true;
   let error = null;
+
+  // Variablen für das Popup
+  let isOpen = false;
+  let selectedShowtime = null;
+  let movie_certification = "";
 
   onMount(async () => {
     if (!id) {
@@ -17,29 +32,64 @@
       return;
     }
     try {
-      const response = await fetch(
-        `https://cinephoria-backend-c53f94f0a255.herokuapp.com/movies/${id}`
-      );
-      if (response.ok) {
-        movieDetails = await response.json();
-        
-        const responsefsk = await fetch (
-        `https://cinephoria-backend-c53f94f0a255.herokuapp.com/movie/${id}/release_dates`
-        );
-        if (responsefsk.ok){
-          moviefsk = await responsefsk.json();
-        } else {
-          console.error('Fehler beim Laden der Filmdetails:', response.statusText);
-          error = 'Fehler beim Laden der Filmdetails.';
+      // Abrufen der Filmdetails und FSK gleichzeitig
+      const [details, fsk, showtimesData, screensData] = await Promise.all([
+        fetchMovieDetails(id),
+        fetchMovieFSK(id),
+        fetchShowtimesByMovie(id),
+        fetchScreens(get(authStore).token)
+      ]);
+
+      movieDetails = details;
+      moviefsk = fsk;
+      try {
+        movie_certification = moviefsk.release_dates[0].certification;
+        if (movie_certification == '') {
+          movie_certification = moviefsk.release_dates[1].certification;
         }
+      } catch (error) {
+        movie_certification = "Keine Angaben";
+        console.error('Fehler beim Laden der FSK:', error);
       }
+
+      showtimes = showtimesData.showtimes;
+
+      // Erstelle eine Map von screen_id zu screen_details für einfaches Nachschlagen
+      screensData.screens.forEach(screen => {
+        screens[screen.screen_id] = screen;
+      });
+      
     } catch (err) {
       console.error('Netzwerkfehler:', err);
       error = 'Netzwerkfehler. Bitte versuche es erneut.';
+      Swal.fire({
+        title: "Fehler",
+        text: error,
+        icon: "error",
+        confirmButtonText: "OK",
+      });
     } finally {
       isLoading = false;
     }
   });
+
+  // Funktion zur Navigation zur Buchungsseite oder weiteren Details
+  function navigateToBooking(showtime) {
+    console.log('Navigiere zu Buchung mit Showtime ID:', showtime.showtime_id);
+    navigate(`/buchung/${showtime.showtime_id}`);
+  }
+
+  // Funktion zum Öffnen des Showtimes Popups
+  function openShowtimePopup(showtime) {
+    selectedShowtime = showtime;
+    isOpen = true;
+  }
+
+  // Funktion zum Schließen des Showtimes Popups
+  function closeShowtimePopup() {
+    isOpen = false;
+    selectedShowtime = null;
+  }
 </script>
 
 <style>
@@ -48,6 +98,7 @@
     gap: 2rem;
     padding: 2rem;
     font-family: Arial, sans-serif;
+    flex-wrap: wrap;
   }
 
   .poster {
@@ -57,7 +108,8 @@
   }
 
   .details {
-    flex: 1;
+    flex: 2;
+    min-width: 300px;
   }
 
   .title {
@@ -75,13 +127,23 @@
   .meta {
     margin-bottom: 1.5rem;
     color: #555;
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+
+  .meta i {
+    font-size: 20px; /* Größe des Icons */
+    color: #555; /* Farbe des Icons */
+    margin-right: 2px; /* Abstand zwischen Icon und Text */
+    vertical-align: middle; /* Mittige Ausrichtung mit dem Text */
   }
 
   .description {
     margin-bottom: 2rem;
     line-height: 1.6;
   }
-
 
   .highlight {
     font-weight: bold;
@@ -92,70 +154,236 @@
     color: red;
     font-size: 1.2rem;
     margin: 2rem;
+    text-align: center;
   }
 
-  .meta i {
-  font-size: 20px; /* Größe des Icons */
-  color: #555; /* Farbe des Icons */
-  margin-right: 5px; /* Abstand zwischen Icon und Text */
-  vertical-align: middle; /* Mittige Ausrichtung mit dem Text */
-}
+  /* Neue Klasse für Showtimes */
+  .showtimes {
+    flex: 1;
+    min-width: 250px;
+    max-width: 300px;
+  }
 
+  .showtimes-container {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .showtime-box {
+    background-color: #7acde1;
+    border-radius: 8px;
+    padding: 0.5rem;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    cursor: pointer;
+    transition: transform 0.2s, box-shadow 0.2s;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .showtime-box:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  }
+
+  .showtime-date {
+    color: black;
+    font-weight: bold;
+    font-size: 0.9rem;
+  }
+
+  .showtime-time {
+    color: #1321bc;
+    font-weight: bold;
+    font-size: 1.6rem;
+  }
+
+  .showtime-screen {
+    color: #555;
+    font-size: 0.7rem;
+  }
+
+  /* Popup Styles */
+  .popup-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.7);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+  }
+
+  .popup-content {
+    background: white;
+    padding: 20px;
+    border-radius: 8px;
+    max-width: 400px;
+    width: 90%;
+    text-align: center;
+    position: relative;
+  }
+
+  .popup-showtime-details h2 {
+    margin-bottom: 1rem;
+    font-size: 1.5rem;
+    color: #333;
+  }
+
+  .popup-showtime-details p {
+    margin: 0.5rem 0;
+    font-size: 1rem;
+    color: #555;
+  }
+
+  .book-button {
+    margin-top: 1rem;
+    padding: 0.5rem 1rem;
+    background-color: #3498db;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+  }
+
+  .book-button:hover {
+    background-color: #2980b9;
+  }
+
+  .close-button {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    cursor: pointer;
+    color: #333;
+  }
+
+  .close-button:hover {
+    color: red;
+  }
+
+  /* Responsive Anpassungen */
+  @media (max-width: 1000px) {
+    .movie-container {
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .showtimes {
+      max-width: none;
+      width: 100%;
+    }
+  }
 </style>
 
-{#if isLoading}
-  <p>Lade Filmdetails...</p>
-{:else if error}
-  <p class="error">{error}</p>
-{:else if movieDetails.title}
-  <div class="movie-container">
-    <!-- Linke Spalte: Poster -->
-    <div>
-      <img
-        src="{IMAGE_BASE_URL}{movieDetails.poster_path}"
-        alt="{movieDetails.title}"
-        class="poster"
-      />
-    </div>
-
-    <!-- Rechte Spalte: Details -->
-    <div class="details">
-      <div class="title">{movieDetails.title}</div>
-      <div class="tagline">{movieDetails.tagline}</div>
-      <div class="meta">
-        <i class="fas fa-clock"></i> {movieDetails.runtime} '
-        <span>FSK: {moviefsk.release_dates[0].certification ? moviefsk.release_dates[0].certification : 'Nicht verfügbar'}</span> 
-        <span>Genre: {movieDetails.genres ? movieDetails.genres.map((genre) => genre.name).join(", ") : 'Keine Angaben'}</span>
-      </div>
-      
-      <div class="description">{movieDetails.overview}</div>
-
-      <!-- Produktionsfirmen -->
-      <div>
-        <h3>Produktionsfirmen:</h3>
-        <ul>
-          {#each movieDetails.production_companies as company}
-            <li>{company.name}</li>
-          {/each}
-        </ul>
-      </div>
-
-      <!-- Erscheinungsdatum -->
-      <div>
-        <h3>Veröffentlichung:</h3>
-        <p>{movieDetails.release_date}</p>
-      </div>
-
-      <!-- Bewertungen -->
-      <div>
-        <h3>Bewertung:</h3>
-        <p>
-          <span class="highlight">{movieDetails.vote_average.toFixed(1)}</span> 
-          von {movieDetails.vote_count} Stimmen
-        </p>
+<!-- Popup für Showtimes -->
+{#if isOpen && selectedShowtime}
+  <div class="popup-overlay" on:click={closeShowtimePopup}>
+    <div class="popup-content" on:click|stopPropagation>
+      <button class="close-button" on:click={closeShowtimePopup}>×</button>
+      <div class="popup-showtime-details">
+        <h2>Showtime Details</h2>
+        <p><strong>Datum:</strong> {new Date(selectedShowtime.start_time).toLocaleDateString()}</p>
+        <p><strong>Startzeit:</strong> {new Date(selectedShowtime.start_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
+        {#if selectedShowtime.end_time}
+          <p><strong>Endzeit:</strong> {new Date(selectedShowtime.end_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
+        {/if}
+        <p><strong>Kinosaal:</strong> {screens[selectedShowtime.screen_id]?.name || 'Unbekannt'}</p>
+        <button on:click={() => navigateToBooking(selectedShowtime)} class="book-button">Tickets buchen</button>
       </div>
     </div>
   </div>
-{:else}
-  <p>Filmdetails konnten nicht geladen werden.</p>
 {/if}
+
+<main>
+  {#if isLoading}
+    <p>Lade Filmdetails...</p>
+  {:else if error}
+    <p class="error">{error}</p>
+  {:else if movieDetails.title}
+    <div class="movie-container">
+      <!-- Linke Spalte: Poster -->
+      <div>
+        <img
+          src="{IMAGE_BASE_URL}{movieDetails.poster_path}"
+          alt="{movieDetails.title}"
+          class="poster"
+        />
+      </div>
+
+      <!-- Mittlere Spalte: Details -->
+      <div class="details">
+        <div class="title">{movieDetails.title}</div>
+        <div class="tagline">{movieDetails.tagline}</div>
+        <div class="meta" style="gap: 0px;">
+          <i class="fas fa-clock"></i> {movieDetails.runtime}'    
+          <span style="margin-left: 5px;"> FSK:{movie_certification}</span> 
+          <span style="margin-left: 5px;">Genre: {movieDetails.genres ? movieDetails.genres.map((genre) => genre.name).join(", ") : 'Keine Angaben'}</span>
+        </div>
+        
+        <div class="description">{movieDetails.overview}</div>
+<!--
+         Produktionsfirmen
+        <div>
+          <h3>Produktionsfirmen:</h3>
+          <ul>
+            {#each movieDetails.production_companies as company}
+              <li>{company.name}</li>
+            {/each}
+          </ul>
+        </div>
+
+        <div>
+          <h3>Veröffentlichung:</h3>
+          <p>{movieDetails.release_date}</p>
+        </div>
+
+        <div>
+          <h3>Bewertung:</h3>
+          <p>
+            <span class="highlight">{movieDetails.vote_average.toFixed(1)}</span> 
+            von {movieDetails.vote_count} Stimmen
+          </p>
+        </div>-->
+      </div> 
+
+      <!-- Rechte Spalte: Showtimes -->
+      <div class="showtimes">
+        {#if showtimes.length > 0}
+          <div class="showtimes-container">
+            {#each showtimes as showtime}
+              <div class="showtime-box" on:click={() => openShowtimePopup(showtime)}>
+                <div class="showtime-date">
+                  {new Date(showtime.start_time).toLocaleDateString()}
+                </div>
+                <div class="showtime-time">
+                  {new Date(showtime.start_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}Uhr
+                </div>
+                <div class="showtime-screen">
+                  {screens[showtime.screen_id]?.name || 'Unbekannt'}
+                </div>
+              </div>
+            {/each}
+            <div style="display: inline-block; padding: 10px; background-color: #65797e; color: white; clip-path: polygon(0 0, 90% 0, 100% 50%, 90% 100%, 0 100%); font-family: Arial, sans-serif; font-size: 16px; text-align: center;">
+              <div style="font-size: 24px; font-weight: bold;">+13(stimmt net)</div>
+              <div style="font-size: 14px;">weitere<br>Vorstellungen</div>
+            </div>
+            
+          </div>
+        {:else}
+          <p>Keine Vorstellungen verfügbar.</p>
+        {/if}
+      </div>
+    </div>
+  {:else}
+    <p>Filmdetails konnten nicht geladen werden.</p>
+  {/if}
+</main>
