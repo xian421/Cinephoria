@@ -288,3 +288,45 @@ export const fetchShowtimesByMovie = async (movieId) => {
     }
     return data;
 };
+
+
+export const fetchSeatsForShowtime = async (showtimeId, token) => {
+    const url = `${API_BASE_URL}/showtimes/${showtimeId}/seats`;
+
+    const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
+        },
+    });
+
+    const data = await response.json();
+    if (!response.ok) {
+        throw new Error(data.error || 'Fehler beim Abrufen der Sitzplätze.');
+    }
+    return data;
+};
+
+// Funktion zum Erstellen einer Buchung
+export const createBooking = async (showtimeId, seatIds, token) => {
+    const url = `${API_BASE_URL}/bookings`;
+
+    const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+            showtime_id: showtimeId,
+            seat_ids: seatIds,
+        }),
+    });
+
+    const data = await response.json();
+    if (!response.ok) {
+        throw new Error(data.error || 'Fehler beim Erstellen der Buchung.');
+    }
+    return data;
+};
