@@ -178,9 +178,44 @@
         })}>
             Impressum
         </button>
-        <button on:click={() => alert("Datenschutz anzeigen!")}>
-            Datenschutz
-        </button>
+        <button on:click={() => Swal.fire({
+          title: "Datenschutzerklärung",
+          icon: "info",
+          html: `
+              <h3>Verantwortlicher</h3>
+              <p>Max Mustermann<br />
+              Musterweg 111<br />
+              Hausnummer 44<br />
+              90210 Musterstadt</p>
+      
+              <h3>Datenerhebung</h3>
+              <p>Wir erheben, verarbeiten und nutzen personenbezogene Daten nur, soweit dies für die Bereitstellung unserer Dienste erforderlich ist. Dazu gehören:</p>
+              <ul style="text-align: left; margin-left: 10px;">
+                  <li>Kontaktinformationen (Name, E-Mail, Telefonnummer)</li>
+                  <li>Nutzungsdaten (IP-Adresse, Zeitstempel der Nutzung)</li>
+              </ul>
+      
+              <h3>Verwendung der Daten</h3>
+              <p>Ihre Daten werden für folgende Zwecke verwendet:</p>
+              <ul style="text-align: left; margin-left: 10px;">
+                  <li>Bereitstellung unserer Dienstleistungen</li>
+                  <li>Verbesserung der Nutzererfahrung</li>
+                  <li>Kommunikation und Support</li>
+              </ul>
+      
+              <h3>Ihre Rechte</h3>
+              <p>Sie haben das Recht, jederzeit Auskunft über die bei uns gespeicherten Daten zu erhalten. Darüber hinaus können Sie die Berichtigung, Sperrung oder Löschung Ihrer Daten verlangen, soweit keine gesetzlichen Aufbewahrungspflichten bestehen.</p>
+      
+              <h3>Kontakt</h3>
+              <p>Für Anfragen zum Datenschutz kontaktieren Sie uns bitte:</p>
+              <p>E-Mail: datenschutz@musterfirma.de<br />
+              Telefon: +49 (0) 123 44 55 66</p>
+          `,
+          confirmButtonText: "Schließen"
+      })}>
+          Datenschutz
+      </button>
+      
     </div>
 
     <!-- Social-Media-Icons -->

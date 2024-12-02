@@ -19,6 +19,8 @@
   import Adminseats from "./routes/Adminseats.svelte";
   import Buchung from './routes/Buchung.svelte';
   import Unauthorized from "./routes/Unauthorized.svelte";
+  import Profile from "./routes/profile.svelte";
+  import Einstellung from "./routes/einstellung.svelte";
 
   // Import von Svelte Stores
   import { authStore, setAuth, updateAuth } from './stores/authStore.js';
@@ -223,6 +225,9 @@
       <Route path="/register" component={Register} />
       <Route path="/forgot-password" component={Forgotpassword} />
       <Route path="/buchung/:showtime_id" component={Buchung} />
+      <Route path="/profile" component={Profile} />
+      <Route path="/einstellung" component={Einstellung} />
+
 
       <!-- Geschützte Admin-Routen mit ProtectedRoute -->
       <Route path="/adminkinosaal" let:params>

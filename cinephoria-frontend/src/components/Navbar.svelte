@@ -211,6 +211,8 @@
   
     .profile-container:hover {
       transform: scale(1.1);
+      
+
     }
   
     .profile-initials {
@@ -224,6 +226,7 @@
       color: white;
       font-size: 20px;
       font-weight: bold;
+      
     }
 
   
@@ -271,8 +274,8 @@
             </div>
             <div class="profile-dropdown-menu">
                 <ul>
-                    <li on:click={() => navigate('/profil')}>Profil anzeigen</li>
-                    <li on:click={() => navigate('/einstellungen')}>Einstellungen</li>
+                    <li on:click={() => navigate('/profile')}>Profil anzeigen</li>
+                    <li on:click={() => navigate('/einstellung')}>Einstellungen</li>
                     <li on:click={() => navigate('/adminkinosaal')}>Kinosaal</li>
                     <li on:click={() => navigate('/adminshowtime')}>Vorstellung erstellen</li>
                     <li on:click={logout}>Abmelden</li>

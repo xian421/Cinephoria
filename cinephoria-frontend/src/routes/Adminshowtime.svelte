@@ -208,93 +208,168 @@
         align-items: center;
         font-family: Arial, sans-serif;
         padding: 20px;
+        background: linear-gradient(145deg, #f8f9fa, #ffffff);
+        min-height: 100vh;
+        color: #333;
+    }
+
+    h1, h2 {
+        color: #1976d2;
+        margin-bottom: 20px;
+        text-align: center;
     }
 
     form {
         display: flex;
         flex-direction: column;
         gap: 15px;
-        width: 300px;
+        width: 100%;
+        max-width: 400px;
+        background: #ffffff;
+        padding: 20px;
+        border-radius: 12px;
+        box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
     }
 
-    label {
+    form label {
         display: flex;
         flex-direction: column;
         font-weight: bold;
+        font-size: 1rem;
+        margin-bottom: 5px;
     }
 
-    select, input {
-        padding: 8px;
-        font-size: 14px;
-        margin-top: 5px;
-    }
-
-    button {
+    form select, form input {
         padding: 10px;
-        font-size: 16px;
+        font-size: 1rem;
+        border: 1px solid #ccc;
+        border-radius: 8px;
+        background: #f8f9fa;
+        transition: all 0.3s ease;
+    }
+
+    form select:focus, form input:focus {
+        border-color: #1976d2;
+        box-shadow: 0 0 8px rgba(25, 118, 210, 0.3);
+        outline: none;
+    }
+
+    form button {
+        padding: 12px;
+        font-size: 1rem;
         cursor: pointer;
         border: none;
-        background-color: #1976d2;
-        color: white;
-        border-radius: 5px;
-        transition: background-color 0.3s;
+        background: #1976d2;
+        color: #ffffff;
+        border-radius: 8px;
+        transition: background-color 0.3s ease, transform 0.2s ease;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
     }
 
-    button:hover {
+    form button:hover {
         background-color: #1565c0;
     }
 
-    .error {
-        color: red;
-        font-weight: bold;
+    form button:active {
+        transform: scale(0.98);
     }
 
     .back-button {
         margin-top: 20px;
         background-color: #757575;
+        font-size: 1rem;
+        padding: 10px 20px;
+        border-radius: 8px;
+        color: #fff;
+        cursor: pointer;
+        transition: background-color 0.3s ease;
     }
 
     .back-button:hover {
         background-color: #616161;
     }
 
+    .error {
+        color: red;
+        font-weight: bold;
+        margin-bottom: 20px;
+    }
+
     table {
-        width: 80%;
+        width: 100%;
+        max-width: 800px;
         border-collapse: collapse;
         margin-top: 30px;
+        background: #ffffff;
+        border-radius: 12px;
+        overflow: hidden;
+        box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
     }
 
     th, td {
         border: 1px solid #ddd;
-        padding: 8px;
+        padding: 12px;
         text-align: center;
+        font-size: 1rem;
     }
 
     th {
-        background-color: #f2f2f2;
+        background-color: #1976d2;
+        color: white;
+        font-size: 1.1rem;
+    }
+
+    tbody tr:nth-child(even) {
+        background-color: #f8f9fa;
+    }
+
+    tbody tr:hover {
+        background-color: #f1f1f1;
     }
 
     .edit-form {
         display: flex;
         flex-direction: column;
-        gap: 10px;
-        margin-top: 20px;
-        width: 300px;
+        gap: 15px;
+        width: 100%;
+        max-width: 400px;
+        margin: 20px auto;
+        background: #ffffff;
+        padding: 20px;
+        border-radius: 12px;
+        box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
     }
 
     .edit-buttons {
         display: flex;
         gap: 10px;
+        margin-top: 10px;
     }
 
     .cancel-button {
         background-color: #f44336;
+        padding: 12px;
+        font-size: 1rem;
+        color: white;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: background-color 0.3s ease;
     }
 
     .cancel-button:hover {
         background-color: #d32f2f;
     }
+
+    .edit-buttons button {
+        flex: 1;
+    }
+
+    .edit-buttons button:hover {
+        transform: none;
+    }
 </style>
+
 
 <main>
     {#if error}
@@ -302,12 +377,12 @@
     {:else if loading}
         <p>Lade Daten...</p>
     {:else}
-        <h1>Showtime hinzufügen und bearbeiten</h1>
+        <h1>Film Editor</h1>
         <form on:submit|preventDefault={handleSubmit}>
             <label>
                 Film auswählen:
                 <select bind:value={selectedMovieId} required>
-                    <option value="" disabled>-- Wähle einen Film --</option>
+                    <option value="" disabled>-- Film --</option>
                     {#each movies as movie}
                         <option value={movie.id}>{movie.title}</option>
                     {/each}
@@ -317,7 +392,7 @@
             <label>
                 Kinosaal auswählen:
                 <select bind:value={selectedScreenId} required>
-                    <option value="" disabled>-- Wähle einen Kinosaal --</option>
+                    <option value="" disabled>-- Kinosaal --</option>
                     {#each screens as screen}
                         <option value={screen.screen_id}>Kinosaal: {screen.name}</option>
                     {/each}
@@ -337,7 +412,7 @@
             <button type="submit">Showtime hinzufügen</button>
         </form>
 
-        <h2>Bestehende Showtimes</h2>
+        <h2>Film-Tabelle</h2>
         <table>
             <thead>
                 <tr>
