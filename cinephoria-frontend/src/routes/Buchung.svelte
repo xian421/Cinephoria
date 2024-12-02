@@ -3,7 +3,7 @@
     import { onMount } from 'svelte';
     import { navigate } from 'svelte-routing';
     import Swal from 'sweetalert2';
-    import { fetchSeatsForShowtime, createBooking } from '../services/api.js';
+    import { fetchSeatsForShowtime, createBooking, createPayPalOrder, capturePayPalOrder } from '../services/api.js';
     import { get } from 'svelte/store';
     import { authStore } from '../stores/authStore'; 
 
@@ -18,7 +18,12 @@
     // Neue Variable für gruppierte Sitzplätze
     let seatsByRow = {};
 
+    // PayPal Client ID aus Umgebungsvariablen oder Backend beziehen
+    // Für dieses Beispiel nehmen wir an, dass Sie sie als Umgebungsvariable bereitstellen
+    const PAYPAL_CLIENT_ID = 'AXWfRwPPgPCoOBZzqI-r4gce1HuWZXDnFqUdES0bP8boKSv5KkkPvZrMFwcCDShXjC3aTdChUjOhwxhW'; // Ersetzen Sie dies durch Ihre tatsächliche Client ID
+
     onMount(async () => {
+        console.log('onMount gestartet');
         if (!showtime_id) {
             console.error('Keine Showtime-ID gefunden!');
             error = 'Keine Showtime-ID gefunden!';
@@ -29,10 +34,13 @@
         try {
             const token = get(authStore).token;
             const data = await fetchSeatsForShowtime(showtime_id, token);
+            console.log('Empfangene Sitzplätze:', data.seats);
             seats = data.seats; // Format: [{ seat_id, row, number, type, status }, ...]
+            console.log('Zugewiesene Sitzplätze:', seats);
 
             // Sitzplätze nach Reihen gruppieren
             seatsByRow = groupSeatsByRow(seats);
+            console.log('Sitzplätze nach Reihen gruppiert:', seatsByRow);
         } catch (err) {
             console.error('Netzwerkfehler:', err);
             error = 'Netzwerkfehler. Bitte versuche es erneut.';
@@ -44,6 +52,7 @@
             });
         } finally {
             isLoading = false;
+            console.log('isLoading auf false gesetzt');
         }
     });
 
@@ -73,19 +82,36 @@
 
     // Funktion zum Auswählen/Abwählen von Sitzplätzen
     function toggleSeatSelection(seat) {
-        if (seat.status !== 'available') return;
+        console.log('toggleSeatSelection aufgerufen für Sitz:', seat);
+        if (seat.status !== 'available') {
+            console.log('Sitz ist nicht verfügbar:', seat);
+            return;
+        }
 
         if (isSelected(seat.seat_id)) {
             // Sitzplatz abwählen
             selectedSeats = selectedSeats.filter(s => s.seat_id !== seat.seat_id);
+            console.log('Sitzplatz abgewählt:', seat.seat_id);
         } else {
             // Sitzplatz auswählen
             selectedSeats = [...selectedSeats, seat];
+            console.log('Sitzplatz ausgewählt:', seat.seat_id);
         }
+        console.log('Aktuelle selectedSeats:', selectedSeats);
     }
 
-    // Funktion zum Bestätigen der Buchung
-    async function confirmBooking() {
+    // Funktion zur Überprüfung, ob ein Sitz ausgewählt ist
+    function isSelected(seat_id) {
+        const result = selectedSeats.some(seat => seat.seat_id === seat_id);
+        console.log(`isSelected(${seat_id}):`, result);
+        return result;
+    }
+
+    // Reaktives Statement zur Überwachung von selectedSeats
+    $: console.log('Reaktives selectedSeats:', selectedSeats);
+
+    // Funktion zur Bestätigung der Buchung mit PayPal
+    async function confirmBooking(orderID) {
         if (selectedSeats.length === 0) {
             Swal.fire({
                 title: "Keine Sitzplätze ausgewählt",
@@ -99,7 +125,7 @@
         try {
             const token = get(authStore).token;
             const seatIds = selectedSeats.map(seat => seat.seat_id);
-            const booking = await createBooking(showtime_id, seatIds, token);
+            const booking = await createBooking(showtime_id, seatIds, token, orderID);
             Swal.fire({
                 title: "Buchung erfolgreich",
                 text: "Deine Tickets wurden erfolgreich gebucht.",
@@ -119,18 +145,120 @@
         }
     }
 
-    // Funktion zur Überprüfung, ob ein Sitz ausgewählt ist
-    function isSelected(seat_id) {
-        return selectedSeats.some(seat => seat.seat_id === seat_id);
-    }
+    // PayPal SDK laden und PayPal Buttons rendern
+    onMount(() => {
+        if (!PAYPAL_CLIENT_ID) {
+            console.error('PayPal Client ID ist nicht gesetzt!');
+            Swal.fire({
+                title: "Fehler",
+                text: 'PayPal Client ID ist nicht gesetzt.',
+                icon: "error",
+                confirmButtonText: "OK",
+            });
+            return;
+        }
+
+        const script = document.createElement('script');
+        script.src = `https://www.paypal.com/sdk/js?client-id=${PAYPAL_CLIENT_ID}&currency=EUR`;
+        script.addEventListener('load', () => {
+            if (!window.paypal) {
+                console.error('PayPal SDK konnte nicht geladen werden.');
+                Swal.fire({
+                    title: "Fehler",
+                    text: 'PayPal SDK konnte nicht geladen werden.',
+                    icon: "error",
+                    confirmButtonText: "OK",
+                });
+                return;
+            }
+
+            window.paypal.Buttons({
+                style: {
+                    layout: 'vertical',
+                    color:  'blue',
+                    shape:  'rect',
+                    label:  'paypal'
+                },
+                createOrder: async (data, actions) => {
+                    if (selectedSeats.length === 0) {
+                        Swal.fire({
+                            title: "Keine Sitzplätze ausgewählt",
+                            text: "Bitte wähle mindestens einen Sitzplatz aus.",
+                            icon: "warning",
+                            confirmButtonText: "OK",
+                        });
+                        throw new Error('Keine Sitzplätze ausgewählt');
+                    }
+
+                    try {
+                        const token = get(authStore).token;
+                        if (!token) {
+                            throw new Error('Nicht authentifiziert');
+                        }
+                        const response = await createPayPalOrder(showtime_id, selectedSeats, token);
+                        return response.orderID;
+                    } catch (err) {
+                        console.error('Fehler beim Erstellen der PayPal-Order:', err);
+                        Swal.fire({
+                            title: "Fehler",
+                            text: 'Es gab ein Problem beim Erstellen der Zahlung. Bitte versuche es erneut.',
+                            icon: "error",
+                            confirmButtonText: "OK",
+                        });
+                        throw err;
+                    }
+                },
+                onApprove: async (data, actions) => {
+                    try {
+                        const token = get(authStore).token;
+                        if (!token) {
+                            throw new Error('Nicht authentifiziert');
+                        }
+                        const captureResult = await capturePayPalOrder(data.orderID, token);
+                        if (captureResult.status === 'COMPLETED') {
+                            await confirmBooking(data.orderID);
+                        } else {
+                            throw new Error('Zahlung wurde nicht abgeschlossen.');
+                        }
+                    } catch (err) {
+                        console.error('Fehler beim Abschließen der Zahlung:', err);
+                        Swal.fire({
+                            title: "Zahlungsfehler",
+                            text: 'Es gab ein Problem beim Abschließen der Zahlung. Bitte versuche es erneut.',
+                            icon: "error",
+                            confirmButtonText: "OK",
+                        });
+                    }
+                },
+                onCancel: () => {
+                    Swal.fire({
+                        title: "Zahlung abgebrochen",
+                        text: 'Die Zahlung wurde abgebrochen.',
+                        icon: "info",
+                        confirmButtonText: "OK",
+                    });
+                },
+                onError: (err) => {
+                    console.error('PayPal Fehler:', err);
+                    Swal.fire({
+                        title: "Zahlungsfehler",
+                        text: 'Es gab ein Problem mit der Zahlung. Bitte versuche es erneut.',
+                        icon: "error",
+                        confirmButtonText: "OK",
+                    });
+                }
+            }).render('#paypal-button-container');
+        });
+        document.body.appendChild(script);
+    });
 </script>
-
-
 
 <style>
     .booking-container {
         padding: 2rem;
         font-family: Arial, sans-serif;
+        max-width: 800px;
+        margin: 0 auto;
     }
 
     .seating-chart {
@@ -166,18 +294,17 @@
         background-color: #2ecc71;
     }
 
-
     .seat.unavailable {
         background-color: #e74c3c;
         cursor: not-allowed;
     }
 
-    .seat.selected {
-        background-color: #3498db !important;
-    }
-
     .seat:hover.available {
         transform: scale(1.1);
+    }
+
+    .seat.selected {
+        background-color: #3498db;
     }
 
     .legend {
@@ -198,8 +325,6 @@
         height: 20px;
         border-radius: 4px;
     }
- 
-
 
     /* Legendenboxen Farben zuweisen */
     .legend-box.available {
@@ -214,27 +339,9 @@
         background-color: #e74c3c;
     }
 
+    /* Ursprünglicher Bestätigungsbutton ausgeblendet */
     .btn-confirm {
-        display: block;
-        margin: 0 auto;
-        padding: 0.75rem 1.5rem;
-        background-color: #3498db;
-        color: white;
-        border: none;
-        border-radius: 4px;
-        cursor: pointer;
-        font-size: 1rem;
-        transition: background-color 0.3s;
-    }
-
-    .btn-confirm:hover {
-        background-color: #2980b9;
-    }
-
-    .error-message {
-        color: red;
-        text-align: center;
-        margin-bottom: 1rem;
+        display: none;
     }
 
     /* Responsive Anpassungen */
@@ -279,10 +386,13 @@
         <div class="seating-chart">
             {#each Object.keys(seatsByRow) as row}
                 <div class="seat-row">
-                    {#each seatsByRow[row] as seat}
+                    {#each seatsByRow[row] as seat (seat.seat_id)}
                         <div 
-                            class="seat {isSelected(seat.seat_id) ? 'selected' : ''} {seat.status}" 
-                            on:click={() => toggleSeatSelection(seat)}
+                            class="seat {seat.status} {isSelected(seat.seat_id) ? 'selected' : ''}" 
+                            on:click={() => {
+                                toggleSeatSelection(seat);
+                                console.log('Seat clicked:', seat);
+                            }}
                         >
                             {seat.number}
                         </div>
@@ -291,11 +401,8 @@
             {/each}
         </div>
 
-        <!-- Bestätigungsbutton -->
-        <button class="btn-confirm" on:click={confirmBooking}>
-            Buchung bestätigen
-        </button>
+        <!-- PayPal Button Container -->
+        
     {/if}
+    <div id="paypal-button-container"></div>
 </main>
-
-

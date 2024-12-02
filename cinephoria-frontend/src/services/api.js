@@ -309,24 +309,70 @@ export const fetchSeatsForShowtime = async (showtimeId, token) => {
 };
 
 // Funktion zum Erstellen einer Buchung
-export const createBooking = async (showtimeId, seatIds, token) => {
-    const url = `${API_BASE_URL}/bookings`;
-
-    const response = await fetch(url, {
+export const createBooking = async (showtime_id, seatIds, token, orderID) => {
+    const response = await fetch(`${API_BASE_URL}/bookings`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${token}`,
         },
         body: JSON.stringify({
-            showtime_id: showtimeId,
+            showtime_id,
             seat_ids: seatIds,
+            order_id: orderID // Neue Feld für PayPal Order ID
         }),
     });
 
-    const data = await response.json();
     if (!response.ok) {
-        throw new Error(data.error || 'Fehler beim Erstellen der Buchung.');
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Fehler beim Erstellen der Buchung.');
     }
-    return data;
+    return await response.json();
 };
+
+
+// Funktion zum Erstellen einer PayPal-Order
+export const createPayPalOrder = async (showtime_id, selectedSeats, token) => {
+    const response = await fetch(`${API_BASE_URL}/paypal/order/create`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+            showtime_id,
+            selected_seats: selectedSeats
+        }),
+    });
+
+    if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Fehler beim Erstellen der PayPal-Order');
+    }
+
+    const data = await response.json();
+    return data; // { orderID: '...' }
+};
+
+// Funktion zum Erfassen einer PayPal-Order
+export const capturePayPalOrder = async (orderID, token) => {
+    const response = await fetch(`${API_BASE_URL}/paypal/order/capture`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+            orderID
+        }),
+    });
+
+    if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Fehler beim Erfassen der PayPal-Order');
+    }
+
+    const data = await response.json();
+    return data; // { status: 'COMPLETED' }
+};
+
