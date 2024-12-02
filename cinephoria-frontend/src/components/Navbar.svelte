@@ -194,7 +194,6 @@
     .profile-dropdown-menu li:hover {
       background-color: #f0f0f0;
       border-radius: 8px;
-      border-color: #1abc9c;
       
     }
   
@@ -226,6 +225,9 @@
       font-size: 20px;
       font-weight: bold;
     }
+
+  
+     
   </style>
 
 <nav>
@@ -286,7 +288,7 @@
                     <input type="email" placeholder="E-Mail" bind:value={email} required />
                     <input type="password" placeholder="Passwort" bind:value={password} required />
                     <button type="submit">Einloggen</button>
-                    <div style="display: flex; justify-content: space-between; gap: 10px; margin-top: 10px;">
+                    <div class="button-container" style="display: flex; justify-content: space-between; gap: 10px; margin-top: 10px;">
                         <button type="button" on:click={() => navigate('/register')} style="background: none; border: none; color: #007bff; cursor: pointer;">
                             Stattdessen Registrieren
                         </button>

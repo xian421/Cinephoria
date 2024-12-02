@@ -60,6 +60,7 @@
       background: #ffffff;
       border-radius: 12px;
       box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      background: linear-gradient(145deg, #f8f9fa, #e9ecef);
     }
   
     .forgot-password-container h1 {
@@ -105,15 +106,14 @@
     }
   
     .forgot-password-button:hover {
-      background: #24b497;
+      background: linear-gradient(145deg, #2980b9, #1abc9c);
     }
   </style>
   
   <div class="forgot-password-container">
     <h1>Passwort vergessen</h1>
     <div class="form-group">
-      <label for="email">E-Mail-Adresse</label>
-      <input type="email" id="email" bind:value={email} placeholder="Gib deine E-Mail-Adresse ein" />
+      <input type="email" id="email" bind:value={email} placeholder="E-Mail-Adresse" />
     </div>
     <button class="forgot-password-button" on:click={handleForgotPassword}>
       Link zum Zurücksetzen senden
