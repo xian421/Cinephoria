@@ -746,12 +746,15 @@ def get_seats_for_showtime(showtime_id):
         return jsonify({'error': 'Fehler beim Abrufen der Sitzplätze'}), 500
     
 def get_allowed_profile_images():
-    PROFILE_IMAGES_DIR = os.path.join(os.getcwd(), 'public', 'Profilbilder')
+    PROFILE_IMAGES_DIR = os.path.join(app.static_folder, 'Profilbilder')
     try:
-        return [f for f in os.listdir(PROFILE_IMAGES_DIR) if os.path.isfile(os.path.join(PROFILE_IMAGES_DIR, f))]
+        images = [f for f in os.listdir(PROFILE_IMAGES_DIR) if os.path.isfile(os.path.join(PROFILE_IMAGES_DIR, f))]
+        print(f"Gefundene Profilbilder: {images}")  # Logge die gefundenen Bilder
+        return images
     except Exception as e:
         print(f"Fehler beim Abrufen der Profilbilder: {e}")
         return []
+
 
 @app.route('/profile', methods=['GET'])
 @token_required
