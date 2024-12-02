@@ -194,6 +194,7 @@
     .profile-dropdown-menu li:hover {
       background-color: #f0f0f0;
       border-radius: 8px;
+      border-color: #1abc9c;
       
     }
   
@@ -206,7 +207,7 @@
       font-weight: bold;
       color: black;
       transition: all 0.3s ease;
-      border-color: #1abc9c;
+  
     }
   
     .profile-container:hover {
