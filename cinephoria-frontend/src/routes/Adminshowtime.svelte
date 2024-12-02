@@ -377,7 +377,7 @@
     {:else if loading}
         <p>Lade Daten...</p>
     {:else}
-        <h1>Film Editor</h1>
+        <h2>Film Editor</h2>
         <form on:submit|preventDefault={handleSubmit}>
             <label>
                 Film auswählen:
