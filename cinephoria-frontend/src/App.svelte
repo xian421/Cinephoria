@@ -226,7 +226,7 @@
       <Route path="/forgot-password" component={Forgotpassword} />
       <Route path="/buchung/:showtime_id" component={Buchung} />
       <Route path="/profile" component={Profile} />
-      <Route path="/einstellung" component={Einstellung} />
+      <Route path="/einstellungen" component={Einstellung} />
 
 
       <!-- Geschützte Admin-Routen mit ProtectedRoute -->

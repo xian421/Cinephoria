@@ -1,29 +1,20 @@
 // src/stores/authStore.js
 import { writable } from 'svelte/store';
 
-const initialState = {
+export const authStore = writable({
     isLoggedIn: false,
     userFirstName: '',
     userLastName: '',
     initials: '',
     isAdmin: false,
-    token: null, // Neuer Eintrag für den Token
+    token: null,
+    profile_image: 'default.png', // Standardprofilbild
+});
+
+export const setAuth = (auth) => {
+    authStore.set(auth);
 };
 
-const authStore = writable(initialState);
-
-const setAuth = (authData) => {
-    authStore.set({
-        ...initialState,
-        ...authData
-    });
+export const updateAuth = (updateFn) => {
+    authStore.update(updateFn);
 };
-
-const updateAuth = (updateFn) => {
-    authStore.update(current => ({
-        ...current,
-        ...updateFn(current)
-    }));
-};
-
-export { authStore, setAuth, updateAuth };

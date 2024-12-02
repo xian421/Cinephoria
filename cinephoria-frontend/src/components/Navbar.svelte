@@ -1,4 +1,3 @@
-<!-- src/components/Navbar.svelte -->
 <script>
     import { navigate } from "svelte-routing";
     export let currentPath;
@@ -12,11 +11,13 @@
     export let handleLogin;
     export let initials;
     export let isLoggedIn;
+    export let profile_image; // Neue Prop
 
     // Optional: Debugging-Log
     console.log('Navbar received logout:', logout);
     console.log('Navbar received email:', email);
     console.log('Navbar received password:', password);
+    console.log('Navbar received profile_image:', profile_image);
 </script>
 
 <style>
@@ -83,7 +84,7 @@
       transform: scale(1.05);
     }
   
-    
+  
   
     /* Login-Dropdown-Stile */
     .dropdown-container {
@@ -222,16 +223,20 @@
       align-items: center;
       justify-content: center;
       border-radius: 50%;
-      background-color: red;
+      background-color: #3498db; /* Angepasst an die Profilseite */
       color: white;
       font-size: 20px;
       font-weight: bold;
-      
     }
 
-  
-     
-  </style>
+    .profile-image {
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        object-fit: cover;
+    }
+
+</style>
 
 <nav>
     <!-- Logo -->
@@ -270,12 +275,16 @@
         <!-- Profil-Dropdown -->
         <div class="profile-dropdown-container {isProfileDropdownOpen ? 'open' : ''}">
             <div class="profile-container" on:click={toggleProfileMenu}>
-                <div class="profile-initials">{initials}</div>
+                {#if profile_image && profile_image !== 'default.png'}
+                    <img src={`/Profilbilder/${profile_image}`} alt="Profilbild" class="profile-image" />
+                {:else}
+                    <div class="profile-initials">{initials}</div>
+                {/if}
             </div>
             <div class="profile-dropdown-menu">
                 <ul>
                     <li on:click={() => navigate('/profile')}>Profil anzeigen</li>
-                    <li on:click={() => navigate('/einstellung')}>Einstellungen</li>
+                    <li on:click={() => navigate('/einstellungen')}>Einstellungen</li>
                     <li on:click={() => navigate('/adminkinosaal')}>Kinosaal</li>
                     <li on:click={() => navigate('/adminshowtime')}>Vorstellung erstellen</li>
                     <li on:click={logout}>Abmelden</li>
@@ -304,4 +313,3 @@
         </div>
     {/if}
 </nav>
-

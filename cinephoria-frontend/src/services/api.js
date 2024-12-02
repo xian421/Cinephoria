@@ -375,7 +375,6 @@ export const capturePayPalOrder = async (orderID, token) => {
     const data = await response.json();
     return data; // { status: 'COMPLETED' }
 };
-
 export const fetchProfile = async (token) => {
     try {
         const response = await fetch(`${API_BASE_URL}/profile`, {
@@ -393,6 +392,51 @@ export const fetchProfile = async (token) => {
         return data;
     } catch (error) {
         console.error('Error fetching profile:', error);
+        throw error;
+    }
+};
+
+// Funktion zum Aktualisieren des Profilbildes
+export const updateProfileImage = async (token, profileImage) => {
+    try {
+        const response = await fetch(`${API_BASE_URL}/profile/image`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ profile_image: profileImage })
+        });
+
+        const data = await response.json();
+        if (!response.ok) {
+            throw new Error(data.error || 'Fehler beim Aktualisieren des Profilbildes');
+        }
+        return data;
+    } catch (error) {
+        console.error('Error updating profile image:', error);
+        throw error;
+    }
+};
+
+// Funktion zum Abrufen der verfügbaren Profilbilder
+export const fetchAvailableProfileImages = async (token) => {
+    try {
+        const response = await fetch(`${API_BASE_URL}/profile/images`, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            }
+        });
+
+        const data = await response.json();
+        if (!response.ok) {
+            throw new Error(data.error || 'Fehler beim Abrufen der Profilbilder');
+        }
+        return data.images;
+    } catch (error) {
+        console.error('Error fetching available profile images:', error);
         throw error;
     }
 };
