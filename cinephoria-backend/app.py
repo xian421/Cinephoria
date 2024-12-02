@@ -745,6 +745,13 @@ def get_seats_for_showtime(showtime_id):
         print(f"Fehler beim Abrufen der Sitzplätze: {e}")
         return jsonify({'error': 'Fehler beim Abrufen der Sitzplätze'}), 500
     
+def get_allowed_profile_images():
+    PROFILE_IMAGES_DIR = os.path.join(os.getcwd(), 'public', 'Profilbilder')
+    try:
+        return [f for f in os.listdir(PROFILE_IMAGES_DIR) if os.path.isfile(os.path.join(PROFILE_IMAGES_DIR, f))]
+    except Exception as e:
+        print(f"Fehler beim Abrufen der Profilbilder: {e}")
+        return []
 
 @app.route('/profile', methods=['GET'])
 @token_required
@@ -753,22 +760,57 @@ def profile():
     try:
         with psycopg2.connect(DATABASE_URL) as conn:
             with conn.cursor() as cursor:
-                cursor.execute("SELECT vorname, nachname, email, role FROM users WHERE id = %s", (user_id,))
+                cursor.execute("SELECT vorname, nachname, email, role, profile_image FROM users WHERE id = %s", (user_id,))
                 result = cursor.fetchone()
                 if not result:
                     return jsonify({'error': 'Benutzer nicht gefunden'}), 404
-                vorname, nachname, email, role = result
+                vorname, nachname, email, role, profile_image = result
                 return jsonify({
                     'vorname': vorname,
                     'nachname': nachname,
                     'email': email,
-                    'role': role
+                    'role': role,
+                    'profile_image': profile_image
                 }), 200
     except Exception as e:
         print(f"Fehler beim Abrufen des Profils: {e}")
         return jsonify({'error': 'Fehler beim Abrufen des Profils'}), 500
 
+# Neuer Endpunkt zum Aktualisieren des Profilbildes
+@app.route('/profile/image', methods=['PUT'])
+@token_required
+def update_profile_image():
+    user_id = request.user.get('user_id')
+    data = request.get_json()
+    if not data or 'profile_image' not in data:
+        return jsonify({'error': 'Keine Bilddaten erhalten'}), 400
+    profile_image = data['profile_image']
+    
+    # Validierung des Profilbildes
+    allowed_images = get_allowed_profile_images()
+    if profile_image not in allowed_images:
+        return jsonify({'error': 'Ungültiges Profilbild'}), 400
+    
+    try:
+        with psycopg2.connect(DATABASE_URL) as conn:
+            with conn.cursor() as cursor:
+                cursor.execute("UPDATE users SET profile_image = %s WHERE id = %s", (profile_image, user_id))
+                conn.commit()
+        return jsonify({'message': 'Profilbild aktualisiert'}), 200
+    except Exception as e:
+        print(f"Fehler beim Aktualisieren des Profilbildes: {e}")
+        return jsonify({'error': 'Fehler beim Aktualisieren des Profilbildes'}), 500
 
+# Neuer Endpunkt zum Auflisten der verfügbaren Profilbilder
+@app.route('/profile/images', methods=['GET'])
+@token_required
+def list_profile_images():
+    try:
+        images = get_allowed_profile_images()
+        return jsonify({'images': images}), 200
+    except Exception as e:
+        print(f"Fehler beim Auflisten der Profilbilder: {e}")
+        return jsonify({'error': 'Fehler beim Auflisten der Profilbilder'}), 500
 
 
 if __name__ == '__main__':
