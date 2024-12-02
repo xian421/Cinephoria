@@ -8,7 +8,7 @@ import jwt
 import datetime
 from functools import wraps
 
-app = Flask(__name__)
+app = Flask(__name__, static_folder='public', static_url_path='')
 
 CORS(app, resources={
     r"/*": {
