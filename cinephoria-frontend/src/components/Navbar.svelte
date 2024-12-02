@@ -1,5 +1,15 @@
 <script>
     import { navigate } from "svelte-routing";
+    import { authStore } from '../stores/authStore';
+    import { get } from 'svelte/store';
+
+    // Abonniere den authStore
+    let auth = get(authStore);
+    authStore.subscribe(value => {
+        auth = value;
+        console.log('Navbar aktualisiert mit auth:', auth);
+    });
+
     export let currentPath;
     export let toggleLoginDropdown;
     export let toggleProfileMenu;
@@ -11,13 +21,6 @@
     export let handleLogin;
     export let initials;
     export let isLoggedIn;
-    export let profile_image; // Neue Prop
-
-    // Optional: Debugging-Log
-    console.log('Navbar received logout:', logout);
-    console.log('Navbar received email:', email);
-    console.log('Navbar received password:', password);
-    console.log('Navbar received profile_image:', profile_image);
 </script>
 
 <style>
@@ -238,6 +241,7 @@
 
 </style>
 
+
 <nav>
     <!-- Logo -->
     <a href="/" class="logo" on:click={() => navigate('/')}>
@@ -271,14 +275,14 @@
     </button>
 
     <!-- Benutzerbereich -->
-    {#if isLoggedIn}
+    {#if auth.isLoggedIn}
         <!-- Profil-Dropdown -->
         <div class="profile-dropdown-container {isProfileDropdownOpen ? 'open' : ''}">
             <div class="profile-container" on:click={toggleProfileMenu}>
-                {#if profile_image && profile_image !== 'default.png'}
-                    <img src={`/Profilbilder/${profile_image}`} alt="Profilbild" class="profile-image" />
+                {#if auth.profile_image && auth.profile_image !== 'default.png'}
+                    <img src={`/Profilbilder/${auth.profile_image}`} alt="Profilbild" class="profile-image" />
                 {:else}
-                    <div class="profile-initials">{initials}</div>
+                    <div class="profile-initials">{auth.initials}</div>
                 {/if}
             </div>
             <div class="profile-dropdown-menu">
@@ -313,3 +317,4 @@
         </div>
     {/if}
 </nav>
+
