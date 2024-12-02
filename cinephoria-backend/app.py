@@ -9,7 +9,6 @@ from functools import wraps
 
 app = Flask(__name__)
 
-
 CORS(app, resources={
     r"/*": {
         "origins": [
@@ -21,16 +20,11 @@ CORS(app, resources={
     }
 })
 
-
 # Datenbankkonfiguration
 DATABASE_URL = os.getenv('DATABASE_URL')
 PAYPAL_CLIENT_ID = os.getenv('PAYPAL_CLIENT_ID')
 PAYPAL_CLIENT_SECRET = os.getenv('PAYPAL_CLIENT_SECRET')
 PAYPAL_API_BASE = 'https://api-m.sandbox.paypal.com'
-# Verbindung zur Datenbank herstellen
-connection = psycopg2.connect(DATABASE_URL)
-connection.autocommit = True  # Automatisches Commit für Änderungen
-cursor = connection.cursor()
 
 # TMDb API-Konfiguration
 TMDB_API_URL = "https://api.themoviedb.org/3/movie"
@@ -73,7 +67,7 @@ def admin_required(f):
         return f(*args, **kwargs)
     return decorated
 
-#Paypal Start
+# PayPal Start
 
 def get_paypal_access_token():
     response = requests.post(
@@ -90,7 +84,6 @@ def get_paypal_access_token():
     else:
         print(response.json())
         raise Exception('Failed to obtain PayPal access token')
-    
 
 
 @app.route('/paypal/order/create', methods=['POST'])
@@ -142,7 +135,6 @@ def create_paypal_order():
     except Exception as e:
         print(f"Fehler beim Erstellen der PayPal-Order: {e}")
         return jsonify({'error': 'Fehler beim Erstellen der PayPal-Order'}), 500
-    
 
 
 @app.route('/paypal/order/capture', methods=['POST'])
@@ -176,8 +168,7 @@ def capture_paypal_order():
         print(f"Fehler beim Erfassen der PayPal-Order: {e}")
         return jsonify({'error': 'Fehler beim Erfassen der PayPal-Order'}), 500
 
-##Paypal Ende
-
+# PayPal Ende
 
 # Token Validierung Endpunkt
 @app.route('/validate-token', methods=['POST'])
@@ -198,8 +189,6 @@ def validate_token():
         return jsonify({'error': 'Token abgelaufen'}), 401
     except jwt.InvalidTokenError:
         return jsonify({'error': 'Ungültiges Token'}), 401
-
-# Weitere Routen bleiben unverändert
 
 @app.route('/movies/now_playing', methods=['GET'])
 def get_now_playing():
@@ -629,7 +618,7 @@ def update_showtime(showtime_id):
 
 @app.route('/bookings', methods=['POST'])
 @token_required
-def create_booking():
+def create_booking_route():
     data = request.get_json()
     showtime_id = data.get('showtime_id')
     seat_ids = data.get('seat_ids')  # Liste von seat_id
@@ -651,7 +640,7 @@ def create_booking():
                 """, (showtime_id,))
                 screen = cursor.fetchone()
                 if not screen:
-                    cursor.execute("ROLLBACK;")
+                    conn.rollback()
                     return jsonify({'error': 'Showtime nicht gefunden'}), 404
                 screen_id = screen[0]
                 
@@ -663,7 +652,7 @@ def create_booking():
                 available_seats = {row[0] for row in cursor.fetchall()}
                 
                 if not available_seats.issuperset(set(seat_ids)):
-                    cursor.execute("ROLLBACK;")
+                    conn.rollback()
                     return jsonify({'error': 'Ein oder mehrere Sitzplätze sind nicht verfügbar'}), 400
                 
                 # Überprüfen, ob die Sitzplätze bereits gebucht wurden
@@ -676,7 +665,7 @@ def create_booking():
                 already_booked = {row[0] for row in cursor.fetchall()}
                 
                 if already_booked:
-                    cursor.execute("ROLLBACK;")
+                    conn.rollback()
                     return jsonify({'error': 'Ein oder mehrere Sitzplätze sind bereits gebucht'}), 400
                 
                 # Berechne den Gesamtbetrag (Beispiel: 10 Euro pro Sitzplatz)
@@ -698,15 +687,12 @@ def create_booking():
                     """, (booking_id, seat_id, 10.00))
                 
                 # Commit der Transaktion
-                cursor.execute("COMMIT;")
+                conn.commit()
         
         return jsonify({'message': 'Buchung erfolgreich', 'booking_id': booking_id}), 201
     except Exception as e:
-        # Im Fehlerfall die Transaktion zurückrollen
-        cursor.execute("ROLLBACK;")
         print(f"Fehler beim Erstellen der Buchung: {e}")
         return jsonify({'error': 'Fehler beim Erstellen der Buchung'}), 500
-
 
 
 @app.route('/showtimes/<int:showtime_id>/seats', methods=['GET'])
