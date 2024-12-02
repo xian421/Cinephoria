@@ -1,3 +1,4 @@
+#App.py
 import os
 import psycopg2
 from flask import Flask, request, jsonify
@@ -743,6 +744,30 @@ def get_seats_for_showtime(showtime_id):
     except Exception as e:
         print(f"Fehler beim Abrufen der Sitzplätze: {e}")
         return jsonify({'error': 'Fehler beim Abrufen der Sitzplätze'}), 500
+    
+
+@app.route('/profile', methods=['GET'])
+@token_required
+def profile():
+    user_id = request.user.get('user_id')
+    try:
+        with psycopg2.connect(DATABASE_URL) as conn:
+            with conn.cursor() as cursor:
+                cursor.execute("SELECT vorname, nachname, email, role FROM users WHERE id = %s", (user_id,))
+                result = cursor.fetchone()
+                if not result:
+                    return jsonify({'error': 'Benutzer nicht gefunden'}), 404
+                vorname, nachname, email, role = result
+                return jsonify({
+                    'vorname': vorname,
+                    'nachname': nachname,
+                    'email': email,
+                    'role': role
+                }), 200
+    except Exception as e:
+        print(f"Fehler beim Abrufen des Profils: {e}")
+        return jsonify({'error': 'Fehler beim Abrufen des Profils'}), 500
+
 
 
 
