@@ -1,28 +1,34 @@
 <!-- src/routes/Adminseats.svelte -->
 <script>
     import { onMount } from "svelte";
-    import { fetchSeats, batchUpdateSeats} from '../services/api.js'; // Angepasst für einzelne Löschoperation
-
+    import { fetchSeats, batchUpdateSeats } from '../services/api.js';
     import { navigate } from "svelte-routing";
     import { get } from 'svelte/store';
     import { authStore } from '../stores/authStore.js';
     import Swal from 'sweetalert2';
+    import "@fortawesome/fontawesome-free/css/all.min.css";
+
 
     export let screenId; 
 
+    // Modus: 'add' oder 'edit' abgeleitet von isEditMode (Boolean)
+    let isEditMode = false; // Standardmäßig im Hinzufügen-Modus
+    const mode = () => isEditMode ? 'Bearbeiten' : 'ADD';
+
+    // Grid: 2D-Array mit Sitztypen ('standard', 'wheelchair', 'vip' oder null)
     let grid = [
-        [false, false, false],
-        [false, false, false],
-        [false, false, false],
-    ]; // Initiales 3x3 Raster
+        [null, null, null],
+        [null, null, null],
+        [null, null, null],
+    ];
+
     let rowLabels = ['A', 'B', 'C']; // Anfangszeilenbeschriftungen
 
-    let editMode = false;
     let loading = true;
     let error = "";
 
-    // Variable zur Speicherung der ursprünglichen Sitzdaten
-    let originalSeats = new Set();
+    // Map zur Speicherung der ursprünglichen Sitzdaten: "A,1" -> 'standard'
+    let originalSeats = new Map();
 
     // Hilfsfunktion zum Generieren von Reihenlabels von 'A' bis maxRow
     function generateRowLabels(maxRow) {
@@ -36,61 +42,81 @@
 
     // Funktionen zum Bearbeiten des Grids
     function toggleCell(row, col) {
-        if (editMode) {
-            grid[row][col] = !grid[row][col];
-            grid = [...grid]; // Reaktivität sicherstellen
+        if (!isEditMode) {
+            // Hinzufügen-Modus: Toggle zwischen 'standard' und null
+            grid[row][col] = grid[row][col] ? null : 'standard';
+        } else {
+            // Bearbeiten-Modus: Zyklische Änderung der Sitztypen
+            if (grid[row][col]) {
+                switch (grid[row][col]) {
+                    case 'standard':
+                        grid[row][col] = 'wheelchair';
+                        break;
+                    case 'wheelchair':
+                        grid[row][col] = 'vip';
+                        break;
+                    case 'vip':
+                        grid[row][col] = 'standard';
+                        break;
+                    default:
+                        grid[row][col] = 'standard';
+                }
+            }
         }
+        grid = [...grid]; // Reaktivität sicherstellen
     }
 
-    function toggleEditMode() {
-        editMode = !editMode;
+    function toggleMode() {
+        isEditMode = !isEditMode;
     }
 
     function toggleRow(row) {
-        if (editMode) {
+        if (!isEditMode) {
+            // Hinzufügen-Modus: Toggle ganze Reihe zwischen 'standard' und null
             const allActive = grid[row].every(cell => cell);
-            grid[row] = grid[row].map(() => !allActive);
-            grid = [...grid]; // Reaktivität sicherstellen
+            grid[row] = grid[row].map(() => allActive ? null : 'standard');
+            grid = [...grid];
         }
     }
 
     function toggleColumn(col) {
-        if (editMode) {
+        if (!isEditMode) {
+            // Hinzufügen-Modus: Toggle ganze Spalte zwischen 'standard' und null
             const allActive = grid.every(row => row[col]);
             grid = grid.map(row => {
-                row[col] = !allActive;
+                row[col] = allActive ? null : 'standard';
                 return row;
             });
-            grid = [...grid]; // Reaktivität sicherstellen
+            grid = [...grid];
         }
     }
 
     function addRow() {
-        if (editMode) {
+        if (!isEditMode) {
             const lastLabel = rowLabels[rowLabels.length - 1];
             const newRowLabel = String.fromCharCode(lastLabel.charCodeAt(0) + 1); // 'D', 'E', ...
-            const newRow = Array(grid[0].length).fill(false);
+            const newRow = Array(grid[0].length).fill(null);
             grid = [...grid, newRow];
             rowLabels = [...rowLabels, newRowLabel];
         }
     }
 
     function addColumn() {
-        if (editMode) {
-            grid = grid.map(row => [...row, false]);
+        if (!isEditMode) {
+            grid = grid.map(row => [...row, null]);
         }
     }
 
     function removeRow() {
-        if (editMode && grid.length > 1) {
-            const removedLabel = rowLabels.pop();
+        if (!isEditMode && grid.length > 1) {
+            rowLabels.pop();
             grid.pop();
             grid = [...grid]; // Reaktivität sicherstellen
         }
     }
 
     function removeColumn() {
-        if (editMode && grid[0].length > 1) {
+        if (!isEditMode && grid[0].length > 1) {
             grid = grid.map(row => row.slice(0, -1));
             grid = [...grid]; // Reaktivität sicherstellen
         }
@@ -117,48 +143,60 @@
             });
 
             // Aktuelle Sitzdaten basierend auf dem Grid ermitteln
-            let currentSeats = new Set();
+            let currentSeats = new Map();
             for (let rowIndex = 0; rowIndex < grid.length; rowIndex++) {
                 for (let colIndex = 0; colIndex < grid[rowIndex].length; colIndex++) {
                     if (grid[rowIndex][colIndex]) {
                         const rowLabel = getRowLabel(rowIndex);
                         const seatNumber = colIndex + 1;
-                        currentSeats.add(`${rowLabel},${seatNumber}`);
+                        currentSeats.set(`${rowLabel},${seatNumber}`, grid[rowIndex][colIndex]);
                     }
                 }
             }
 
             // Sitze zum Hinzufügen: In currentSeats, aber nicht in originalSeats
-            let seatsToAdd = [...currentSeats].filter(seat => !originalSeats.has(seat));
+            let seatsToAdd = [];
+            currentSeats.forEach((type, seat) => {
+                if (!originalSeats.has(seat)) {
+                    const [row, number] = seat.split(',');
+                    seatsToAdd.push({ row, number: parseInt(number, 10), type });
+                }
+            });
 
             // Sitze zum Löschen: In originalSeats, aber nicht in currentSeats
-            let seatsToDelete = [...originalSeats].filter(seat => !currentSeats.has(seat));
-
-            // Umwandeln der Sitze in die benötigte Struktur
-            const seatsToAddStructured = seatsToAdd.map(seat => {
-                const [row, number] = seat.split(',');
-                return { row, number: parseInt(number, 10), type: 'standard' }; // Passe 'type' nach Bedarf an
+            let seatsToDelete = [];
+            originalSeats.forEach((type, seat) => {
+                if (!currentSeats.has(seat)) {
+                    const [row, number] = seat.split(',');
+                    seatsToDelete.push({ row, number: parseInt(number, 10) });
+                }
             });
 
-            const seatsToDeleteStructured = seatsToDelete.map(seat => {
-                const [row, number] = seat.split(',');
-                return { row, number: parseInt(number, 10) };
+            // Sitze, deren Typ sich geändert hat
+            let seatsToUpdate = [];
+            currentSeats.forEach((type, seat) => {
+                if (originalSeats.has(seat) && originalSeats.get(seat) !== type) {
+                    const [row, number] = seat.split(',');
+                    seatsToUpdate.push({ row, number: parseInt(number, 10), type });
+                }
             });
 
-            // Logge die zu addierenden und zu löschenden Sitze
-            console.log("Zu addierende Sitze:", seatsToAddStructured);
-            console.log("Zu löschende Sitze:", seatsToDeleteStructured);
+            // Logge die zu addierenden, zu löschenden und zu aktualisierenden Sitze
+            console.log("Zu addierende Sitze:", seatsToAdd);
+            console.log("Zu löschende Sitze:", seatsToDelete);
+            console.log("Zu aktualisierende Sitze:", seatsToUpdate);
 
             // Sende die Änderungen an das Backend
-            const result = await batchUpdateSeats(screenId, seatsToAddStructured, seatsToDeleteStructured);
+            const result = await batchUpdateSeats(screenId, seatsToAdd, seatsToDelete, seatsToUpdate);
 
             // Schließe den Ladebildschirm und zeige die Erfolgsnachricht an
             loadingSwal.close();
             Swal.fire({
                 title: "Erfolgreich",
                 html: `
-                    <p>Zu addierende Sitze: ${seatsToAdd.length > 0 ? seatsToAdd.join(', ') : 'Keine'}</p>
-                    <p>Zu löschende Sitze: ${seatsToDelete.length > 0 ? seatsToDelete.join(', ') : 'Keine'}</p>
+                    <p>Zu addierende Sitze: ${seatsToAdd.length > 0 ? seatsToAdd.map(s => `(${s.row},${s.number},${s.type})`).join(', ') : 'Keine'}</p>
+                    <p>Zu löschende Sitze: ${seatsToDelete.length > 0 ? seatsToDelete.map(s => `(${s.row},${s.number})`).join(', ') : 'Keine'}</p>
+                    <p>Zu aktualisierende Sitze: ${seatsToUpdate.length > 0 ? seatsToUpdate.map(s => `(${s.row},${s.number},${s.type})`).join(', ') : 'Keine'}</p>
                 `,
                 icon: "success",
                 timer: 2500,
@@ -166,7 +204,7 @@
             });
 
             // Aktualisiere originalSeats mit den neuen Daten
-            originalSeats = new Set(currentSeats);
+            originalSeats = new Map(currentSeats);
 
         } catch (err) {
             console.error("Fehler beim Eintragen der Änderungen:", err);
@@ -178,9 +216,6 @@
             });
         }
     }
-
-    
-
 
     onMount(async () => {
         const auth = get(authStore);
@@ -214,17 +249,17 @@
                             s => s.row === rowLabels[rowIndex] && s.number === colIndex + 1
                         );
                         if (seat) {
-                            // Füge das Sitz-Tuple zum originalSeats Set hinzu
-                            originalSeats.add(`${seat.row},${seat.number}`);
-                            return true;
+                            // Füge das Sitz-Tuple zum originalSeats Map hinzu
+                            originalSeats.set(`${seat.row},${seat.number}`, seat.type);
+                            return seat.type;
                         }
-                        return false;
+                        return null;
                     });
                 });
             } else {
                 // Falls keine Sitze vorhanden sind, initialisiere mit mindestens einer Reihe
                 grid = [
-                    [false, false, false],
+                    [null, null, null],
                 ];
                 rowLabels = ['A'];
             }
@@ -235,33 +270,10 @@
             loading = false;
         }
     });
-
-    function logSelectedSeats() {
-        let selectedSeats = [];
-
-        // Durchlaufe alle Zeilen
-        grid.forEach((row, rowIndex) => {
-            row.forEach((cell, colIndex) => {
-                if (cell) { // Wenn die Zelle aktiv ist
-                    const rowLabel = getRowLabel(rowIndex); // Konvertiere Zeilenindex in Label (A, B, ...)
-                    selectedSeats.push(`(${rowLabel},${colIndex + 1})`); // Füge die Sitzposition hinzu
-                }
-            });
-        });
-
-        // Ausgabe im gewünschten Format
-        console.log(selectedSeats.join(', '));
-        Swal.fire({
-            title: "Ausgewählte Sitze",
-            text: selectedSeats.join(', '),
-            icon: "info",
-            confirmButtonText: "OK",
-        });
-    }
 </script>
 
 <style>
-    /* Dein bestehendes CSS bleibt unverändert */
+    /* Dein bestehendes CSS bleibt größtenteils unverändert */
     main {
         display: flex;
         flex-direction: column;
@@ -317,19 +329,39 @@
     .cell {
         width: 50px;
         height: 50px;
-        background-color: rgba(0, 255, 0, 0.2);
         border: 1px solid #ddd;
         cursor: pointer;
         transition: background-color 0.3s;
     }
 
-    .cell.active {
-        background-color: green;
+    /* Sitztypen-Farben */
+    .cell.standard {
+        background-color: rgb(103, 139, 224);
     }
 
-    .cell:hover:not(.active) {
-        background-color: #a5d6a7;
+    /* Entfernen Sie die Hintergrundfarbe für Rollstuhlplätze */
+    .cell.wheelchair {
+        background-color: rgb(103, 139, 224);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 24px; /* Größe des Icons anpassen */
     }
+
+    /* Optional: Stil für 'null' Zellen anpassen, falls erforderlich */
+    .cell.null {
+        background-color: rgba(0, 0, 0, 0.05);
+    }
+
+
+    .cell.vip {
+        background-color: rgb(140, 76, 140);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 24px; 
+    }
+
 
     .error {
         color: red;
@@ -364,6 +396,86 @@
         gap: 10px;
     }
 
+    .add-buttons {
+        background-color: rgb(0, 114, 28);
+    }
+
+    .remove-buttons {
+        background-color: darkred;
+    }
+
+    .submit-button {
+        background-color: white;
+        color: black;
+        border: 3px solid #1976d2;
+        font-weight: bold;
+        font-size: 18px;
+        font-family: Arial, sans-serif;
+    }
+
+    /* Hinzufügen von Styles für den Switch */
+    .switch {
+        position: relative;
+        display: inline-block;
+        width: 60px;
+        height: 34px;
+        margin: 0 10px;
+    }
+
+    .switch input {
+        opacity: 0;
+        width: 0;
+        height: 0;
+    }
+
+    .slider {
+        position: absolute;
+        cursor: pointer;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: #ccc;
+        transition: .4s;
+        border-radius: 34px;
+    }
+
+    .slider:before {
+        position: absolute;
+        content: "";
+        height: 26px;
+        width: 26px;
+        left: 4px;
+        bottom: 4px;
+        background-color: white;
+        transition: .4s;
+        border-radius: 50%;
+    }
+
+    input:checked + .slider {
+        background-color: #2196F3;
+    }
+
+    input:checked + .slider:before {
+        transform: translateX(26px);
+    }
+
+    .mode-label {
+        position: absolute;
+        top: 40px;
+        left: 0;
+        right: 0;
+        text-align: center;
+        font-size: 20px;
+        font-weight: bold;
+    }
+
+    #screen-label {
+        font-size: 1.5rem;
+        font-weight: bold;
+        margin: 10px;
+    }
+
     /* Responsive Design */
     @media (max-width: 600px) {
         .cell, .row-selector, .column-selector {
@@ -387,16 +499,21 @@
         <h1>Kinositz-Editor für Screen {screenId}</h1>
 
         <div class="controls">
-            <button on:click={submitChanges}>EINTRAGEN</button>
-            <button on:click={toggleEditMode}>
-                Bearbeitungsmodus: {editMode ? "Ein" : "Aus"}
-            </button>
-            <button on:click={addRow} disabled={!editMode}>Zeile hinzufügen</button>
-            <button on:click={addColumn} disabled={!editMode}>Spalte hinzufügen</button>
-            <button on:click={removeRow} disabled={!editMode || grid.length <= 1}>Zeile entfernen</button>
-            <button on:click={removeColumn} disabled={!editMode || grid[0].length <= 1}>Spalte entfernen</button>
-            <button on:click={logSelectedSeats}>Ausgewählte Sitze anzeigen</button>
+            <button on:click={submitChanges} class="submit-button">EINTRAGEN</button>
+           
+            
+            <button on:click={addRow} class="add-buttons" disabled={isEditMode}>Zeile hinzufügen</button>
+            <button on:click={addColumn} class="add-buttons" disabled={isEditMode}>Spalte hinzufügen</button>
+            <button on:click={removeRow} class="remove-buttons" disabled={isEditMode || grid.length <= 1}>Zeile entfernen</button>
+            <button on:click={removeColumn} class="remove-buttons" disabled={isEditMode || grid[0].length <= 1}>Spalte entfernen</button>
         </div>
+        <p></p>
+        <label class="switch">
+            <input type="checkbox" bind:checked={isEditMode}>
+            <span class="slider"></span>
+            <span class="mode-label">{mode()}</span>
+        </label>
+        <p id="screen-label"><br></p>
         <p> LEINWAND <br>
    _____________________________________ </p>
 
@@ -430,11 +547,21 @@
                     </div>
                     {#each row as cell, colIndex}
                         <div
-                            class="cell {cell ? 'active' : ''}"
+                            class="cell {cell || 'null'}"
                             on:click={() => toggleCell(rowIndex, colIndex)}
-                            title={`Reihe: ${getRowLabel(rowIndex)}, Sitz: ${colIndex + 1}`}
-                        ></div>
+                            title={`Reihe: ${getRowLabel(rowIndex)}, Sitz: ${colIndex + 1}${cell ? `, Typ: ${cell}` : ''}`}
+                        >
+                        {#if cell === 'wheelchair'}
+                            <i class="fas fa-wheelchair"></i>
+                        {:else if cell === 'vip'}
+                            <i class="fas fa-star"></i>
+                        {:else if cell === 'standard'}
+                            <!-- Optional: Standard-Sitzsymbol oder Farbe -->
+                            <div class="standard-seat"></div>
+                        {/if}
+                        </div>
                     {/each}
+
                 </div>
             {/each}
         </div>

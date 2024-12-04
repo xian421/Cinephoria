@@ -443,7 +443,7 @@ export const fetchAvailableProfileImages = async (token) => {
 
 // src/services/api.js
 
-export const batchUpdateSeats = async (screenId, seatsToAdd, seatsToDelete) => {
+export const batchUpdateSeats = async (screenId, seatsToAdd, seatsToDelete, seatsToUpdate) => {
     try {
         const token = get(authStore).token;
         const response = await fetch(`${API_BASE_URL}/seats/batch_update`, {
@@ -456,6 +456,8 @@ export const batchUpdateSeats = async (screenId, seatsToAdd, seatsToDelete) => {
                 screen_id: screenId,
                 seats_to_add: seatsToAdd,       // Array von {row: 'A', number: 1, type: 'standard'}
                 seats_to_delete: seatsToDelete, // Array von {row: 'B', number: 2}
+                seats_to_update: seatsToUpdate, // Array von {row: 'C', number: 3, type: 'vip'}
+
             }),
         });
 
