@@ -441,3 +441,33 @@ export const fetchAvailableProfileImages = async (token) => {
     }
 };
 
+// src/services/api.js
+
+export const batchUpdateSeats = async (screenId, seatsToAdd, seatsToDelete) => {
+    try {
+        const token = get(authStore).token;
+        const response = await fetch(`${API_BASE_URL}/seats/batch_update`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`,
+            },
+            body: JSON.stringify({
+                screen_id: screenId,
+                seats_to_add: seatsToAdd,       // Array von {row: 'A', number: 1, type: 'standard'}
+                seats_to_delete: seatsToDelete, // Array von {row: 'B', number: 2}
+            }),
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            throw new Error(data.error || 'Fehler beim Aktualisieren der Sitze');
+        }
+
+        return data;
+    } catch (error) {
+        console.error('Error updating seats:', error);
+        throw error;
+    }
+};

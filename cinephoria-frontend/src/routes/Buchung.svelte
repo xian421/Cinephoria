@@ -38,6 +38,22 @@
 
         // Gruppiere die Sitze mit Lücken
         seatsByRow = groupSeatsByRowWithGaps(seats);
+
+        // Berechne Unterschiede (to_add und to_remove)
+        const existingSeats = seats.map(seat => [seat.row, seat.number]); // Aktuelle Sitze
+        const newSeats = /* hier neue Sitzplatzdaten einfügen */ [];
+
+        const existingSet = new Set(existingSeats.map(([row, number]) => `${row}-${number}`));
+        const newSet = new Set(newSeats.map(([row, number]) => `${row}-${number}`));
+
+        const to_add = Array.from(newSet).filter(seat => !existingSet.has(seat));
+        const to_remove = Array.from(existingSet).filter(seat => !newSet.has(seat));
+
+        console.log('Hinzugefügte Sitze:', to_add);
+        console.log('Entfernte Sitze:', to_remove);
+
+        // Hier kannst du to_add und to_remove in die Datenbank schreiben, falls notwendig
+        await updateSeatsInDatabase(to_add, to_remove, token);
     } catch (error) {
         console.error('Fehler beim Laden der Sitze:', error);
         error = error.message || 'Fehler beim Laden der Sitze.';
@@ -45,6 +61,7 @@
         isLoading = false;
     }
 });
+
 
 
     // Funktion zum Gruppieren der Sitzplätze nach Reihen
@@ -84,6 +101,7 @@
         rowsWithGaps[rowLabel] = rowSeats;
     });
 
+    console.log('rowsWithGaps:', rowsWithGaps);
     return rowsWithGaps;
 }
 
@@ -121,19 +139,15 @@ function generateAllSeatNumbers(existingSeatNumbers) {
         if (isSelected(seat.seat_id)) {
             // Sitzplatz abwählen
             selectedSeats = selectedSeats.filter(s => s.seat_id !== seat.seat_id);
-            console.log('Sitzplatz abgewählt:', seat.seat_id);
         } else {
             // Sitzplatz auswählen
             selectedSeats = [...selectedSeats, seat];
-            console.log('Sitzplatz ausgewählt:', seat.seat_id);
         }
-        console.log('Aktuelle selectedSeats:', selectedSeats);
     }
 
     // Funktion zur Überprüfung, ob ein Sitz ausgewählt ist
     function isSelected(seat_id) {
         const result = selectedSeats.some(seat => seat.seat_id === seat_id);
-        console.log(`isSelected(${seat_id}):`, result);
         return result;
     }
 

@@ -1,7 +1,8 @@
 <!-- src/routes/Adminseats.svelte -->
 <script>
     import { onMount } from "svelte";
-    import { fetchSeats, createSeat, deleteAllSeats } from '../services/api.js';
+    import { fetchSeats, batchUpdateSeats} from '../services/api.js'; // Angepasst für einzelne Löschoperation
+
     import { navigate } from "svelte-routing";
     import { get } from 'svelte/store';
     import { authStore } from '../stores/authStore.js';
@@ -19,6 +20,9 @@
     let editMode = false;
     let loading = true;
     let error = "";
+
+    // Variable zur Speicherung der ursprünglichen Sitzdaten
+    let originalSeats = new Set();
 
     // Hilfsfunktion zum Generieren von Reihenlabels von 'A' bis maxRow
     function generateRowLabels(maxRow) {
@@ -82,17 +86,13 @@
             const removedLabel = rowLabels.pop();
             grid.pop();
             grid = [...grid]; // Reaktivität sicherstellen
-
-           
         }
     }
 
     function removeColumn() {
         if (editMode && grid[0].length > 1) {
-            const removedColIndex = grid[0].length; // Spaltenindex vor dem Entfernen
             grid = grid.map(row => row.slice(0, -1));
             grid = [...grid]; // Reaktivität sicherstellen
-
         }
     }
 
@@ -116,31 +116,58 @@
                 },
             });
 
-            // Lösche alle bestehenden Sitze für den Screen
-            await deleteAllSeats(screenId, token);
-
-            // Erstelle alle aktiven Sitze aus dem aktuellen Grid
-            let selectedSeats = [];
+            // Aktuelle Sitzdaten basierend auf dem Grid ermitteln
+            let currentSeats = new Set();
             for (let rowIndex = 0; rowIndex < grid.length; rowIndex++) {
                 for (let colIndex = 0; colIndex < grid[rowIndex].length; colIndex++) {
                     if (grid[rowIndex][colIndex]) {
                         const rowLabel = getRowLabel(rowIndex);
                         const seatNumber = colIndex + 1;
-                        await createSeat(screenId, rowLabel, seatNumber, 'standard', token);
-                        selectedSeats.push(`(${rowLabel},${seatNumber})`);
+                        currentSeats.add(`${rowLabel},${seatNumber}`);
                     }
                 }
             }
+
+            // Sitze zum Hinzufügen: In currentSeats, aber nicht in originalSeats
+            let seatsToAdd = [...currentSeats].filter(seat => !originalSeats.has(seat));
+
+            // Sitze zum Löschen: In originalSeats, aber nicht in currentSeats
+            let seatsToDelete = [...originalSeats].filter(seat => !currentSeats.has(seat));
+
+            // Umwandeln der Sitze in die benötigte Struktur
+            const seatsToAddStructured = seatsToAdd.map(seat => {
+                const [row, number] = seat.split(',');
+                return { row, number: parseInt(number, 10), type: 'standard' }; // Passe 'type' nach Bedarf an
+            });
+
+            const seatsToDeleteStructured = seatsToDelete.map(seat => {
+                const [row, number] = seat.split(',');
+                return { row, number: parseInt(number, 10) };
+            });
+
+            // Logge die zu addierenden und zu löschenden Sitze
+            console.log("Zu addierende Sitze:", seatsToAddStructured);
+            console.log("Zu löschende Sitze:", seatsToDeleteStructured);
+
+            // Sende die Änderungen an das Backend
+            const result = await batchUpdateSeats(screenId, seatsToAddStructured, seatsToDeleteStructured);
 
             // Schließe den Ladebildschirm und zeige die Erfolgsnachricht an
             loadingSwal.close();
             Swal.fire({
                 title: "Erfolgreich",
-                text: `Alle Änderungen wurden eingetragen. Ausgewählte Sitze: ${selectedSeats.join(', ')}`,
+                html: `
+                    <p>Zu addierende Sitze: ${seatsToAdd.length > 0 ? seatsToAdd.join(', ') : 'Keine'}</p>
+                    <p>Zu löschende Sitze: ${seatsToDelete.length > 0 ? seatsToDelete.join(', ') : 'Keine'}</p>
+                `,
                 icon: "success",
                 timer: 2500,
                 showConfirmButton: false,
             });
+
+            // Aktualisiere originalSeats mit den neuen Daten
+            originalSeats = new Set(currentSeats);
+
         } catch (err) {
             console.error("Fehler beim Eintragen der Änderungen:", err);
             Swal.fire({
@@ -151,6 +178,9 @@
             });
         }
     }
+
+    
+
 
     onMount(async () => {
         const auth = get(authStore);
@@ -183,7 +213,12 @@
                         const seat = data.seats.find(
                             s => s.row === rowLabels[rowIndex] && s.number === colIndex + 1
                         );
-                        return seat ? true : false;
+                        if (seat) {
+                            // Füge das Sitz-Tuple zum originalSeats Set hinzu
+                            originalSeats.add(`${seat.row},${seat.number}`);
+                            return true;
+                        }
+                        return false;
                     });
                 });
             } else {
@@ -226,6 +261,7 @@
 </script>
 
 <style>
+    /* Dein bestehendes CSS bleibt unverändert */
     main {
         display: flex;
         flex-direction: column;
@@ -245,7 +281,6 @@
         display: grid;
         grid-template-columns: 50px repeat(auto-fit, 50px);
         gap: 2px;
-        /* margin-bottom: 10px; */
     }
 
     .column-selector {
@@ -264,7 +299,6 @@
     .row {
         display: flex;
         align-items: center;
-        /* margin-bottom: 5px; */
     }
 
     .row-selector {
@@ -277,7 +311,6 @@
         cursor: pointer;
         font-weight: bold;
         border: 1px solid #ddd;
-        /* margin-right: 5px; */
         user-select: none;
     }
 
