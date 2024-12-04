@@ -13,7 +13,7 @@
 
     // Modus: 'add' oder 'edit' abgeleitet von isEditMode (Boolean)
     let isEditMode = false; // Standardmäßig im Hinzufügen-Modus
-    const mode = () => isEditMode ? 'Bearbeiten' : 'ADD';
+    const mode = () => isEditMode ? 'Aktiver Modus: Bearbeiten' : 'Aktiver Modus: Hinzufügen/Löschen';
 
     // Grid: 2D-Array mit Sitztypen ('standard', 'wheelchair', 'vip' oder null)
     let grid = [
@@ -412,14 +412,46 @@
         font-size: 18px;
         font-family: Arial, sans-serif;
     }
-
+    
     /* Hinzufügen von Styles für den Switch */
+
+
+
+    #screen-label {
+        font-size: 1.5rem;
+        font-weight: bold;
+        margin: 10px;
+    }
+
+    .Testklasse {
+        width: 5000px;
+        font-size: 1.5rem;
+        font-weight: bold;
+        margin: 10px;
+    }
+
+
+        /* Stil für den Modus-Switch-Container */
+    .mode-switch {
+        display: flex;
+        align-items: center;
+        gap: 15px; 
+        margin: 20px 0; 
+    }
+
+    /* Stil für die Modus-Beschriftung */
+    .mode-label {
+        font-size: 18px;
+        font-weight: bold;
+        color: #333;
+    }
+
+    /* Stil für den Switch */
     .switch {
         position: relative;
         display: inline-block;
         width: 60px;
-        height: 34px;
-        margin: 0 10px;
+        height: 30px;
     }
 
     .switch input {
@@ -435,46 +467,36 @@
         left: 0;
         right: 0;
         bottom: 0;
-        background-color: #ccc;
-        transition: .4s;
-        border-radius: 34px;
+        background-color: green;
+        transition: 0.4s;
+        border-radius: 30px;
     }
 
     .slider:before {
         position: absolute;
         content: "";
-        height: 26px;
-        width: 26px;
-        left: 4px;
-        bottom: 4px;
+        height: 24px;
+        width: 24px;
+        left: 3px;
+        bottom: 3px;
         background-color: white;
-        transition: .4s;
+        transition: 0.4s;
         border-radius: 50%;
     }
 
     input:checked + .slider {
-        background-color: #2196F3;
+        background-color: #1976d2;
     }
 
     input:checked + .slider:before {
-        transform: translateX(26px);
+        transform: translateX(30px);
     }
 
-    .mode-label {
-        position: absolute;
-        top: 40px;
-        left: 0;
-        right: 0;
-        text-align: center;
-        font-size: 20px;
-        font-weight: bold;
+    /* Optional: Hover-Effekt */
+    .switch:hover .slider {
+        transform: scale(1.05);
     }
 
-    #screen-label {
-        font-size: 1.5rem;
-        font-weight: bold;
-        margin: 10px;
-    }
 
     /* Responsive Design */
     @media (max-width: 600px) {
@@ -507,13 +529,15 @@
             <button on:click={removeRow} class="remove-buttons" disabled={isEditMode || grid.length <= 1}>Zeile entfernen</button>
             <button on:click={removeColumn} class="remove-buttons" disabled={isEditMode || grid[0].length <= 1}>Spalte entfernen</button>
         </div>
-        <p></p>
-        <label class="switch">
-            <input type="checkbox" bind:checked={isEditMode}>
-            <span class="slider"></span>
+        <!-- Modus-Switch -->
+        <div class="mode-switch">
+            <label class="switch">
+                <input type="checkbox" bind:checked={isEditMode}>
+                <span class="slider"></span>
+            </label>
             <span class="mode-label">{mode()}</span>
-        </label>
-        <p id="screen-label"><br></p>
+        </div>
+
         <p> LEINWAND <br>
    _____________________________________ </p>
 
