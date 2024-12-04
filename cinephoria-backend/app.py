@@ -816,5 +816,67 @@ def list_profile_images():
         return jsonify({'error': 'Fehler beim Auflisten der Profilbilder'}), 500
 
 
+@app.route('/seats/batch_update', methods=['POST'])
+@admin_required
+def batch_update_seats():
+    data = request.get_json()
+    screen_id = data.get('screen_id')
+    seats_to_add = data.get('seats_to_add', [])
+    seats_to_delete = data.get('seats_to_delete', [])
+
+    if not screen_id:
+        return jsonify({'error': 'screen_id ist erforderlich'}), 400
+
+    try:
+        with psycopg2.connect(DATABASE_URL) as conn:
+            with conn.cursor() as cursor:
+                # Beginne eine Transaktion
+                cursor.execute("BEGIN;")
+                
+                # Hinzufügen der Sitze
+                for seat in seats_to_add:
+                    row = seat.get('row')
+                    number = seat.get('number')
+                    seat_type = seat.get('type', 'standard')
+                    if not row or not number:
+                        raise ValueError("Jeder Sitz in seats_to_add muss 'row' und 'number' enthalten.")
+                    
+                    cursor.execute("""
+                        INSERT INTO seats (screen_id, row, number, type)
+                        VALUES (%s, %s, %s, %s)
+                        ON CONFLICT (screen_id, row, number) DO NOTHING
+                    """, (screen_id, row, number, seat_type))
+                
+                # Löschen der Sitze
+                for seat in seats_to_delete:
+                    row = seat.get('row')
+                    number = seat.get('number')
+                    if not row or not number:
+                        raise ValueError("Jeder Sitz in seats_to_delete muss 'row' und 'number' enthalten.")
+                    
+                    cursor.execute("""
+                        DELETE FROM seats
+                        WHERE screen_id = %s AND row = %s AND number = %s
+                    """, (screen_id, row, number))
+                
+                # Commit der Transaktion
+                conn.commit()
+        
+        return jsonify({
+            'message': 'Sitze erfolgreich aktualisiert',
+            'added': len(seats_to_add),
+            'deleted': len(seats_to_delete)
+        }), 200
+
+    except Exception as e:
+        print(f"Fehler beim Aktualisieren der Sitze: {e}")
+        return jsonify({'error': 'Fehler beim Aktualisieren der Sitze'}), 500
+
+
+
+
+
+
+
 if __name__ == '__main__':
     app.run(debug=True)
