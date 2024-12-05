@@ -999,7 +999,8 @@ def update_seat_type(seat_type_id):
     color = data.get('color')  # New field
     icon = data.get('icon')    # New field
 
-    if not all([name, (price is not None), color]):
+    #if not all([name, (price is not None), color]):
+    if name is None or price is None or color is None:
         return jsonify({'error': 'Alle Felder müssen angegeben werden'}), 400
 
 
