@@ -445,8 +445,7 @@ export const fetchAvailableProfileImages = async (token) => {
     }
 };
 
-// src/services/api.js
-
+// Funktion zum Aktualisieren des Profils
 export const batchUpdateSeats = async (screenId, seatsToAdd, seatsToDelete, seatsToUpdate) => {
     try {
         const token = get(authStore).token;
@@ -474,6 +473,75 @@ export const batchUpdateSeats = async (screenId, seatsToAdd, seatsToDelete, seat
         return data;
     } catch (error) {
         console.error('Error updating seats:', error);
+        throw error;
+    }
+};
+
+// Funktion zum Abrufen aller Sitztypen
+export const fetchSeatTypes = async (token) => {
+    try {
+        const response = await fetch(`${API_BASE_URL}/seat_types`, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            }
+        });
+
+        const data = await response.json();
+        if (!response.ok) {
+            throw new Error(data.error || 'Fehler beim Abrufen der Sitztypen');
+        }
+        return data.seat_types; // Hier wird das Array direkt zurückgegeben
+    } catch (error) {
+        console.error('Error fetching seat types:', error);
+        throw error;
+    }
+};
+
+
+// Funktion zum Hinzufügen eines neuen Sitztyps
+export const addSeatType = async (token,  name, price, color, icon) => {
+    try {
+        const response = await fetch(`${API_BASE_URL}/seat_types`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({  name, price, color, icon })
+        });
+
+        const data = await response.json();
+        if (!response.ok) {
+            throw new Error(data.error || 'Fehler beim Hinzufügen des Sitztyps');
+        }
+        return data; // Gibt die Nachricht und seat_type_id zurück
+    } catch (error) {
+        console.error('Error adding seat type:', error);
+        throw error;
+    }
+};
+
+// Funktion zum Aktualisieren eines bestehenden Sitztyps
+export const updateSeatType = async (token, seatTypeId, updates) => {
+    try {
+        const response = await fetch(`${API_BASE_URL}/seat_types/${seatTypeId}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify(updates) // updates enthält { name, price }
+        });
+
+        const data = await response.json();
+        if (!response.ok) {
+            throw new Error(data.error || 'Fehler beim Aktualisieren des Sitztyps');
+        }
+        return data; // Gibt die Nachricht zurück
+    } catch (error) {
+        console.error('Error updating seat type:', error);
         throw error;
     }
 };

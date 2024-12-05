@@ -106,13 +106,32 @@
                   token: data.token, // Token im Store speichern
               }));
 
-              Swal.fire({
-                  title: "Erfolgreich eingeloggt!",
-                  text: "Willkommen zurück!",
-                  icon: "success",
-                  timer: 1500,
-                  showConfirmButton: false,
-              });
+              // Swal.fire({
+              //     title: "Erfolgreich eingeloggt!",
+              //     text: "Willkommen zurück!",
+              //     icon: "success",
+              //     timer: 1500,
+              //     showConfirmButton: false,
+              // });
+
+
+              const Toast = Swal.mixin({
+              toast: true,
+              position: "top-end",
+              showConfirmButton: false,
+              timer: 3000,
+              timerProgressBar: true,
+              didOpen: (toast) => {
+                toast.onmouseenter = Swal.stopTimer;
+                toast.onmouseleave = Swal.resumeTimer;
+              }
+            });
+            Toast.fire({
+              icon: "success",
+              title: "Erfolgreich angemeldet!"
+            });
+
+
           } else {
               Swal.fire({
                   title: "Fehler",
