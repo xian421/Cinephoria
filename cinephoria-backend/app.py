@@ -567,8 +567,8 @@ def get_seat_types():
                         'seat_type_id': st[0],
                         'name': st[1],
                         'price': float(st[2]),
-                        'color': st[3] or '#000000',  # Default color if None
-                        'icon': st[4] or 'fa-chair'   # Default icon if None
+                        'color': st[3] or '#678be0',  # Default color if None
+                        'icon': st[4]
                     } for st in seat_types
                 ]
         return jsonify({'seat_types': seat_types_list}), 200
@@ -804,8 +804,8 @@ def get_seats_for_showtime(showtime_id):
                         'number': number,
                         'type': seat_type_name,
                         'price': float(price),
-                        'color': color or '#000000',
-                        'icon': icon or '',
+                        'color': color or '#678be0',
+                        'icon': icon,
                         'status': status
                     })
 
