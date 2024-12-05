@@ -1021,9 +1021,9 @@ def update_seat_type(seat_type_id):
                 if color:
                     update_fields.append("color = %s")
                     update_values.append(color)
-                if icon:
-                    update_fields.append("icon = %s")
-                    update_values.append(icon)
+
+                update_fields.append("icon = %s")
+                update_values.append(icon)
 
                 update_values.append(seat_type_id)
 
