@@ -958,26 +958,26 @@ def batch_update_seats():
         return jsonify({'error': 'Fehler beim Aktualisieren der Sitze'}), 500
 
 
-@app.route('/seat_types', methods=['GET'])
-@admin_required
-def get_seat_types():
-    try:
-        with psycopg2.connect(DATABASE_URL) as conn:
-            with conn.cursor() as cursor:
-                # Führe das SELECT-Statement aus
-                cursor.execute("SELECT seat_type_id, name, price FROM seat_types")
-                result = cursor.fetchall()  # Abruf aller Ergebnisse
-                if not result:
-                    return jsonify({'error': 'Keine Sitztypen gefunden'}), 404
-                # Formatiere die Ergebnisse als Liste von Dictionaries
-                seat_types = [
-                    {'seat_type_id': seat_type_id, 'name': name, 'price': price}
-                    for seat_type_id, name, price in result
-                ]
-                return jsonify(seat_types), 200
-    except Exception as e:
-        print(f"Fehler beim Abrufen der Sitztypen: {e}")
-        return jsonify({'error': 'Fehler beim Abrufen der Sitztypen'}), 500
+# @app.route('/seat_types', methods=['GET'])
+# @admin_required
+# def get_seat_types():
+#     try:
+#         with psycopg2.connect(DATABASE_URL) as conn:
+#             with conn.cursor() as cursor:
+#                 # Führe das SELECT-Statement aus
+#                 cursor.execute("SELECT seat_type_id, name, price FROM seat_types")
+#                 result = cursor.fetchall()  # Abruf aller Ergebnisse
+#                 if not result:
+#                     return jsonify({'error': 'Keine Sitztypen gefunden'}), 404
+#                 # Formatiere die Ergebnisse als Liste von Dictionaries
+#                 seat_types = [
+#                     {'seat_type_id': seat_type_id, 'name': name, 'price': price}
+#                     for seat_type_id, name, price in result
+#                 ]
+#                 return jsonify(seat_types), 200
+#     except Exception as e:
+#         print(f"Fehler beim Abrufen der Sitztypen: {e}")
+#         return jsonify({'error': 'Fehler beim Abrufen der Sitztypen'}), 500
 
 
 @app.route('/seat_types', methods=['POST'])
