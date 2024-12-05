@@ -571,9 +571,9 @@
                     </div>
                     {#each row as cell, colIndex}
                         <div
-                            class="cell {cell || 'null'}"
+                            class="cell {cell.type || 'null'}"
                             on:click={() => toggleCell(rowIndex, colIndex)}
-                            title={`Reihe: ${getRowLabel(rowIndex)}, Sitz: ${colIndex + 1}${cell ? `, Typ: ${cell}` : ''}`}
+                            title={`Reihe: ${getRowLabel(rowIndex)}, Sitz: ${colIndex + 1}${cell.type ? `, Typ: ${cell.type}, Preis: ${cell.price}€` : ''}`}
                         >
                         {#if cell === 'wheelchair'}
                             <i class="fas fa-wheelchair"></i>

@@ -1,9 +1,7 @@
 <!-- src/routes/Buchung.svelte -->
 <script>
     import { onMount } from 'svelte';
-    // @ts-ignore
     import { navigate } from 'svelte-routing';
-    // @ts-ignore
     import Swal from 'sweetalert2';
     import { fetchSeatsForShowtime, createBooking, createPayPalOrder, capturePayPalOrder } from '../services/api.js';
     import { get } from 'svelte/store';
@@ -17,122 +15,104 @@
 
     let selectedSeats = [];
 
-    // Neue Variable für gruppierte Sitzplätze
+    // Variable für gruppierte Sitzplätze
     let seatsByRow = {};
+
+    // Gesamtpreis der ausgewählten Sitzplätze
+    let totalPrice = 0.00;
 
     // PayPal Client ID aus Umgebungsvariablen oder Backend beziehen
     // Für dieses Beispiel nehmen wir an, dass Sie sie als Umgebungsvariable bereitstellen
-    const PAYPAL_CLIENT_ID = 'AXWfRwPPgPCoOBZzqI-r4gce1HuWZXDnFqUdES0bP8boKSv5KkkPvZrMFwcCDShXjC3aTdChUjOhwxhW'; // Ersetzen Sie dies durch Ihre tatsächliche Client ID
+    const PAYPAL_CLIENT_ID = 'IHRE_PAYPAL_CLIENT_ID'; // Ersetzen Sie dies durch Ihre tatsächliche Client ID
 
     onMount(async () => {
-    isLoading = true;
-    try {
-        const token = get(authStore).token;
+        isLoading = true;
+        try {
+            const token = get(authStore).token;
 
-        // Hole die Sitzstatus für die Vorstellung
-        const seatStatusData = await fetchSeatsForShowtime(showtime_id, token);
-        const seatStatusSeats = seatStatusData.seats;
+            // Hole die Sitzstatus für die Vorstellung
+            const seatStatusData = await fetchSeatsForShowtime(showtime_id, token);
+            const seatStatusSeats = seatStatusData.seats;
 
-        // Nutze die vorhandenen Sitze aus seatStatusSeats
-        seats = seatStatusSeats;
+            // Nutze die vorhandenen Sitze aus seatStatusSeats
+            seats = seatStatusSeats;
 
-        // Gruppiere die Sitze mit Lücken
-        seatsByRow = groupSeatsByRowWithGaps(seats);
+            // Gruppiere die Sitze mit Lücken
+            seatsByRow = groupSeatsByRowWithGaps(seats);
 
-        // Berechne Unterschiede (to_add und to_remove)
-        const existingSeats = seats.map(seat => [seat.row, seat.number]); // Aktuelle Sitze
-        const newSeats = /* hier neue Sitzplatzdaten einfügen */ [];
+        } catch (error) {
+            console.error('Fehler beim Laden der Sitze:', error);
+            error = error.message || 'Fehler beim Laden der Sitze.';
+        } finally {
+            isLoading = false;
+        }
+    });
 
-        const existingSet = new Set(existingSeats.map(([row, number]) => `${row}-${number}`));
-        const newSet = new Set(newSeats.map(([row, number]) => `${row}-${number}`));
-
-        const to_add = Array.from(newSet).filter(seat => !existingSet.has(seat));
-        const to_remove = Array.from(existingSet).filter(seat => !newSet.has(seat));
-
-        console.log('Hinzugefügte Sitze:', to_add);
-        console.log('Entfernte Sitze:', to_remove);
-
-        // Hier kannst du to_add und to_remove in die Datenbank schreiben, falls notwendig
-        await updateSeatsInDatabase(to_add, to_remove, token);
-    } catch (error) {
-        console.error('Fehler beim Laden der Sitze:', error);
-        error = error.message || 'Fehler beim Laden der Sitze.';
-    } finally {
-        isLoading = false;
-    }
-});
-
-
-
-    // Funktion zum Gruppieren der Sitzplätze nach Reihen
+    // Funktion zum Gruppieren der Sitzplätze nach Reihen mit Platzhaltern für fehlende Sitze
     function groupSeatsByRowWithGaps(seats) {
-    const rowsSet = new Set();
-    const seatNumbersSet = new Set();
+        const rowsSet = new Set();
+        const seatNumbersSet = new Set();
 
-    // Sammle alle vorhandenen Reihen und Sitznummern
-    seats.forEach(seat => {
-        rowsSet.add(seat.row);
-        seatNumbersSet.add(seat.number);
-    });
-
-    // Bestimme den Bereich aller Reihen und Sitznummern
-    const allRowLabels = generateAllRowLabels(Array.from(rowsSet));
-    const allSeatNumbers = generateAllSeatNumbers(Array.from(seatNumbersSet));
-
-    // Erstelle eine Map für schnellen Zugriff auf Sitzdaten
-    const seatMap = {};
-    seats.forEach(seat => {
-        seatMap[`${seat.row}-${seat.number}`] = seat;
-    });
-
-    // Baue den Sitzplan mit Platzhaltern für fehlende Sitze
-    const rowsWithGaps = {};
-    allRowLabels.forEach(rowLabel => {
-        const rowSeats = [];
-        allSeatNumbers.forEach(seatNumber => {
-            const key = `${rowLabel}-${seatNumber}`;
-            if (seatMap[key]) {
-                rowSeats.push(seatMap[key]);
-            } else {
-                // Platzhalter für fehlenden Sitz einfügen
-                rowSeats.push({ row: rowLabel, number: seatNumber, status: 'missing', seat_id: null });
-            }
+        // Sammle alle vorhandenen Reihen und Sitznummern
+        seats.forEach(seat => {
+            rowsSet.add(seat.row);
+            seatNumbersSet.add(seat.number);
         });
-        rowsWithGaps[rowLabel] = rowSeats;
-    });
 
-    console.log('rowsWithGaps:', rowsWithGaps);
-    return rowsWithGaps;
-}
+        // Bestimme den Bereich aller Reihen und Sitznummern
+        const allRowLabels = generateAllRowLabels(Array.from(rowsSet));
+        const allSeatNumbers = generateAllSeatNumbers(Array.from(seatNumbersSet));
 
-// Hilfsfunktion zur Generierung aller Reihenbezeichnungen
-function generateAllRowLabels(existingRows) {
-    const minRowCharCode = Math.min(...existingRows.map(r => r.charCodeAt(0)));
-    const maxRowCharCode = Math.max(...existingRows.map(r => r.charCodeAt(0)));
-    const allRows = [];
-    for (let code = minRowCharCode; code <= maxRowCharCode; code++) {
-        allRows.push(String.fromCharCode(code));
+        // Erstelle eine Map für schnellen Zugriff auf Sitzdaten
+        const seatMap = {};
+        seats.forEach(seat => {
+            seatMap[`${seat.row}-${seat.number}`] = seat;
+        });
+
+        // Baue den Sitzplan mit Platzhaltern für fehlende Sitze
+        const rowsWithGaps = {};
+        allRowLabels.forEach(rowLabel => {
+            const rowSeats = [];
+            allSeatNumbers.forEach(seatNumber => {
+                const key = `${rowLabel}-${seatNumber}`;
+                if (seatMap[key]) {
+                    rowSeats.push(seatMap[key]);
+                } else {
+                    // Platzhalter für fehlenden Sitz einfügen
+                    rowSeats.push({ row: rowLabel, number: seatNumber, status: 'missing', seat_id: null });
+                }
+            });
+            rowsWithGaps[rowLabel] = rowSeats;
+        });
+
+        return rowsWithGaps;
     }
-    return allRows;
-}
 
-// Hilfsfunktion zur Generierung aller Sitznummern
-function generateAllSeatNumbers(existingSeatNumbers) {
-    const minSeatNumber = Math.min(...existingSeatNumbers);
-    const maxSeatNumber = Math.max(...existingSeatNumbers);
-    const allSeatNumbers = [];
-    for (let num = minSeatNumber; num <= maxSeatNumber; num++) {
-        allSeatNumbers.push(num);
+    // Hilfsfunktion zur Generierung aller Reihenbezeichnungen
+    function generateAllRowLabels(existingRows) {
+        const minRowCharCode = Math.min(...existingRows.map(r => r.charCodeAt(0)));
+        const maxRowCharCode = Math.max(...existingRows.map(r => r.charCodeAt(0)));
+        const allRows = [];
+        for (let code = minRowCharCode; code <= maxRowCharCode; code++) {
+            allRows.push(String.fromCharCode(code));
+        }
+        return allRows;
     }
-    return allSeatNumbers;
-}
 
+    // Hilfsfunktion zur Generierung aller Sitznummern
+    function generateAllSeatNumbers(existingSeatNumbers) {
+        const minSeatNumber = Math.min(...existingSeatNumbers);
+        const maxSeatNumber = Math.max(...existingSeatNumbers);
+        const allSeatNumbers = [];
+        for (let num = minSeatNumber; num <= maxSeatNumber; num++) {
+            allSeatNumbers.push(num);
+        }
+        return allSeatNumbers;
+    }
 
     // Funktion zum Auswählen/Abwählen von Sitzplätzen
     function toggleSeatSelection(seat) {
-        console.log('toggleSeatSelection aufgerufen für Sitz:', seat);
         if (seat.status !== 'available') {
-            console.log('Sitz ist nicht verfügbar:', seat);
             return;
         }
 
@@ -143,16 +123,25 @@ function generateAllSeatNumbers(existingSeatNumbers) {
             // Sitzplatz auswählen
             selectedSeats = [...selectedSeats, seat];
         }
+
+        // Gesamtpreis neu berechnen
+        calculateTotalPrice();
+    }
+
+    // Funktion zur Berechnung des Gesamtpreises
+    function calculateTotalPrice() {
+        totalPrice = selectedSeats.reduce((sum, seat) => sum + seat.price, 0);
     }
 
     // Funktion zur Überprüfung, ob ein Sitz ausgewählt ist
     function isSelected(seat_id) {
-        const result = selectedSeats.some(seat => seat.seat_id === seat_id);
-        return result;
+        return selectedSeats.some(seat => seat.seat_id === seat_id);
     }
 
     // Reaktives Statement zur Überwachung von selectedSeats
-    $: console.log('Reaktives selectedSeats:', selectedSeats);
+    $: if (selectedSeats) {
+        console.log('Ausgewählte Sitze:', selectedSeats);
+    }
 
     // Funktion zur Bestätigung der Buchung mit PayPal
     async function confirmBooking(orderID) {
@@ -317,6 +306,7 @@ function generateAllSeatNumbers(existingSeatNumbers) {
         display: flex;
         justify-content: center;
         gap: 5px;
+        align-items: center;
     }
 
     .seat {
@@ -351,6 +341,14 @@ function generateAllSeatNumbers(existingSeatNumbers) {
         background-color: #3498db;
     }
 
+    .seat.vip {
+        background-color: gold;
+    }
+
+    .seat.wheelchair {
+        background-color: #9b59b6;
+    }
+
     .legend {
         display: flex;
         justify-content: center;
@@ -371,19 +369,18 @@ function generateAllSeatNumbers(existingSeatNumbers) {
     }
 
     .seat.placeholder {
-    background-color: transparent;
-    pointer-events: none;
-    width: 40px;
-    height: 40px;
-}
+        background-color: transparent;
+        pointer-events: none;
+        width: 40px;
+        height: 40px;
+    }
 
-.row-label {
-    width: 20px;
-    text-align: right;
-    margin-right: 5px;
-    font-weight: bold;
-}
-
+    .row-label {
+        width: 20px;
+        text-align: right;
+        margin-right: 5px;
+        font-weight: bold;
+    }
 
     /* Legendenboxen Farben zuweisen */
     .legend-box.available {
@@ -398,9 +395,12 @@ function generateAllSeatNumbers(existingSeatNumbers) {
         background-color: #e74c3c;
     }
 
-    /* Ursprünglicher Bestätigungsbutton ausgeblendet */
-    .btn-confirm {
-        display: none;
+    .legend-box.vip {
+        background-color: gold;
+    }
+
+    .legend-box.wheelchair {
+        background-color: #9b59b6;
     }
 
     /* Responsive Anpassungen */
@@ -439,36 +439,45 @@ function generateAllSeatNumbers(existingSeatNumbers) {
                 <div class="legend-box unavailable"></div>
                 <span>Nicht verfügbar</span>
             </div>
+            <div class="legend-item">
+                <div class="legend-box vip"></div>
+                <span>VIP</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-box wheelchair"></div>
+                <span>Rollstuhl</span>
+            </div>
         </div>
 
-    <!-- Sitzplan -->
-<div class="seating-chart">
-    {#each Object.keys(seatsByRow) as row}
-        <div class="seat-row">
-            <!-- Reihenlabel -->
-            <div class="row-label">{row}</div>
-            {#each seatsByRow[row] as seat (row + '-' + seat.number)}
-                {#if seat.status !== 'missing'}
-                    <div 
-                        class="seat {seat.status} {isSelected(seat.seat_id) ? 'selected' : ''}" 
-                        on:click={() => {
-                            toggleSeatSelection(seat);
-                        }}
-                    >
-                        {seat.number}
-                    </div>
-                {:else}
-                    <div class="seat placeholder"></div>
-                {/if}
+        <!-- Sitzplan -->
+        <div class="seating-chart">
+            {#each Object.keys(seatsByRow) as row}
+                <div class="seat-row">
+                    <!-- Reihenlabel -->
+                    <div class="row-label">{row}</div>
+                    {#each seatsByRow[row] as seat (row + '-' + seat.number)}
+                        {#if seat.status !== 'missing'}
+                            <div 
+                                class="seat {seat.status} {seat.type} {isSelected(seat.seat_id) ? 'selected' : ''}" 
+                                on:click={() => {
+                                    toggleSeatSelection(seat);
+                                }}
+                                title="Reihe {seat.row}, Sitz {seat.number}, Typ: {seat.type}, Preis: {seat.price.toFixed(2)}€"
+                            >
+                                {seat.number}
+                            </div>
+                        {:else}
+                            <div class="seat placeholder"></div>
+                        {/if}
+                    {/each}
+                </div>
             {/each}
         </div>
-    {/each}
-</div>
 
+        <!-- Anzeige des Gesamtpreises -->
+        <p>Gesamtpreis: {totalPrice.toFixed(2)}€</p>
 
         <!-- PayPal Button Container -->
-        
+        <div id="paypal-button-container"></div>
     {/if}
-    Email: sb-ng2ae34511206@personal.example.com PW: gK|i4A?q
-    <div id="paypal-button-container"></div>
 </main>

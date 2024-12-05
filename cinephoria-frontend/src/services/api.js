@@ -71,12 +71,14 @@ export async function fetchSeats(screen_id, token) {
         }
 
         const data = await response.json();
-        return data; // Stelle sicher, dass data das Feld 'seats' enthält
+        // Stellen Sie sicher, dass 'data.seats' die Felder 'type' und 'price' enthält
+        return data; 
     } catch (error) {
         console.error('Error fetching seats:', error);
         throw error;
     }
 }
+
 
 // Funktion zum Erstellen eines neuen Sitzes
 export const createSeat = async (screen_id, row, number, type = 'standard') => {
@@ -305,8 +307,10 @@ export const fetchSeatsForShowtime = async (showtimeId, token) => {
     if (!response.ok) {
         throw new Error(data.error || 'Fehler beim Abrufen der Sitzplätze.');
     }
+    // 'data.seats' enthält jetzt 'type' und 'price'
     return data;
 };
+
 
 // Funktion zum Erstellen einer Buchung
 export const createBooking = async (showtime_id, seatIds, token, orderID) => {
