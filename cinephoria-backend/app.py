@@ -805,7 +805,7 @@ def get_seats_for_showtime(showtime_id):
                         'type': seat_type_name,
                         'price': float(price),
                         'color': color or '#000000',
-                        'icon': icon or 'fa-chair',
+                        'icon': icon or '',
                         'status': status
                     })
 
