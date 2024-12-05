@@ -23,7 +23,7 @@
 
     // PayPal Client ID aus Umgebungsvariablen oder Backend beziehen
     // Für dieses Beispiel nehmen wir an, dass Sie sie als Umgebungsvariable bereitstellen
-    const PAYPAL_CLIENT_ID = 'IHRE_PAYPAL_CLIENT_ID'; // Ersetzen Sie dies durch Ihre tatsächliche Client ID
+    const PAYPAL_CLIENT_ID = 'AXWfRwPPgPCoOBZzqI-r4gce1HuWZXDnFqUdES0bP8boKSv5KkkPvZrMFwcCDShXjC3aTdChUjOhwxhW'; // Ersetzen Sie dies durch Ihre tatsächliche Client ID
 
     onMount(async () => {
         isLoading = true;
