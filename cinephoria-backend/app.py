@@ -796,7 +796,7 @@ def get_seats_for_showtime(showtime_id):
                 # Strukturieren der Sitzplatzdaten
                 seats_list = []
                 for seat in seats:
-                    seat_id, row, number, seat_type_name, price = seat
+                    seat_id, row, number, seat_type_name, price, color, icon = seat
                     status = 'unavailable' if seat_id in booked_seat_ids else 'available'
                     seats_list.append({
                         'seat_id': seat_id,
@@ -804,8 +804,11 @@ def get_seats_for_showtime(showtime_id):
                         'number': number,
                         'type': seat_type_name,
                         'price': float(price),
+                        'color': color or '#000000',
+                        'icon': icon or 'fa-chair',
                         'status': status
                     })
+
                 
         return jsonify({'seats': seats_list}), 200
     except Exception as e:
