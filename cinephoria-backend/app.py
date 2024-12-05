@@ -999,8 +999,9 @@ def update_seat_type(seat_type_id):
     color = data.get('color')  # New field
     icon = data.get('icon')    # New field
 
-    if not all([name, price is not None, color]): 
+    if not all([name, (price is not None), color]):
         return jsonify({'error': 'Alle Felder müssen angegeben werden'}), 400
+
 
     try:
         with psycopg2.connect(DATABASE_URL) as conn:
