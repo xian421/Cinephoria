@@ -17,10 +17,12 @@
   import Forgotpassword from "./routes/Forgotpassword.svelte";
   import Adminkinosaal from "./routes/Adminkinosaal.svelte";
   import Adminseats from "./routes/Adminseats.svelte";
+  import Adminpreise from './routes/Adminpreise.svelte';
   import Buchung from './routes/Buchung.svelte';
   import Unauthorized from "./routes/Unauthorized.svelte";
   import Profile from "./routes/profile.svelte";
   import Einstellung from "./routes/einstellung.svelte";
+  import Admin from './routes/Admin.svelte';
 
   // Import von Svelte Stores
   import { authStore, setAuth, updateAuth } from './stores/authStore.js';
@@ -240,6 +242,21 @@
               <Adminseats screenId={params.screenId} />
           </ProtectedRoute>
       </Route>
+
+        <Route path="/adminpreise" let:params>
+            <ProtectedRoute admin={true}>
+                <Adminpreise />
+            </ProtectedRoute>
+        </Route>
+
+        <Route path="/admin" let:params>
+            <ProtectedRoute admin={true}>
+                <Admin />
+            </ProtectedRoute>
+        </Route>
+
+
+  
 
       <Route path="/beschreibung/:id" component={Beschreibung} />
       <Route path="/unauthorized" component={Unauthorized} />
