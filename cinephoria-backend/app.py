@@ -957,5 +957,92 @@ def batch_update_seats():
         print(f"Fehler beim Aktualisieren der Sitze: {e}")
         return jsonify({'error': 'Fehler beim Aktualisieren der Sitze'}), 500
 
+
+@app.route('/seat_types', methods=['GET'])
+@admin_required
+def get_seat_types():
+    try:
+        with psycopg2.connect(DATABASE_URL) as conn:
+            with conn.cursor() as cursor:
+                # Führe das SELECT-Statement aus
+                cursor.execute("SELECT seat_type_id, name, price FROM seat_types")
+                result = cursor.fetchall()  # Abruf aller Ergebnisse
+                if not result:
+                    return jsonify({'error': 'Keine Sitztypen gefunden'}), 404
+                # Formatiere die Ergebnisse als Liste von Dictionaries
+                seat_types = [
+                    {'seat_type_id': seat_type_id, 'name': name, 'price': price}
+                    for seat_type_id, name, price in result
+                ]
+                return jsonify(seat_types), 200
+    except Exception as e:
+        print(f"Fehler beim Abrufen der Sitztypen: {e}")
+        return jsonify({'error': 'Fehler beim Abrufen der Sitztypen'}), 500
+
+
+@app.route('/seat_types', methods=['POST'])
+@admin_required
+def add_seat_type():
+    data = request.get_json()
+    name = data.get('name')
+    price = data.get('price')
+
+    if not name or price is None:
+        return jsonify({'error': 'Name und Preis sind erforderlich'}), 400
+
+    try:
+        with psycopg2.connect(DATABASE_URL) as conn:
+            with conn.cursor() as cursor:
+                cursor.execute(
+                    "INSERT INTO seat_types (name, price) VALUES (%s, %s) RETURNING seat_type_id",
+                    (name, price)
+                )
+                seat_type_id = cursor.fetchone()[0]
+                conn.commit()
+                return jsonify({'message': 'Sitztyp hinzugefügt', 'seat_type_id': seat_type_id}), 201
+    except Exception as e:
+        print(f"Fehler beim Hinzufügen des Sitztyps: {e}")
+        return jsonify({'error': 'Fehler beim Hinzufügen des Sitztyps'}), 500
+
+
+@app.route('/seat_types/<int:seat_type_id>', methods=['PUT'])
+@admin_required
+def update_seat_type(seat_type_id):
+    data = request.get_json()
+    name = data.get('name')
+    price = data.get('price')
+
+    if not name and price is None:
+        return jsonify({'error': 'Mindestens Name oder Preis müssen angegeben werden'}), 400
+
+    try:
+        with psycopg2.connect(DATABASE_URL) as conn:
+            with conn.cursor() as cursor:
+                # Dynamisch das UPDATE-Statement aufbauen
+                update_fields = []
+                update_values = []
+
+                if name:
+                    update_fields.append("name = %s")
+                    update_values.append(name)
+                if price is not None:
+                    update_fields.append("price = %s")
+                    update_values.append(price)
+
+                update_values.append(seat_type_id)
+
+                update_query = f"UPDATE seat_types SET {', '.join(update_fields)} WHERE seat_type_id = %s"
+                cursor.execute(update_query, tuple(update_values))
+                
+                if cursor.rowcount == 0:
+                    return jsonify({'error': 'Sitztyp nicht gefunden'}), 404
+                
+                conn.commit()
+                return jsonify({'message': 'Sitztyp aktualisiert'}), 200
+    except Exception as e:
+        print(f"Fehler beim Aktualisieren des Sitztyps: {e}")
+        return jsonify({'error': 'Fehler beim Aktualisieren des Sitztyps'}), 500
+
+
 if __name__ == '__main__':
     app.run(debug=True)
