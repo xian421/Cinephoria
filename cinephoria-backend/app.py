@@ -972,8 +972,8 @@ def add_seat_type():
     color = data.get('color')  # New field
     icon = data.get('icon')    # New field
 
-    if not name or price is None:
-        return jsonify({'error': 'Name und Preis sind erforderlich'}), 400
+    if not (name and price is not None and color):
+        return jsonify({'error': 'Name, Preis und Farbe sind erforderlich'}), 400
 
     try:
         with psycopg2.connect(DATABASE_URL) as conn:
@@ -999,8 +999,8 @@ def update_seat_type(seat_type_id):
     color = data.get('color')  # New field
     icon = data.get('icon')    # New field
 
-    if not any([name, price is not None, color, icon]):
-        return jsonify({'error': 'Mindestens ein Feld muss angegeben werden'}), 400
+    if not all([name, price is not None, color]): 
+        return jsonify({'error': 'Alle Felder müssen angegeben werden'}), 400
 
     try:
         with psycopg2.connect(DATABASE_URL) as conn:
