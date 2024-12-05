@@ -90,7 +90,7 @@ def get_paypal_access_token():
 
 
 @app.route('/paypal/order/create', methods=['POST'])
-@token_required  # Optional: Nur authentifizierte Benutzer können Orders erstellen
+@token_required
 def create_paypal_order():
     data = request.get_json()
     showtime_id = data.get('showtime_id')
@@ -102,35 +102,53 @@ def create_paypal_order():
     try:
         token = get_paypal_access_token()
 
-        # Berechnen des Gesamtbetrags basierend auf den Sitzpreisen
-        total_amount = 0.0
         seat_ids = [seat['seat_id'] for seat in selected_seats]
 
         with psycopg2.connect(DATABASE_URL) as conn:
             with conn.cursor() as cursor:
-                # Preise für die ausgewählten Sitzplätze abrufen
+                # Preise und Details für die ausgewählten Sitzplätze abrufen
                 cursor.execute("""
-                    SELECT s.seat_id, st.price
+                    SELECT s.seat_id, s.row, s.number, st.name AS seat_type_name, st.price
                     FROM seats s
                     JOIN seat_types st ON s.seat_type_id = st.seat_type_id
                     WHERE s.seat_id = ANY(%s)
                 """, (seat_ids,))
-                seat_prices = cursor.fetchall()
-                seat_price_dict = {seat_id: price for seat_id, price in seat_prices}
+                seats_data = cursor.fetchall()
+                if not seats_data:
+                    return jsonify({'error': 'Keine gültigen Sitzplätze gefunden'}), 400
 
-        total_amount = sum(seat_price_dict[seat_id] for seat_id in seat_ids)
+                items = []
+                total_amount = 0.0
+                for seat in seats_data:
+                    seat_id, row, number, seat_type_name, price = seat
+                    total_amount += float(price)
+                    items.append({
+                        "name": f"Reihe {row} Sitz {number} ({seat_type_name})",
+                        "quantity": "1",
+                        "unit_amount": {
+                            "currency_code": "EUR",
+                            "value": f"{float(price):.2f}"
+                        }
+                    })
 
         order_payload = {
             "intent": "CAPTURE",
             "purchase_units": [{
                 "amount": {
                     "currency_code": "EUR",
-                    "value": f"{total_amount:.2f}"
-                }
+                    "value": f"{total_amount:.2f}",
+                    "breakdown": {
+                        "item_total": {
+                            "currency_code": "EUR",
+                            "value": f"{total_amount:.2f}"
+                        }
+                    }
+                },
+                "items": items
             }],
             "application_context": {
-                "return_url": "https://cinephoria-theta.vercel.app/upcoming",  # Ersetzen Sie dies durch Ihre tatsächliche URL
-                "cancel_url": "https://cinephoria-theta.vercel.app/nowplaying"   # Ersetzen Sie dies durch Ihre tatsächliche URL
+                "return_url": "https://cinephoria-theta.vercel.app/upcoming",
+                "cancel_url": "https://cinephoria-theta.vercel.app/nowplaying"
             }
         }
 
@@ -147,8 +165,9 @@ def create_paypal_order():
             order = response.json()
             return jsonify({'orderID': order['id']}), 201
         else:
+            print(f"PayPal Order Creation Failed: {response.status_code}")
             print(response.json())
-            return jsonify({'error': 'Fehler beim Erstellen der PayPal-Order'}), 500
+            return jsonify({'error': 'Fehler beim Erstellen der PayPal-Order', 'details': response.json()}), 500
 
     except Exception as e:
         print(f"Fehler beim Erstellen der PayPal-Order: {e}")
