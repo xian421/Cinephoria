@@ -1,4 +1,5 @@
-#App.py
+# app.py
+
 import os
 import psycopg2
 import psycopg2.extras
@@ -101,8 +102,23 @@ def create_paypal_order():
     try:
         token = get_paypal_access_token()
 
-        # Berechnen des Gesamtbetrags (z.B. 10 EUR pro Sitzplatz)
-        total_amount = len(selected_seats) * 10.00  # Passen Sie den Preis entsprechend an
+        # Berechnen des Gesamtbetrags basierend auf den Sitzpreisen
+        total_amount = 0.0
+        seat_ids = [seat['seat_id'] for seat in selected_seats]
+
+        with psycopg2.connect(DATABASE_URL) as conn:
+            with conn.cursor() as cursor:
+                # Preise für die ausgewählten Sitzplätze abrufen
+                cursor.execute("""
+                    SELECT s.seat_id, st.price
+                    FROM seats s
+                    JOIN seat_types st ON s.seat_type_id = st.seat_type_id
+                    WHERE s.seat_id = ANY(%s)
+                """, (seat_ids,))
+                seat_prices = cursor.fetchall()
+                seat_price_dict = {seat_id: price for seat_id, price in seat_prices}
+
+        total_amount = sum(seat_price_dict[seat_id] for seat_id in seat_ids)
 
         order_payload = {
             "intent": "CAPTURE",
@@ -237,7 +253,7 @@ def get_movie_details(movie_id):
         return jsonify({"error": f"Unable to fetch details for movie ID {movie_id}"}), response.status_code
 
 @app.route('/movie/<int:movie_id>/release_dates', methods=['GET'])
-def get_movie_details_richtig(movie_id):
+def get_movie_release_dates(movie_id):
     # URL für die TMDB-API mit der spezifischen Film-ID
     url = f"{TMDB_API_URL}/{movie_id}/release_dates"
     
@@ -334,7 +350,6 @@ def get_cinemas():
         return jsonify({'error': 'Fehler beim Abrufen der Kinos'}), 500
 
 @app.route('/screens', methods=['GET'])
-#@admin_required
 def get_screens():
     cinema_id = request.args.get('cinema_id', default=1, type=int)  # Standardwert: 1
     try:
@@ -367,9 +382,6 @@ def get_screens():
         print(f"Fehler: {e}")
         return jsonify({'error': 'Fehler beim Abrufen der Kinosäle'}), 500
 
-
-
-
 @app.route('/register', methods=['POST'])
 def register():
     data = request.get_json()
@@ -400,8 +412,6 @@ def register():
         print(f"Fehler bei der Registrierung: {e}")
         return jsonify({'error': 'Ein Fehler ist aufgetreten'}), 500
 
-
-
 @app.route('/seats', methods=['POST'])
 @admin_required
 def create_seat():
@@ -409,7 +419,7 @@ def create_seat():
     screen_id = data.get('screen_id')
     row = data.get('row')
     number = data.get('number')
-    seat_type = data.get('type', 'standard')
+    seat_type_name = data.get('type', 'standard')
 
     if not screen_id or not row or not number:
         return jsonify({'error': 'screen_id, row und number sind erforderlich'}), 400
@@ -417,6 +427,16 @@ def create_seat():
     try:
         with psycopg2.connect(DATABASE_URL) as conn:
             with conn.cursor() as cursor:
+                # Sitztyp-ID basierend auf dem Namen abrufen
+                cursor.execute("""
+                    SELECT seat_type_id FROM seat_types WHERE name = %s
+                """, (seat_type_name,))
+                result = cursor.fetchone()
+                if not result:
+                    return jsonify({'error': 'Ungültiger Sitztyp'}), 400
+                seat_type_id = result[0]
+
+                # Prüfen, ob der Sitz bereits existiert
                 cursor.execute("""
                     SELECT seat_id FROM seats
                     WHERE screen_id = %s AND row = %s AND number = %s
@@ -425,11 +445,13 @@ def create_seat():
                 if existing_seat:
                     return jsonify({'error': 'Sitz existiert bereits'}), 400
 
+                # Sitz einfügen mit seat_type_id
                 cursor.execute("""
-                    INSERT INTO seats (screen_id, row, number, type)
+                    INSERT INTO seats (screen_id, row, number, seat_type_id)
                     VALUES (%s, %s, %s, %s)
                     RETURNING seat_id
-                """, (screen_id, row, number, seat_type))
+                """, (screen_id, row, number, seat_type_id))
+
                 seat_id = cursor.fetchone()[0]
 
         return jsonify({'message': 'Sitz erstellt', 'seat_id': seat_id}), 201
@@ -456,10 +478,6 @@ def delete_seat(seat_id):
     except Exception as e:
         print(f"Fehler beim Löschen des Sitzes: {e}")
         return jsonify({'error': 'Fehler beim Löschen des Sitzes'}), 500
-    
-
-##############################################################################################################
-
 
 @app.route('/seats', methods=['DELETE'])
 @admin_required
@@ -482,10 +500,6 @@ def delete_all_seats():
         print(f"Fehler beim Löschen aller Sitze: {e}")
         return jsonify({'error': 'Fehler beim Löschen aller Sitze'}), 500
 
-
-
-    ##############################################################################################################
-
 @app.route('/seats', methods=['GET'])
 def get_seats():
     screen_id = request.args.get('screen_id')
@@ -496,9 +510,10 @@ def get_seats():
         with psycopg2.connect(DATABASE_URL) as conn:
             with conn.cursor() as cursor:
                 cursor.execute("""
-                    SELECT seat_id, screen_id, row, number, type
-                    FROM seats
-                    WHERE screen_id = %s
+                    SELECT s.seat_id, s.screen_id, s.row, s.number, st.name AS seat_type_name, st.price
+                    FROM seats s
+                    JOIN seat_types st ON s.seat_type_id = st.seat_type_id
+                    WHERE s.screen_id = %s
                 """, (screen_id,))
                 seats = cursor.fetchall()
                 seats_list = [
@@ -507,7 +522,8 @@ def get_seats():
                         'screen_id': seat[1],
                         'row': seat[2],
                         'number': seat[3],
-                        'type': seat[4]
+                        'type': seat[4],  # seat_type_name
+                        'price': float(seat[5])
                     } for seat in seats
                 ]
 
@@ -516,7 +532,28 @@ def get_seats():
     except Exception as e:
         print(f"Fehler beim Abrufen der Sitze: {e}")
         return jsonify({'error': 'Fehler beim Abrufen der Sitze'}), 500
-    
+
+@app.route('/seat_types', methods=['GET'])
+def get_seat_types():
+    try:
+        with psycopg2.connect(DATABASE_URL) as conn:
+            with conn.cursor() as cursor:
+                cursor.execute("""
+                    SELECT seat_type_id, name, price
+                    FROM seat_types
+                """)
+                seat_types = cursor.fetchall()
+                seat_types_list = [
+                    {
+                        'seat_type_id': st[0],
+                        'name': st[1],
+                        'price': float(st[2])
+                    } for st in seat_types
+                ]
+        return jsonify({'seat_types': seat_types_list}), 200
+    except Exception as e:
+        print(f"Fehler beim Abrufen der Sitztypen: {e}")
+        return jsonify({'error': 'Fehler beim Abrufen der Sitztypen'}), 500
 
 @app.route('/showtimes', methods=['POST'])
 @admin_required
@@ -544,8 +581,6 @@ def create_showtime():
     except Exception as e:
         print(f"Fehler beim Erstellen des Showtimes: {e}")
         return jsonify({'error': 'Fehler beim Erstellen des Showtimes'}), 500
-
-
 
 @app.route('/showtimes', methods=['GET'])
 def get_showtimes():
@@ -584,9 +619,6 @@ def get_showtimes():
         print(f"Fehler beim Abrufen der Showtimes: {e}")
         return jsonify({'error': 'Fehler beim Abrufen der Showtimes'}), 500
 
-
-
-
 @app.route('/showtimes/<int:showtime_id>', methods=['PUT'])
 @admin_required
 def update_showtime(showtime_id):
@@ -616,7 +648,6 @@ def update_showtime(showtime_id):
     except Exception as e:
         print(f"Fehler beim Aktualisieren des Showtimes: {e}")
         return jsonify({'error': 'Fehler beim Aktualisieren des Showtimes'}), 500
-
 
 @app.route('/bookings', methods=['POST'])
 @token_required
@@ -670,23 +701,34 @@ def create_booking_route():
                     conn.rollback()
                     return jsonify({'error': 'Ein oder mehrere Sitzplätze sind bereits gebucht'}), 400
                 
-                # Berechne den Gesamtbetrag (Beispiel: 10 Euro pro Sitzplatz)
-                total_amount = len(seat_ids) * 10.00  # Passe den Preis entsprechend an
+                # Preise für die ausgewählten Sitzplätze abrufen
+                cursor.execute("""
+                    SELECT s.seat_id, st.price
+                    FROM seats s
+                    JOIN seat_types st ON s.seat_type_id = st.seat_type_id
+                    WHERE s.seat_id = ANY(%s)
+                """, (seat_ids,))
+                seat_prices = cursor.fetchall()
+                seat_price_dict = {seat_id: price for seat_id, price in seat_prices}
+                
+                # Gesamtbetrag berechnen
+                total_amount = sum(seat_price_dict[seat_id] for seat_id in seat_ids)
                 
                 # Erstellen der Buchung
                 cursor.execute("""
-                    INSERT INTO Bookings (user_id, showtime_id, payment_status, total_amount, paypal_order_id)
+                    INSERT INTO bookings (user_id, showtime_id, payment_status, total_amount, paypal_order_id)
                     VALUES (%s, %s, %s, %s, %s)
                     RETURNING booking_id
                 """, (user_id, showtime_id, 'completed', total_amount, order_id))
                 booking_id = cursor.fetchone()[0]
                 
-                # Verknüpfen der Sitzplätze mit der Buchung
+                # Verknüpfen der Sitzplätze mit der Buchung und deren Preis
                 for seat_id in seat_ids:
+                    price = seat_price_dict[seat_id]
                     cursor.execute("""
-                        INSERT INTO Booking_Seats (booking_id, seat_id, price)
+                        INSERT INTO booking_seats (booking_id, seat_id, price)
                         VALUES (%s, %s, %s)
-                    """, (booking_id, seat_id, 10.00))
+                    """, (booking_id, seat_id, price))
                 
                 # Commit der Transaktion
                 conn.commit()
@@ -695,7 +737,6 @@ def create_booking_route():
     except Exception as e:
         print(f"Fehler beim Erstellen der Buchung: {e}")
         return jsonify({'error': 'Fehler beim Erstellen der Buchung'}), 500
-
 
 @app.route('/showtimes/<int:showtime_id>/seats', methods=['GET'])
 @token_required  # Optional: Falls nur authentifizierte Benutzer Sitzplätze abrufen dürfen
@@ -714,9 +755,11 @@ def get_seats_for_showtime(showtime_id):
                 
                 # Abrufen aller Sitzplätze für den Kinosaal
                 cursor.execute("""
-                    SELECT seat_id, row, number, type FROM seats
-                    WHERE screen_id = %s
-                    ORDER BY row, number
+                    SELECT s.seat_id, s.row, s.number, st.name AS seat_type_name, st.price
+                    FROM seats s
+                    JOIN seat_types st ON s.seat_type_id = st.seat_type_id
+                    WHERE s.screen_id = %s
+                    ORDER BY s.row, s.number
                 """, (screen_id,))
                 seats = cursor.fetchall()
                 
@@ -731,13 +774,14 @@ def get_seats_for_showtime(showtime_id):
                 # Strukturieren der Sitzplatzdaten
                 seats_list = []
                 for seat in seats:
-                    seat_id, row, number, seat_type = seat
+                    seat_id, row, number, seat_type_name, price = seat
                     status = 'unavailable' if seat_id in booked_seat_ids else 'available'
                     seats_list.append({
                         'seat_id': seat_id,
                         'row': row,
                         'number': number,
-                        'type': seat_type,
+                        'type': seat_type_name,
+                        'price': float(price),
                         'status': status
                     })
                 
@@ -745,7 +789,7 @@ def get_seats_for_showtime(showtime_id):
     except Exception as e:
         print(f"Fehler beim Abrufen der Sitzplätze: {e}")
         return jsonify({'error': 'Fehler beim Abrufen der Sitzplätze'}), 500
-    
+
 def get_allowed_profile_images():
     PROFILE_IMAGES_DIR = os.path.join(app.static_folder, 'Profilbilder')
     try:
@@ -755,7 +799,6 @@ def get_allowed_profile_images():
     except Exception as e:
         print(f"Fehler beim Abrufen der Profilbilder: {e}")
         return []
-
 
 @app.route('/profile', methods=['GET'])
 @token_required
@@ -816,8 +859,6 @@ def list_profile_images():
         print(f"Fehler beim Auflisten der Profilbilder: {e}")
         return jsonify({'error': 'Fehler beim Auflisten der Profilbilder'}), 500
 
-
-
 @app.route('/seats/batch_update', methods=['POST'])
 @admin_required
 def batch_update_seats():
@@ -838,23 +879,40 @@ def batch_update_seats():
                 
                 # Hinzufügen der Sitze in Bulk
                 if seats_to_add:
+                    values = []
+                    for seat in seats_to_add:
+                        seat_type_name = seat.get('type', 'standard')
+                        # Sitztyp-ID abrufen
+                        cursor.execute("SELECT seat_type_id FROM seat_types WHERE name = %s", (seat_type_name,))
+                        result = cursor.fetchone()
+                        if not result:
+                            conn.rollback()
+                            return jsonify({'error': f'Ungültiger Sitztyp: {seat_type_name}'}), 400
+                        seat_type_id = result[0]
+                        values.append((screen_id, seat['row'], seat['number'], seat_type_id))
                     insert_query = """
-                        INSERT INTO seats (screen_id, row, number, type)
+                        INSERT INTO seats (screen_id, row, number, seat_type_id)
                         VALUES %s
                         ON CONFLICT (screen_id, row, number) DO NOTHING
                     """
-                    values = [(screen_id, seat['row'], seat['number'], seat.get('type', 'standard')) for seat in seats_to_add]
                     psycopg2.extras.execute_values(cursor, insert_query, values)
 
                 # Aktualisieren der Sitztypen in Bulk
                 if seats_to_update:
-                    update_query = """
-                        UPDATE seats
-                        SET type = %s
-                        WHERE screen_id = %s AND row = %s AND number = %s
-                    """
                     for seat in seats_to_update:
-                        cursor.execute(update_query, (seat['type'], screen_id, seat['row'], seat['number']))
+                        seat_type_name = seat.get('type', 'standard')
+                        # Sitztyp-ID abrufen
+                        cursor.execute("SELECT seat_type_id FROM seat_types WHERE name = %s", (seat_type_name,))
+                        result = cursor.fetchone()
+                        if not result:
+                            conn.rollback()
+                            return jsonify({'error': f'Ungültiger Sitztyp: {seat_type_name}'}), 400
+                        seat_type_id = result[0]
+                        cursor.execute("""
+                            UPDATE seats
+                            SET seat_type_id = %s
+                            WHERE screen_id = %s AND row = %s AND number = %s
+                        """, (seat_type_id, screen_id, seat['row'], seat['number']))
 
                 # Löschen der Sitze in Bulk
                 if seats_to_delete:
@@ -879,13 +937,6 @@ def batch_update_seats():
     except Exception as e:
         print(f"Fehler beim Aktualisieren der Sitze: {e}")
         return jsonify({'error': 'Fehler beim Aktualisieren der Sitze'}), 500
-
-
-
-
-
-
-
 
 if __name__ == '__main__':
     app.run(debug=True)
