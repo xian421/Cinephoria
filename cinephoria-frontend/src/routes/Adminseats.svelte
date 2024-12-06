@@ -31,10 +31,10 @@
 
     function standardexisting(){
     // Überprüft, ob irgendein Sitztyp den Namen 'standard' enthält
-    const hasStandard = seatTypesList.some(st => st.name.includes('standard'));
+    const hasStandard = seatTypesList.some(st => st.name.includes('Standard'));
 
     if (hasStandard) {
-        return 'standard';
+        return 'Standard';
     } else if (seatTypesList.length > 0) {
         return seatTypesList[0].name;
     } else {
