@@ -501,7 +501,7 @@ export const fetchSeatTypes = async (token) => {
 
 
 // Funktion zum Hinzufügen eines neuen Sitztyps
-export const addSeatType = async (token,  name, price, color, icon) => {
+export const addSeatType = async (token, name, price, color, icon) => {
     try {
         const response = await fetch(`${API_BASE_URL}/seat_types`, {
             method: 'POST',
@@ -509,7 +509,7 @@ export const addSeatType = async (token,  name, price, color, icon) => {
                 'Content-Type': 'application/json',
                 'Authorization': `Bearer ${token}`
             },
-            body: JSON.stringify({  name, price, color, icon })
+            body: JSON.stringify({name, price, color, icon})
         });
 
         const data = await response.json();

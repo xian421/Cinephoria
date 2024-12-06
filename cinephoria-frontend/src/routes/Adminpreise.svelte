@@ -18,16 +18,30 @@
 
     // Beispielhafte Liste von Font Awesome Icons
     const availableIcons = [
-        '',
-       // 'fa-chair',
-        'fa-wheelchair',
-        'fa-star',
-        'fa-user',
-        'fa-crown',
-        'fa-heart',
-        'fa-music',
-        // Fügen Sie weitere Icons hinzu, die Sie benötigen
-    ];
+    '',
+    'fa-chair',
+    'fa-wheelchair',
+    'fa-star',
+    'fa-user',
+    'fa-crown',
+    'fa-heart',
+    'fa-music',
+    'fa-lock',        // Reservierte Plätze
+    'fa-tag',         // Ermäßigte Sitze
+    'fa-table',       // Sitze mit Tisch
+    'fa-plug',        // Sitze mit Stromversorgung
+    'fa-fire',        // Beheizte Sitze
+    'fa-eye',         // Beste Sicht (erste Reihe)
+    'fa-users',       // Familienbereich
+    'fa-users-cog',   // Bereich für Gruppen
+    'fa-throne',      // Luxus-Sitze
+    'fa-tree',        // Outdoor-Kino
+    'fa-glasses',     // 3D-Erlebnis
+    'fa-ticket-alt',  // Spezialplätze oder Events
+    'fa-bed',         // Relax-Sitze
+    'fa-solid fa-couch' // Alternative für Entspannungssitze
+];
+
 
     // Daten vom Backend laden
     onMount(async () => {
@@ -64,6 +78,7 @@
         try {
             const updatePromises = seatTypes.map(seat =>
                 updateSeatType(token, seat.seat_type_id, { 
+                    name: seat.name,
                     price: seat.price,
                     color: seat.color,
                     icon: seat.icon
@@ -275,7 +290,13 @@
             <tbody>
                 {#each seatTypes as seat, index}
                     <tr>
-                        <td>{seat.name}</td>
+                        <td>
+                            <input
+                                type="text"
+                                bind:value={seat.name}
+                            />
+                        </td>
+                        
                         <td>
                             <input
                                 type="number"
