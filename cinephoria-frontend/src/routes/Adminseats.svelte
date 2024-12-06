@@ -29,6 +29,21 @@
     // Neu: Liste aller Sitztypen laden (inkl. color & icon)
     let seatTypesList = [];
 
+    function standardexisting(){
+    // Überprüft, ob irgendein Sitztyp den Namen 'standard' enthält
+    const hasStandard = seatTypesList.some(st => st.name.includes('standard'));
+
+    if (hasStandard) {
+        return 'standard';
+    } else if (seatTypesList.length > 0) {
+        return seatTypesList[0].name;
+    } else {
+        return 'defaultType'; // Fallback-Wert, falls seatTypesList leer ist
+    }
+}
+
+
+
     function generateRowLabels(maxRow) {
         const labels = [];
         const maxCode = maxRow.charCodeAt(0);
@@ -56,14 +71,17 @@
         if (!isEditMode) {
             // Add-Modus: null <-> seatTypesList[0].name
             if (current === null) {
-                grid[row][col] = seatTypesList[0].name;
+               // grid[row][col] = seatTypesList[0].name;
+                grid[row][col] = standardexisting();
+
+              //  console.log('Seat type:', seatTypesList);
             } else {
                 grid[row][col] = null;
             }
         } else {
             // Edit-Modus: zyklisch durch seatTypesList
             if (current === null) {
-                grid[row][col] = seatTypesList[0].name;
+                grid[row][col] = standardexisting();
             } else {
                 const i = seatTypesList.findIndex(st => st.name === current);
                 const nextIndex = (i + 1) % seatTypesList.length;
@@ -81,7 +99,7 @@
     function toggleRow(row) {
         if (!isEditMode && seatTypesList.length > 0) {
             const allActive = grid[row].every(cell => cell);
-            grid[row] = grid[row].map(() => allActive ? null : seatTypesList[0].name);
+            grid[row] = grid[row].map(() => allActive ? null : standardexisting()); //seatTypesList[0].name);
             grid = [...grid];
         }
     }
@@ -90,7 +108,7 @@
         if (!isEditMode && seatTypesList.length > 0) {
             const allActive = grid.every(row => row[col]);
             grid = grid.map(row => {
-                row[col] = allActive ? null : seatTypesList[0].name;
+                row[col] = allActive ? null : standardexisting(); //seatTypesList[0].name;
                 return row;
             });
             grid = [...grid];
@@ -131,6 +149,11 @@
     function getRowLabel(index) {
         return rowLabels[index];
     }
+
+    function getStandardSeatType() {
+    return seatTypesList.find(st => st.name.toLowerCase() === 'standard');
+    }
+
 
     async function submitChanges() {
         const auth = get(authStore);
