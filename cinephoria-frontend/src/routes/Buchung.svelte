@@ -331,6 +331,7 @@
         }
     }
 
+
 </script>
 
 <style>
@@ -373,6 +374,12 @@
 
     .seat.selected {
         background-color: #2ecc71 !important; /* Grüner Hintergrund für ausgewählte Sitze */
+    }
+
+    .seat.selected:before {
+        content: "\f007"; /* Unicode für das Icon */
+        font-family: "Font Awesome 5 Free";
+        font-weight: 900; /* Fett für das Icon */
     }
 
     .seat.vip {
@@ -523,7 +530,7 @@
                             <i class={`fas ${seatType.icon}`} style="color: white;"></i>
                         {/if}
                     </div>
-                    <span>{seatType.name}</span>
+                    <span>{`${seatType.name} ab ${seatType.price} €`}</span>
                 </div>
             {/each}
         </div>
