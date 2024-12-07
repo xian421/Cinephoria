@@ -762,21 +762,41 @@ def create_booking_route():
         return jsonify({'error': 'Fehler beim Erstellen der Buchung'}), 500
 
 @app.route('/showtimes/<int:showtime_id>/seats', methods=['GET'])
-@token_required  # Optional: Falls nur authentifizierte Benutzer Sitzplätze abrufen dürfen
 def get_seats_for_showtime(showtime_id):
+    token = request.headers.get('Authorization', '').replace('Bearer ', '')
+    guest_id = request.args.get('guest_id', None)
+    user_id = None
+
+    # Versuch den Token zu dekodieren, um user_id zu erhalten
+    if token:
+        try:
+            decoded = jwt.decode(token, SECRET_KEY, algorithms=['HS256'])
+            user_id = decoded['user_id']
+        except jwt.ExpiredSignatureError:
+            pass
+        except jwt.InvalidTokenError:
+            pass
+
+    # user_id hat Vorrang (wenn token gültig), sonst guest_id verwenden
+    # Wenn beides None ist, ist der Nutzer anonym ohne guest_id (sollte eigentlich nicht passieren, da guest_id immer generiert wird)
+    
+    # Zuerst abgelaufene Reservierungen löschen
+    with psycopg2.connect(DATABASE_URL) as conn:
+        with conn.cursor() as cursor:
+            cursor.execute("DELETE FROM guest_cart_items WHERE reserved_until < NOW()")
+            cursor.execute("DELETE FROM user_cart_items WHERE reserved_until < NOW()")
+
     try:
         with psycopg2.connect(DATABASE_URL) as conn:
-            with conn.cursor() as cursor:
-                # Ermitteln des Kinosaals für die Showtime
-                cursor.execute("""
-                    SELECT screen_id FROM showtimes WHERE showtime_id = %s
-                """, (showtime_id,))
+            with conn.cursor(cursor_factory=psycopg2.extras.DictCursor) as cursor:
+                # Showtime -> screen_id ermitteln
+                cursor.execute("SELECT screen_id FROM showtimes WHERE showtime_id = %s", (showtime_id,))
                 screen = cursor.fetchone()
                 if not screen:
                     return jsonify({'error': 'Showtime nicht gefunden'}), 404
-                screen_id = screen[0]
-                
-                # Abrufen aller Sitzplätze für den Kinosaal
+                screen_id = screen['screen_id']
+
+                # Alle Sitzplätze für diesen Kinosaal holen
                 cursor.execute("""
                     SELECT s.seat_id, s.row, s.number, st.name AS seat_type_name, st.price, st.color, st.icon
                     FROM seats s
@@ -784,37 +804,102 @@ def get_seats_for_showtime(showtime_id):
                     WHERE s.screen_id = %s
                     ORDER BY s.row, s.number
                 """, (screen_id,))
-                seats = cursor.fetchall()
-                
-                # Abrufen aller bereits gebuchten Sitzplätze für die Showtime
+                all_seats = cursor.fetchall()
+
+                # Bereits gebuchte Sitzplätze (booking_seats, payment_status=completed)
                 cursor.execute("""
                     SELECT bs.seat_id FROM booking_seats bs
                     JOIN bookings b ON bs.booking_id = b.booking_id
                     WHERE b.showtime_id = %s AND b.payment_status = 'completed'
                 """, (showtime_id,))
-                booked_seat_ids = {row[0] for row in cursor.fetchall()}
-                
-                # Strukturieren der Sitzplatzdaten
-                seats_list = []
-                for seat in seats:
-                    seat_id, row, number, seat_type_name, price, color, icon = seat
-                    status = 'unavailable' if seat_id in booked_seat_ids else 'available'
-                    seats_list.append({
-                        'seat_id': seat_id,
-                        'row': row,
-                        'number': number,
-                        'type': seat_type_name,
-                        'price': float(price),
-                        'color': color or '#678be0',
-                        'icon': icon,
-                        'status': status
-                    })
+                booked_seats = {row['seat_id'] for row in cursor.fetchall()}
 
-                
+                # Reservierte Sitzplätze in user_carts
+                cursor.execute("""
+                    SELECT seat_id, user_id, reserved_until 
+                    FROM user_cart_items uci
+                    JOIN user_carts uc ON uci.user_id = uc.user_id
+                    WHERE seat_id IN (
+                        SELECT seat_id FROM seats WHERE screen_id = %s
+                    ) AND reserved_until > NOW()
+                """, (screen_id,))
+                user_reserved = cursor.fetchall()
+
+                # Reservierte Sitzplätze in guest_carts
+                cursor.execute("""
+                    SELECT seat_id, guest_id, reserved_until
+                    FROM guest_cart_items gci
+                    JOIN guest_carts gc ON gci.guest_id = gc.guest_id
+                    WHERE seat_id IN (
+                        SELECT seat_id FROM seats WHERE screen_id = %s
+                    ) AND reserved_until > NOW()
+                """, (screen_id,))
+                guest_reserved = cursor.fetchall()
+
+                # Sets für Reserved Seats erstellen
+                reserved_by_others = set()
+                reserved_by_self = set()
+
+                # Alle User-Reservierungen durchgehen
+                for r in user_reserved:
+                    sid = r['seat_id']
+                    uid = r['user_id']
+                    if user_id and uid == user_id:
+                        # Gehört dem aktuellen eingeloggten User
+                        reserved_by_self.add(sid)
+                    else:
+                        reserved_by_others.add(sid)
+
+                # Alle Gast-Reservierungen durchgehen
+                for r in guest_reserved:
+                    sid = r['seat_id']
+                    gid = r['guest_id']
+                    if guest_id and gid == guest_id and not user_id:
+                        # Gehört diesem Gast (nicht eingeloggt)
+                        reserved_by_self.add(sid)
+                    else:
+                        reserved_by_others.add(sid)
+
+                seats_list = []
+                for seat in all_seats:
+                    sid = seat['seat_id']
+                    # Reihenfolge der Checks:
+                    # 1. Bereits gebucht -> unavailable
+                    # 2. Von anderen reserviert -> unavailable
+                    # 3. Vom Nutzer selbst reserviert -> verfügbar aber reserved_by_self=true
+                    # 4. Sonst available
+
+                    if sid in booked_seats:
+                        status = 'unavailable'
+                        rbs = False
+                    elif sid in reserved_by_others:
+                        status = 'unavailable'
+                        rbs = False
+                    elif sid in reserved_by_self:
+                        # Sitzplatz gehört dem aktuellen User/Gast
+                        status = 'available'
+                        rbs = True
+                    else:
+                        status = 'available'
+                        rbs = False
+
+                    seats_list.append({
+                        'seat_id': sid,
+                        'row': seat['row'],
+                        'number': seat['number'],
+                        'type': seat['seat_type_name'],
+                        'price': float(seat['price']),
+                        'color': seat['color'] or '#678be0',
+                        'icon': seat['icon'],
+                        'status': status,
+                        'reserved_by_self': rbs
+                    })
+                    
         return jsonify({'seats': seats_list}), 200
     except Exception as e:
         print(f"Fehler beim Abrufen der Sitzplätze: {e}")
         return jsonify({'error': 'Fehler beim Abrufen der Sitzplätze'}), 500
+
 
 def get_allowed_profile_images():
     PROFILE_IMAGES_DIR = os.path.join(app.static_folder, 'Profilbilder')
