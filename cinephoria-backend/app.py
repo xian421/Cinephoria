@@ -7,8 +7,9 @@ from flask import Flask, request, jsonify
 from flask_cors import CORS
 import requests
 import jwt
-import datetime
+from datetime import datetime, timedelta
 from functools import wraps
+import uuid
 
 app = Flask(__name__, static_folder='public', static_url_path='')
 
@@ -1074,38 +1075,6 @@ def get_user_cart():
         return jsonify({'error': 'Fehler beim Abrufen des Warenkorbs'}), 500
 
 
-@app.route('/user/cart', methods=['POST'])
-@token_required
-def add_to_user_cart():
-    user_id = request.user.get('user_id')
-    data = request.get_json()
-    seat_id = data.get('seat_id')
-    price = data.get('price')
-    
-    if not seat_id or not price:
-        return jsonify({'error': 'seat_id und price sind erforderlich'}), 400
-    
-    try:
-        with psycopg2.connect(DATABASE_URL) as conn:
-            with conn.cursor() as cursor:
-                # Überprüfen, ob der Benutzer bereits einen Warenkorb hat
-                cursor.execute("SELECT user_id FROM user_carts WHERE user_id = %s", (user_id,))
-                if cursor.fetchone() is None:
-                    # Wenn kein Warenkorb existiert, erstellen wir einen
-                    cursor.execute("INSERT INTO user_carts (user_id) VALUES (%s)", (user_id,))
-                    conn.commit()
-                
-                # Hinzufügen des Sitzplatzes zum Warenkorb
-                cursor.execute("""
-                    INSERT INTO user_cart_items (user_id, seat_id, price)
-                    VALUES (%s, %s, %s)
-                    ON CONFLICT (user_id, seat_id) DO NOTHING
-                """, (user_id, seat_id, price))
-                conn.commit()
-        return jsonify({'message': 'Sitzplatz zum Warenkorb hinzugefügt'}), 201
-    except Exception as e:
-        print(f"Fehler beim Hinzufügen zum Warenkorb: {e}")
-        return jsonify({'error': 'Fehler beim Hinzufügen zum Warenkorb'}), 500
 
 @app.route('/user/cart/<int:seat_id>', methods=['DELETE'])
 @token_required
@@ -1142,6 +1111,186 @@ def clear_user_cart():
         print(f"Fehler beim Leeren des Warenkorbs: {e}")
         return jsonify({'error': 'Fehler beim Leeren des Warenkorbs'}), 500
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+import uuid
+
+
+def clear_expired_guest_cart_items():
+    with psycopg2.connect(DATABASE_URL) as conn:
+        with conn.cursor() as cursor:
+            cursor.execute("""
+                DELETE FROM guest_cart_items
+                WHERE reserved_until < NOW()
+            """)
+            conn.commit()
+
+def clear_expired_user_cart_items():
+    with psycopg2.connect(DATABASE_URL) as conn:
+        with conn.cursor() as cursor:
+            cursor.execute("""
+                DELETE FROM user_cart_items
+                WHERE reserved_until < NOW()
+            """)
+            conn.commit()
+
+@app.route('/api/user/cart', methods=['POST'])
+@token_required
+def add_to_user_cart():
+    clear_expired_user_cart_items()  # erst abgelaufene Einträge bereinigen
+    user_id = request.user.get('user_id')
+    data = request.get_json()
+    seat_id = data.get('seat_id')
+    price = data.get('price')
+    
+    if not seat_id or price is None:
+        return jsonify({'error': 'seat_id und price sind erforderlich'}), 400
+    
+    try:
+        with psycopg2.connect(DATABASE_URL) as conn:
+            with conn.cursor() as cursor:
+                # Sicherstellen, dass der Warenkorb für den aktuellen Benutzer existiert
+                cursor.execute("SELECT user_id FROM user_carts WHERE user_id = %s", (user_id,))
+                if cursor.fetchone() is None:
+                    # Wenn kein Warenkorb existiert, erstellen
+                    cursor.execute("INSERT INTO user_carts (user_id) VALUES (%s)", (user_id,))
+                    conn.commit()
+                
+                # Reserviere den Sitzplatz
+                reserved_until = datetime.utcnow() + timedelta(minutes=15)
+                
+                # Hinzufügen des Sitzplatzes
+                cursor.execute("""
+                    INSERT INTO user_cart_items (user_id, seat_id, price, reserved_until)
+                    VALUES (%s, %s, %s, %s)
+                    ON CONFLICT (user_id, seat_id) DO NOTHING
+                """, (user_id, seat_id, price, reserved_until))
+                conn.commit()
+        return jsonify({'message': 'Sitzplatz zum Warenkorb hinzugefügt', 'reserved_until': reserved_until.isoformat()}), 201
+    except Exception as e:
+        print(f"Fehler beim Hinzufügen zum Warenkorb: {e}")
+        return jsonify({'error': 'Fehler beim Hinzufügen zum Warenkorb'}), 500
+
+# Neue Endpoints für GUEST CART
+
+@app.route('/api/guest/cart', methods=['GET'])
+def get_guest_cart():
+    clear_expired_guest_cart_items()  # erst abgelaufene Einträge bereinigen
+    guest_id = request.args.get('guest_id', None)
+    if not guest_id:
+        return jsonify({'error': 'guest_id ist erforderlich'}), 400
+    
+    try:
+        with psycopg2.connect(DATABASE_URL) as conn:
+            with conn.cursor(cursor_factory=psycopg2.extras.DictCursor) as cursor:
+                # Prüfen ob guest_cart existiert
+                cursor.execute("SELECT guest_id FROM guest_carts WHERE guest_id = %s", (guest_id,))
+                if cursor.fetchone() is None:
+                    # Warenkorb für Gast erstellen
+                    cursor.execute("INSERT INTO guest_carts (guest_id) VALUES (%s)", (guest_id,))
+                    conn.commit()
+
+                # Items abrufen
+                cursor.execute("""
+                    SELECT seat_id, price, added_at
+                    FROM guest_cart_items
+                    WHERE guest_id = %s
+                """, (guest_id,))
+                items = cursor.fetchall()
+                cart_items = []
+                for item in items:
+                    cart_items.append({
+                        'seat_id': item['seat_id'],
+                        'price': float(item['price']),
+                        'added_at': item['added_at'].isoformat()
+                    })
+        return jsonify({'cart_items': cart_items}), 200
+    except Exception as e:
+        print(f"Fehler beim Abrufen des Guest-Warenkorbs: {e}")
+        return jsonify({'error': 'Fehler beim Abrufen des Guest-Warenkorbs'}), 500
+
+@app.route('/api/guest/cart', methods=['POST'])
+def add_to_guest_cart():
+    clear_expired_guest_cart_items()  
+    data = request.get_json()
+    guest_id = data.get('guest_id')
+    seat_id = data.get('seat_id')
+    price = data.get('price')
+    
+    if not guest_id or not seat_id or price is None:
+        return jsonify({'error': 'guest_id, seat_id und price sind erforderlich'}), 400
+    
+    try:
+        with psycopg2.connect(DATABASE_URL) as conn:
+            with conn.cursor() as cursor:
+                # Sicherstellen, dass guest_cart existiert
+                cursor.execute("SELECT guest_id FROM guest_carts WHERE guest_id = %s", (guest_id,))
+                if cursor.fetchone() is None:
+                    cursor.execute("INSERT INTO guest_carts (guest_id) VALUES (%s)", (guest_id,))
+                    conn.commit()
+                
+                reserved_until = datetime.utcnow() + timedelta(minutes=15)
+                cursor.execute("""
+                    INSERT INTO guest_cart_items (guest_id, seat_id, price, reserved_until)
+                    VALUES (%s, %s, %s, %s)
+                    ON CONFLICT (guest_id, seat_id) DO NOTHING
+                """, (guest_id, seat_id, price, reserved_until))
+                conn.commit()
+        return jsonify({'message': 'Sitzplatz zum Guest-Warenkorb hinzugefügt', 'reserved_until': reserved_until.isoformat()}), 201
+    except Exception as e:
+        print(f"Fehler beim Hinzufügen zum Guest-Warenkorb: {e}")
+        return jsonify({'error': 'Fehler beim Hinzufügen zum Guest-Warenkorb'}), 500
+
+@app.route('/api/guest/cart/<int:seat_id>', methods=['DELETE'])
+def remove_from_guest_cart(seat_id):
+    clear_expired_guest_cart_items()
+    guest_id = request.args.get('guest_id', None)
+    if not guest_id:
+        return jsonify({'error': 'guest_id ist erforderlich'}), 400
+    
+    try:
+        with psycopg2.connect(DATABASE_URL) as conn:
+            with conn.cursor() as cursor:
+                cursor.execute("""
+                    DELETE FROM guest_cart_items
+                    WHERE guest_id = %s AND seat_id = %s
+                """, (guest_id, seat_id))
+                conn.commit()
+        return jsonify({'message': 'Sitzplatz aus dem Guest-Warenkorb entfernt'}), 200
+    except Exception as e:
+        print(f"Fehler beim Entfernen aus dem Guest-Warenkorb: {e}")
+        return jsonify({'error': 'Fehler beim Entfernen aus dem Guest-Warenkorb'}), 500
+
+@app.route('/api/guest/cart', methods=['DELETE'])
+def clear_guest_cart():
+    clear_expired_guest_cart_items()
+    guest_id = request.args.get('guest_id', None)
+    if not guest_id:
+        return jsonify({'error': 'guest_id ist erforderlich'}), 400
+    
+    try:
+        with psycopg2.connect(DATABASE_URL) as conn:
+            with conn.cursor() as cursor:
+                cursor.execute("""
+                    DELETE FROM guest_cart_items
+                    WHERE guest_id = %s
+                """, (guest_id,))
+                conn.commit()
+        return jsonify({'message': 'Guest-Warenkorb geleert'}), 200
+    except Exception as e:
+        print(f"Fehler beim Leeren des Guest-Warenkorbs: {e}")
+        return jsonify({'error': 'Fehler beim Leeren des Guest-Warenkorbs'}), 500
 
 
 if __name__ == '__main__':
