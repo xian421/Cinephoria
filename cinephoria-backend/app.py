@@ -809,7 +809,8 @@ def get_seats_for_showtime(showtime_id):
 
                 # Bereits gebuchte Sitzplätze (booking_seats, payment_status=completed)
                 cursor.execute("""
-                    SELECT bs.seat_id FROM booking_seats bs
+                    SELECT bs.seat_id 
+                    FROM booking_seats bs
                     JOIN bookings b ON bs.booking_id = b.booking_id
                     WHERE b.showtime_id = %s AND b.payment_status = 'completed'
                 """, (showtime_id,))
@@ -817,23 +818,23 @@ def get_seats_for_showtime(showtime_id):
 
                 # Reservierte Sitzplätze in user_carts
                 cursor.execute("""
-                    SELECT seat_id, uc.user_id, reserved_until 
+                    SELECT uci.seat_id, uci.user_id, uci.reserved_until 
                     FROM user_cart_items uci
                     JOIN user_carts uc ON uci.user_id = uc.user_id
-                    WHERE seat_id IN (
+                    WHERE uci.seat_id IN (
                         SELECT seat_id FROM seats WHERE screen_id = %s
-                    ) AND reserved_until > NOW()
+                    ) AND uci.reserved_until > NOW()
                 """, (screen_id,))
                 user_reserved = cursor.fetchall()
 
                 # Reservierte Sitzplätze in guest_carts
                 cursor.execute("""
-                    SELECT seat_id, guest_id, reserved_until
+                    SELECT gci.seat_id, gci.guest_id, gci.reserved_until
                     FROM guest_cart_items gci
                     JOIN guest_carts gc ON gci.guest_id = gc.guest_id
-                    WHERE seat_id IN (
+                    WHERE gci.seat_id IN (
                         SELECT seat_id FROM seats WHERE screen_id = %s
-                    ) AND reserved_until > NOW()
+                    ) AND gci.reserved_until > NOW()
                 """, (screen_id,))
                 guest_reserved = cursor.fetchall()
 
