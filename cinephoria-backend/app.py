@@ -7,7 +7,7 @@ from flask import Flask, request, jsonify
 from flask_cors import CORS
 import requests
 import jwt
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from functools import wraps
 import uuid
 
@@ -327,7 +327,7 @@ def login():
                         'last_name': nachname,
                         'initials': initials,
                         'role': role,  
-                        'exp': datetime.now(datetime.timezone.utc) + timedelta(hours=1)
+                        'exp': datetime.now(timezone.utc) + timedelta(hours=1)
                     }, SECRET_KEY, algorithm='HS256')
 
                     return jsonify({
@@ -1240,7 +1240,7 @@ def add_to_user_cart():
                     conn.commit()
                 
                 # Reserviere den Sitzplatz
-                reserved_until = datetime.now(datetime.timezone.utc) + timedelta(minutes=15)
+                reserved_until = datetime.now(timezone.utc) + timedelta(minutes=15)
                 
                 # Hinzufügen des Sitzplatzes
                 cursor.execute("""
@@ -1312,7 +1312,7 @@ def add_to_guest_cart():
                     cursor.execute("INSERT INTO guest_carts (guest_id) VALUES (%s)", (guest_id,))
                     conn.commit()
                 
-                reserved_until = datetime.now(datetime.timezone.utc) + timedelta(minutes=15)
+                reserved_until = datetime.now(timezone.utc) + timedelta(minutes=15)
                 cursor.execute("""
                     INSERT INTO guest_cart_items (guest_id, seat_id, price, reserved_until)
                     VALUES (%s, %s, %s, %s)
