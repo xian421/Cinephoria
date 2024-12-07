@@ -817,7 +817,7 @@ def get_seats_for_showtime(showtime_id):
 
                 # Reservierte Sitzplätze in user_carts
                 cursor.execute("""
-                    SELECT seat_id, user_id, reserved_until 
+                    SELECT seat_id, uc.user_id, reserved_until 
                     FROM user_cart_items uci
                     JOIN user_carts uc ON uci.user_id = uc.user_id
                     WHERE seat_id IN (
