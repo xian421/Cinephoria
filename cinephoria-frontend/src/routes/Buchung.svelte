@@ -3,9 +3,16 @@
     import { onMount, tick } from 'svelte';
     import { navigate } from 'svelte-routing';
     import Swal from 'sweetalert2';
-    import { fetchSeatsForShowtime, createBooking, createPayPalOrder, capturePayPalOrder, fetchSeatTypes } from '../services/api.js';
+    import { 
+        fetchSeatsForShowtime, 
+        createBooking, 
+        createPayPalOrder, 
+        capturePayPalOrder, 
+        fetchSeatTypes 
+    } from '../services/api.js';
     import { get } from 'svelte/store';
     import { authStore } from '../stores/authStore'; 
+    import { cartStore, addToCart, removeFromCart, clearCart } from '../stores/cartStore.js';
     import "@fortawesome/fontawesome-free/css/all.min.css";
 
     export let showtime_id; // Wird aus der Route übergeben
@@ -13,8 +20,6 @@
     let seats = [];
     let isLoading = true;
     let error = null;
-
-    let selectedSeats = [];
 
     // Variable für gruppierte Sitzplätze
     let seatsByRow = {};
@@ -33,6 +38,13 @@
 
     // Variable, um zu verhindern, dass PayPal-Buttons mehrfach initialisiert werden
     let payPalInitialized = false;
+
+    // Abonnieren des Warenkorb-Stores, um ausgewählte Sitze zu überwachen
+    let selectedSeats = [];
+    const unsubscribe = cartStore.subscribe((currentCart) => {
+        selectedSeats = currentCart;
+        calculateTotalPrice();
+    });
 
     onMount(async () => {
         isLoading = true;
@@ -106,6 +118,15 @@
                     return;
                 }
                 renderPayPalButtons();
+            });
+            script.addEventListener('error', () => {
+                console.error('Fehler beim Laden des PayPal SDK Skripts.');
+                Swal.fire({
+                    title: "Fehler",
+                    text: 'PayPal SDK konnte nicht geladen werden.',
+                    icon: "error",
+                    confirmButtonText: "OK",
+                });
             });
             document.body.appendChild(script);
         }
@@ -232,7 +253,14 @@
                     rowSeats.push(seatMap[key]);
                 } else {
                     // Platzhalter für fehlenden Sitz einfügen
-                    rowSeats.push({ row: rowLabel, number: seatNumber, status: 'missing', seat_id: null, type: null, price: 0.00 });
+                    rowSeats.push({ 
+                        row: rowLabel, 
+                        number: seatNumber, 
+                        status: 'missing', 
+                        seat_id: null, 
+                        type: null, 
+                        price: 0.00 
+                    });
                 }
             });
             rowsWithGaps[rowLabel] = rowSeats;
@@ -243,6 +271,7 @@
 
     // Hilfsfunktion zur Generierung aller Reihenbezeichnungen
     function generateAllRowLabels(existingRows) {
+        if (existingRows.length === 0) return [];
         const minRowCharCode = Math.min(...existingRows.map(r => r.charCodeAt(0)));
         const maxRowCharCode = Math.max(...existingRows.map(r => r.charCodeAt(0)));
         const allRows = [];
@@ -254,6 +283,7 @@
 
     // Hilfsfunktion zur Generierung aller Sitznummern
     function generateAllSeatNumbers(existingSeatNumbers) {
+        if (existingSeatNumbers.length === 0) return [];
         const minSeatNumber = Math.min(...existingSeatNumbers);
         const maxSeatNumber = Math.max(...existingSeatNumbers);
         const allSeatNumbers = [];
@@ -271,10 +301,24 @@
 
         if (isSelected(seat.seat_id)) {
             // Sitzplatz abwählen
-            selectedSeats = selectedSeats.filter(s => s.seat_id !== seat.seat_id);
+            removeFromCart(seat.seat_id);
+            Swal.fire({
+                title: 'Entfernt!',
+                text: `Sitzplatz ${seat.row}-${seat.number} wurde aus dem Warenkorb entfernt.`,
+                icon: 'success',
+                timer: 1500,
+                showConfirmButton: false
+            });
         } else {
-            // Sitzplatz auswählen
-            selectedSeats = [...selectedSeats, seat];
+            // Sitzplatz auswählen und zum Warenkorb hinzufügen
+            addToCart(seat);
+            Swal.fire({
+                title: 'Hinzugefügt!',
+                text: `Sitzplatz ${seat.row}-${seat.number} wurde zum Warenkorb hinzugefügt.`,
+                icon: 'success',
+                timer: 1500,
+                showConfirmButton: false
+            });
         }
 
         // Gesamtpreis neu berechnen
@@ -289,11 +333,6 @@
     // Funktion zur Überprüfung, ob ein Sitz ausgewählt ist
     function isSelected(seat_id) {
         return selectedSeats.some(seat => seat.seat_id === seat_id);
-    }
-
-    // Reaktives Statement zur Überwachung von selectedSeats
-    $: if (selectedSeats) {
-        console.log('Ausgewählte Sitze:', selectedSeats);
     }
 
     // Funktion zur Bestätigung der Buchung mit PayPal
@@ -318,6 +357,7 @@
                 icon: "success",
                 confirmButtonText: "OK",
             }).then(() => {
+                clearCart(); // Warenkorb leeren nach erfolgreicher Buchung
                 navigate('/'); // Zurück zur Startseite oder einer anderen Seite
             });
         } catch (err) {
@@ -330,8 +370,6 @@
             });
         }
     }
-
-
 </script>
 
 <style>
@@ -376,7 +414,7 @@
         background-color: #2ecc71 !important; /* Grüner Hintergrund für ausgewählte Sitze */
     }
 
-    .seat.selected:before {
+    .seat.selected::before {
         content: "\f007"; /* Unicode für das Icon */
         font-family: "Font Awesome 5 Free";
         font-weight: 900; /* Fett für das Icon */
@@ -556,8 +594,8 @@
                                 {:else if seat.type && getSeatTypeIcon(seat.type)}
                                     <!-- Icon basierend auf dem Sitztyp -->
                                     <i class={`fas ${getSeatTypeIcon(seat.type)}`}></i>
-                                {:else if seat.status === 'selected'}
-                                    <!-- Optional: Icon für ausgewählte Sitze -->
+                                {:else if isSelected(seat.seat_id)}
+                                    <!-- Icon für ausgewählte Sitze -->
                                     <i class="fas fa-check"></i>
                                 {:else}
                                     {seat.number}
@@ -577,4 +615,6 @@
         <!-- PayPal Button Container -->
         <div id="paypal-button-container" bind:this={paypalContainer}></div>
     {/if}
+
+    <button on:click={() => navigate('/adminkinosaal')}>Zurück zu Überblick der Kinosäle</button>
 </main>
