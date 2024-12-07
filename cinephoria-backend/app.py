@@ -1040,5 +1040,109 @@ def update_seat_type(seat_type_id):
         return jsonify({'error': 'Fehler beim Aktualisieren des Sitztyps'}), 500
 
 
+@app.route('/user/cart', methods=['GET'])
+@token_required
+def get_user_cart():
+    user_id = request.user.get('user_id')
+    try:
+        with psycopg2.connect(DATABASE_URL) as conn:
+            with conn.cursor(cursor_factory=psycopg2.extras.DictCursor) as cursor:
+                # Überprüfen, ob der Benutzer bereits einen Warenkorb hat
+                cursor.execute("SELECT user_id FROM user_carts WHERE user_id = %s", (user_id,))
+                if cursor.fetchone() is None:
+                    # Wenn kein Warenkorb existiert, erstellen wir einen
+                    cursor.execute("INSERT INTO user_carts (user_id) VALUES (%s)", (user_id,))
+                    conn.commit()
+                
+                # Abrufen der Warenkorb-Elemente
+                cursor.execute("""
+                    SELECT seat_id, price, added_at
+                    FROM user_cart_items
+                    WHERE user_id = %s
+                """, (user_id,))
+                items = cursor.fetchall()
+                cart_items = []
+                for item in items:
+                    cart_items.append({
+                        'seat_id': item['seat_id'],
+                        'price': float(item['price']),
+                        'added_at': item['added_at'].isoformat()
+                    })
+        return jsonify({'cart_items': cart_items}), 200
+    except Exception as e:
+        print(f"Fehler beim Abrufen des Warenkorbs: {e}")
+        return jsonify({'error': 'Fehler beim Abrufen des Warenkorbs'}), 500
+
+
+@app.route('/user/cart', methods=['POST'])
+@token_required
+def add_to_user_cart():
+    user_id = request.user.get('user_id')
+    data = request.get_json()
+    seat_id = data.get('seat_id')
+    price = data.get('price')
+    
+    if not seat_id or not price:
+        return jsonify({'error': 'seat_id und price sind erforderlich'}), 400
+    
+    try:
+        with psycopg2.connect(DATABASE_URL) as conn:
+            with conn.cursor() as cursor:
+                # Überprüfen, ob der Benutzer bereits einen Warenkorb hat
+                cursor.execute("SELECT user_id FROM user_carts WHERE user_id = %s", (user_id,))
+                if cursor.fetchone() is None:
+                    # Wenn kein Warenkorb existiert, erstellen wir einen
+                    cursor.execute("INSERT INTO user_carts (user_id) VALUES (%s)", (user_id,))
+                    conn.commit()
+                
+                # Hinzufügen des Sitzplatzes zum Warenkorb
+                cursor.execute("""
+                    INSERT INTO user_cart_items (user_id, seat_id, price)
+                    VALUES (%s, %s, %s)
+                    ON CONFLICT (user_id, seat_id) DO NOTHING
+                """, (user_id, seat_id, price))
+                conn.commit()
+        return jsonify({'message': 'Sitzplatz zum Warenkorb hinzugefügt'}), 201
+    except Exception as e:
+        print(f"Fehler beim Hinzufügen zum Warenkorb: {e}")
+        return jsonify({'error': 'Fehler beim Hinzufügen zum Warenkorb'}), 500
+
+@app.route('/user/cart/<int:seat_id>', methods=['DELETE'])
+@token_required
+def remove_from_user_cart(seat_id):
+    user_id = request.user.get('user_id')
+    try:
+        with psycopg2.connect(DATABASE_URL) as conn:
+            with conn.cursor() as cursor:
+                cursor.execute("""
+                    DELETE FROM user_cart_items
+                    WHERE user_id = %s AND seat_id = %s
+                """, (user_id, seat_id))
+                conn.commit()
+        return jsonify({'message': 'Sitzplatz aus dem Warenkorb entfernt'}), 200
+    except Exception as e:
+        print(f"Fehler beim Entfernen aus dem Warenkorb: {e}")
+        return jsonify({'error': 'Fehler beim Entfernen aus dem Warenkorb'}), 500
+
+
+@app.route('/user/cart', methods=['DELETE'])
+@token_required
+def clear_user_cart():
+    user_id = request.user.get('user_id')
+    try:
+        with psycopg2.connect(DATABASE_URL) as conn:
+            with conn.cursor() as cursor:
+                cursor.execute("""
+                    DELETE FROM user_cart_items
+                    WHERE user_id = %s
+                """, (user_id,))
+                conn.commit()
+        return jsonify({'message': 'Warenkorb geleert'}), 200
+    except Exception as e:
+        print(f"Fehler beim Leeren des Warenkorbs: {e}")
+        return jsonify({'error': 'Fehler beim Leeren des Warenkorbs'}), 500
+
+
+
 if __name__ == '__main__':
     app.run(debug=True)
