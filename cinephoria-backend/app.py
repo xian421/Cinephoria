@@ -1174,6 +1174,11 @@ def remove_from_user_cart(seat_id):
     try:
         with psycopg2.connect(DATABASE_URL) as conn:
             with conn.cursor() as cursor:
+                valid_until = datetime.now(timezone.utc) + timedelta(minutes=15)
+
+                cursor.execute("""
+                    UPDATE user_carts SET valid_until = %s WHERE user_id = %s
+                               """, (valid_until, user_id))
                 # Entfernen des Sitzplatzes
                 cursor.execute("""
                     DELETE FROM user_cart_items
@@ -1194,6 +1199,10 @@ def clear_user_cart():
     try:
         with psycopg2.connect(DATABASE_URL) as conn:
             with conn.cursor() as cursor:
+                valid_until = datetime.now(timezone.utc) + timedelta(minutes=15)
+                cursor.execute("""
+                    UPDATE user_carts SET valid_until = %s WHERE user_id = %s
+                               """, (valid_until, user_id))
                 # Löschen aller Sitzplätze im Warenkorb
                 cursor.execute("""
                     DELETE FROM user_cart_items
@@ -1240,10 +1249,11 @@ def add_to_user_cart():
         with psycopg2.connect(DATABASE_URL) as conn:
             with conn.cursor() as cursor:
                 # Sicherstellen, dass der Warenkorb für den aktuellen Benutzer existiert
+                valid_until = datetime.now(timezone.utc) + timedelta(minutes=15)
                 cursor.execute("SELECT user_id FROM user_carts WHERE user_id = %s", (user_id,))
                 if cursor.fetchone() is None:
                     # Wenn kein Warenkorb existiert, erstellen
-                    cursor.execute("INSERT INTO user_carts (user_id) VALUES (%s)", (user_id,))
+                    cursor.execute("INSERT INTO user_carts (user_id, valid_until) VALUES (%s, %s)", (user_id, valid_until,))
                     conn.commit()
                 
                 # Reserviere den Sitzplatz
@@ -1256,6 +1266,10 @@ def add_to_user_cart():
                     ON CONFLICT (user_id, seat_id) DO UPDATE
                     SET reserved_until = EXCLUDED.reserved_until, price = EXCLUDED.price
                 """, (user_id, seat_id, price, reserved_until))
+
+                cursor.execute("""
+                    UPDATE user_carts SET valid_until = %s WHERE user_id = %s
+                               """, (valid_until, user_id))
                 conn.commit()
         return jsonify({'message': 'Sitzplatz zum Warenkorb hinzugefügt', 'reserved_until': reserved_until.isoformat()}), 201
     except Exception as e:
