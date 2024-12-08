@@ -1329,15 +1329,18 @@ def add_to_guest_cart():
     try:
         with psycopg2.connect(DATABASE_URL) as conn:
             with conn.cursor() as cursor:
+                valid_until = datetime.now(timezone.utc) + timedelta(minutes=15)
                 # Sicherstellen, dass guest_cart existiert
                 cursor.execute("SELECT guest_id FROM guest_carts WHERE guest_id = %s", (guest_id,))
                 if cursor.fetchone() is None:
-                    cursor.execute("INSERT INTO guest_carts (guest_id) VALUES (%s)", (guest_id,))
+                    cursor.execute("INSERT INTO guest_carts (guest_id, valid_until) VALUES (%s, %s)", (guest_id, valid_until,))
                     conn.commit()
                 
                 # Reserviere den Sitzplatz
                 reserved_until = datetime.now(timezone.utc) + timedelta(minutes=15)
-                
+                cursor.execute("""
+                    UPDATE guest_carts SET valid_until = %s WHERE guest_id = %s
+                               """, (valid_until, guest_id))
                 # Hinzufügen des Sitzplatzes mit aktualisiertem `reserved_until`
                 cursor.execute("""
                     INSERT INTO guest_cart_items (guest_id, seat_id, price, reserved_until)
@@ -1355,12 +1358,17 @@ def add_to_guest_cart():
 def remove_from_guest_cart(seat_id):
     clear_expired_guest_cart_items()
     guest_id = request.args.get('guest_id', None)
+    valid_until = datetime.now(timezone.utc) + timedelta(minutes=15)
+
     if not guest_id:
         return jsonify({'error': 'guest_id ist erforderlich'}), 400
     
     try:
         with psycopg2.connect(DATABASE_URL) as conn:
             with conn.cursor() as cursor:
+                cursor.execute("""
+                    UPDATE guest_carts SET valid_until = %s WHERE guest_id = %s
+                               """, (valid_until, guest_id))
                 # Entfernen des Sitzplatzes
                 cursor.execute("""
                     DELETE FROM guest_cart_items
@@ -1382,6 +1390,10 @@ def clear_guest_cart():
     try:
         with psycopg2.connect(DATABASE_URL) as conn:
             with conn.cursor() as cursor:
+                valid_until = datetime.now(timezone.utc) + timedelta(minutes=15)
+                cursor.execute("""
+                    UPDATE guest_carts SET valid_until = %s WHERE guest_id = %s
+                               """, (valid_until, guest_id))
                 # Löschen aller Sitzplätze im Guest-Warenkorb
                 cursor.execute("""
                     DELETE FROM guest_cart_items
