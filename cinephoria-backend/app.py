@@ -1218,19 +1218,33 @@ def clear_user_cart():
 def clear_expired_guest_cart_items():
     with psycopg2.connect(DATABASE_URL) as conn:
         with conn.cursor() as cursor:
-            cursor.execute("""
-                DELETE FROM guest_cart_items
-                WHERE reserved_until < NOW()
-            """)
+            delete_sql = """
+                        WITH expired_guests AS (
+                            SELECT guest_id
+                            FROM uguest_carts
+                            WHERE valid_until < NOW()
+                        )
+
+                        DELETE FROM guest_carts
+                        WHERE guest_id IN (SELECT guest_id FROM expired_guests);
+                    """
+            cursor.execute(delete_sql)
             conn.commit()
 
 def clear_expired_user_cart_items():
     with psycopg2.connect(DATABASE_URL) as conn:
         with conn.cursor() as cursor:
-            cursor.execute("""
-                DELETE FROM user_cart_items
-                WHERE reserved_until < NOW()
-            """)
+            delete_sql = """
+                        WITH expired_users AS (
+                            SELECT user_id
+                            FROM user_carts
+                            WHERE valid_until < NOW()
+                        )
+
+                        DELETE FROM user_carts
+                        WHERE user_id IN (SELECT user_id FROM expired_users);
+                    """
+            cursor.execute(delete_sql)
             conn.commit()
 
 @app.route('/api/user/cart', methods=['POST'])
