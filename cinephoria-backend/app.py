@@ -1164,24 +1164,25 @@ def update_seat_type(seat_type_id):
         return jsonify({'error': 'Fehler beim Aktualisieren des Sitztyps'}), 500
 
 
+# app.py
+
 @app.route('/user/cart', methods=['GET'])
 @token_required
 def get_user_cart():
-    clear_expired_user_cart_items()  # Bereinigung vor dem Laden
+    clear_expired_user_cart_items()
     user_id = request.user.get('user_id')
     try:
         with psycopg2.connect(DATABASE_URL) as conn:
             with conn.cursor(cursor_factory=psycopg2.extras.DictCursor) as cursor:
-                # Überprüfen, ob der Benutzer bereits einen Warenkorb hat
+                # Überprüfen, ob der Benutzer einen Warenkorb hat
                 cursor.execute("SELECT user_id FROM user_carts WHERE user_id = %s", (user_id,))
                 if cursor.fetchone() is None:
-                    # Wenn kein Warenkorb existiert, erstellen wir einen
                     cursor.execute("INSERT INTO user_carts (user_id) VALUES (%s)", (user_id,))
                     conn.commit()
-                
-                # Abrufen der Warenkorb-Elemente
+
+                # Abrufen der Warenkorb-Elemente mit showtime_id
                 cursor.execute("""
-                    SELECT seat_id, price, reserved_until
+                    SELECT seat_id, price, reserved_until, showtime_id
                     FROM user_cart_items
                     WHERE user_id = %s
                 """, (user_id,))
@@ -1191,12 +1192,14 @@ def get_user_cart():
                     cart_items.append({
                         'seat_id': item['seat_id'],
                         'price': float(item['price']),
-                        'reserved_until': item['reserved_until'].isoformat()
+                        'reserved_until': item['reserved_until'].isoformat(),
+                        'showtime_id': item['showtime_id']
                     })
         return jsonify({'cart_items': cart_items}), 200
     except Exception as e:
         print(f"Fehler beim Abrufen des Warenkorbs: {e}")
         return jsonify({'error': 'Fehler beim Abrufen des Warenkorbs'}), 500
+
 
 
 
@@ -1281,49 +1284,50 @@ def clear_expired_user_cart_items():
             cursor.execute(delete_sql)
             conn.commit()
 
+# app.py
+
 @app.route('/api/user/cart', methods=['POST'])
 @token_required
 def add_to_user_cart():
-    clear_expired_user_cart_items()  # Bereinigung vor der Hauptaktion
+    clear_expired_user_cart_items()
     user_id = request.user.get('user_id')
     data = request.get_json()
     seat_id = data.get('seat_id')
     price = data.get('price')
-    
-    if not seat_id or price is None:
-        return jsonify({'error': 'seat_id und price sind erforderlich'}), 400
-    
+    showtime_id = data.get('showtime_id')  # Neu hinzugefügt
+
+    if not seat_id or price is None or not showtime_id:
+        return jsonify({'error': 'seat_id, price und showtime_id sind erforderlich'}), 400
+
     try:
         with psycopg2.connect(DATABASE_URL) as conn:
             with conn.cursor() as cursor:
-                # Sicherstellen, dass der Warenkorb für den aktuellen Benutzer existiert
+                # Sicherstellen, dass der Warenkorb existiert
                 valid_until = datetime.now(timezone.utc) + timedelta(minutes=15)
                 cursor.execute("SELECT user_id FROM user_carts WHERE user_id = %s", (user_id,))
                 if cursor.fetchone() is None:
-                    # Wenn kein Warenkorb existiert, erstellen
                     cursor.execute("INSERT INTO user_carts (user_id, valid_until) VALUES (%s, %s)", (user_id, valid_until,))
                     conn.commit()
-                
+
                 # Reserviere den Sitzplatz
                 reserved_until = datetime.now(timezone.utc) + timedelta(minutes=15)
-                
-                # Hinzufügen des Sitzplatzes mit aktualisiertem `reserved_until`
+
+                # Hinzufügen des Sitzplatzes mit showtime_id
                 cursor.execute("""
-                    INSERT INTO user_cart_items (user_id, seat_id, price, reserved_until)
-                    VALUES (%s, %s, %s, %s)
+                    INSERT INTO user_cart_items (user_id, seat_id, price, reserved_until, showtime_id)
+                    VALUES (%s, %s, %s, %s, %s)
                     ON CONFLICT (user_id, seat_id) DO UPDATE
-                    SET reserved_until = EXCLUDED.reserved_until, price = EXCLUDED.price
-                """, (user_id, seat_id, price, reserved_until))
+                    SET reserved_until = EXCLUDED.reserved_until, price = EXCLUDED.price, showtime_id = EXCLUDED.showtime_id
+                """, (user_id, seat_id, price, reserved_until, showtime_id))
 
                 cursor.execute("""
                     UPDATE user_carts SET valid_until = %s WHERE user_id = %s
-                               """, (valid_until, user_id))
+                """, (valid_until, user_id))
                 conn.commit()
         return jsonify({'message': 'Sitzplatz zum Warenkorb hinzugefügt', 'reserved_until': reserved_until.isoformat()}), 201
     except Exception as e:
         print(f"Fehler beim Hinzufügen zum Warenkorb: {e}")
         return jsonify({'error': 'Fehler beim Hinzufügen zum Warenkorb'}), 500
-
 
 
 # Neue Endpoints für GUEST CART
