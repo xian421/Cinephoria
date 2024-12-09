@@ -8,8 +8,6 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 
 # Holen der Datenbank-URL aus den Umgebungsvariablen
 DATABASE_URL = os.getenv('DATABASE_URL')
-
-
 def cleanup_inactive_carts():
    logging.info("Macht gerade nichts weil auskommentiert!")
 #     try:

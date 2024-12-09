@@ -1,75 +1,75 @@
 <!-- src/routes/Buchung.svelte -->
 <script>
-    import { onMount, tick } from 'svelte';
+    import { onMount, onDestroy, tick } from 'svelte';
     import { navigate } from 'svelte-routing';
     import Swal from 'sweetalert2';
     import { 
-        fetchSeatsForShowtime, 
         createBooking, 
         createPayPalOrder, 
         capturePayPalOrder, 
-        fetchSeatTypes 
+        fetchSeatTypes,
+        fetchSeatsWithReservation
     } from '../services/api.js';
     import { get } from 'svelte/store';
     import { authStore } from '../stores/authStore'; 
-    import { cartStore, addToCart, removeFromCart, clearCart } from '../stores/cartStore.js';
+    import { cart, cartError, addToCart, removeFromCart, clearCart, loadCart } from '../stores/cartStore.js';
+
     import "@fortawesome/fontawesome-free/css/all.min.css";
 
-    export let showtime_id; // Wird aus der Route übergeben
+    export let showtime_id;
+
 
     let seats = [];
     let isLoading = true;
     let error = null;
-
-    // Variable für gruppierte Sitzplätze
-    let seatsByRow = {};
-
-    // Gesamtpreis der ausgewählten Sitzplätze
-    let totalPrice = 0.00;
-
-    // PayPal Client ID aus Umgebungsvariablen oder Backend beziehen
-    const PAYPAL_CLIENT_ID = 'AXWfRwPPgPCoOBZzqI-r4gce1HuWZXDnFqUdES0bP8boKSv5KkkPvZrMFwcCDShXjC3aTdChUjOhwxhW'; // Ersetzen Sie dies durch Ihre tatsächliche Client ID
-
-    // Liste aller Sitztypen laden (inkl. color & icon)
     let seatTypesList = [];
-
-    // Referenz zum PayPal-Button-Container
-    let paypalContainer;
-
-    // Variable, um zu verhindern, dass PayPal-Buttons mehrfach initialisiert werden
+    let seatsByRow = {};
     let payPalInitialized = false;
+    let paypalContainer;
+    let test = [];
+    
+    let totalPrice = 0.0;
+    let timer = null;
+    let timeLeft = 0; // in Sekunden
+    let warning = false;
 
-    // Abonnieren des Warenkorb-Stores, um ausgewählte Sitze zu überwachen
-    let selectedSeats = [];
-    const unsubscribe = cartStore.subscribe((currentCart) => {
-        selectedSeats = currentCart;
-        calculateTotalPrice();
-    });
+    const PAYPAL_CLIENT_ID = 'AXWfRwPPgPCoOBZzqI-r4gce1HuWZXDnFqUdES0bP8boKSv5KkkPvZrMFwcCDShXjC3aTdChUjOhwxhW';
+
+    // Reaktive Abhängigkeiten mit Svelte's $-Syntax
+    $: calculateTimeLeft();
+    $: calculateTotalPrice();
+    $: startTimer(); // Timer neu starten bei jeder Aktualisierung
+
+    // Reaktive Fehleranzeige
+    $: if ($cartError) {
+        Swal.fire({
+            title: "Fehler",
+            text: $cartError,
+            icon: "error"
+        });
+    }
 
     onMount(async () => {
         isLoading = true;
         try {
             const token = get(authStore).token;
+            let guest_id = localStorage.getItem('guest_id') || crypto.randomUUID();
+            localStorage.setItem('guest_id', guest_id);
 
-            // Zuerst Sitztypen laden
             seatTypesList = await fetchSeatTypes(token);
-
-            // Hole die Sitzstatus für die Vorstellung
-            const seatStatusData = await fetchSeatsForShowtime(showtime_id, token);
-            const seatStatusSeats = seatStatusData.seats;
-
-            // Nutze die vorhandenen Sitze aus seatStatusSeats
-            seats = seatStatusSeats;
-
-            // Gruppiere die Sitze mit Lücken
+            const seatData = await fetchSeatsWithReservation(showtime_id, token, guest_id);
+            seats = seatData.seats;
             seatsByRow = groupSeatsByRowWithGaps(seats);
 
-        } catch (error) {
-            console.error('Fehler beim Laden der Sitze oder Sitztypen:', error);
-            error = error.message || 'Fehler beim Laden der Sitze oder Sitztypen.';
+            // Warenkorb laden, damit $cart aktuell ist
+            await loadCart();
+
+        } catch (err) {
+            console.error('Fehler beim Laden der Sitze oder Sitztypen:', err);
+            error = err.message || 'Fehler beim Laden.';
         } finally {
             isLoading = false;
-            await tick(); // Warten, bis der DOM aktualisiert ist
+            await tick(); // Warten, bis DOM-Änderungen abgeschlossen sind
             if (!payPalInitialized) {
                 initializePayPalButtons();
                 payPalInitialized = true;
@@ -77,199 +77,42 @@
         }
     });
 
-    function getSeatTypeColor(typeName) {
-        const type = seatTypesList.find(st => st.name === typeName);
-        return type ? type.color : '#678be0'; // Standardfarbe, falls nicht gefunden
-    }
+    onDestroy(() => {
+        clearInterval(timer);
+    });
 
-    // Funktion, um das Icon eines Sitztyps zu bekommen
-    function getSeatTypeIcon(typeName) {
-        const type = seatTypesList.find(st => st.name === typeName);
-        return type ? type.icon : null;
-    }
-
-    function initializePayPalButtons() {
-        if (!PAYPAL_CLIENT_ID) {
-            console.error('PayPal Client ID ist nicht gesetzt!');
-            Swal.fire({
-                title: "Fehler",
-                text: 'PayPal Client ID ist nicht gesetzt.',
-                icon: "error",
-                confirmButtonText: "OK",
-            });
-            return;
-        }
-
-        // Überprüfen, ob das PayPal-SDK bereits geladen wurde
-        if (window.paypal) {
-            renderPayPalButtons();
-        } else {
-            const script = document.createElement('script');
-            script.src = `https://www.paypal.com/sdk/js?client-id=${PAYPAL_CLIENT_ID}&currency=EUR`;
-            script.addEventListener('load', () => {
-                if (!window.paypal) {
-                    console.error('PayPal SDK konnte nicht geladen werden.');
-                    Swal.fire({
-                        title: "Fehler",
-                        text: 'PayPal SDK konnte nicht geladen werden.',
-                        icon: "error",
-                        confirmButtonText: "OK",
-                    });
-                    return;
-                }
-                renderPayPalButtons();
-            });
-            script.addEventListener('error', () => {
-                console.error('Fehler beim Laden des PayPal SDK Skripts.');
-                Swal.fire({
-                    title: "Fehler",
-                    text: 'PayPal SDK konnte nicht geladen werden.',
-                    icon: "error",
-                    confirmButtonText: "OK",
-                });
-            });
-            document.body.appendChild(script);
-        }
-    }
-
-    function renderPayPalButtons() {
-        if (!paypalContainer) {
-            console.error('Element #paypal-button-container existiert nicht im DOM.');
-            Swal.fire({
-                title: "Zahlungsfehler",
-                text: 'Es gab ein Problem mit der Zahlung. Bitte versuche es erneut.',
-                icon: "error",
-                confirmButtonText: "OK",
-            });
-            return;
-        }
-
-        window.paypal.Buttons({
-            style: {
-                layout: 'vertical',
-                color:  'blue',
-                shape:  'rect',
-                label:  'paypal'
-            },
-            createOrder: async (data, actions) => {
-                if (selectedSeats.length === 0) {
-                    Swal.fire({
-                        title: "Keine Sitzplätze ausgewählt",
-                        text: "Bitte wähle mindestens einen Sitzplatz aus.",
-                        icon: "warning",
-                        confirmButtonText: "OK",
-                    });
-                    throw new Error('Keine Sitzplätze ausgewählt');
-                }
-
-                try {
-                    const token = get(authStore).token;
-                    if (!token) {
-                        throw new Error('Nicht authentifiziert');
-                    }
-                    const response = await createPayPalOrder(showtime_id, selectedSeats, token);
-                    return response.orderID;
-                } catch (err) {
-                    console.error('Fehler beim Erstellen der PayPal-Order:', err);
-                    Swal.fire({
-                        title: "Fehler",
-                        text: 'Es gab ein Problem beim Erstellen der Zahlung. Bitte versuche es erneut.',
-                        icon: "error",
-                        confirmButtonText: "OK",
-                    });
-                    throw err;
-                }
-            },
-            onApprove: async (data, actions) => {
-                try {
-                    const token = get(authStore).token;
-                    if (!token) {
-                        throw new Error('Nicht authentifiziert');
-                    }
-                    const captureResult = await capturePayPalOrder(data.orderID, token);
-                    if (captureResult.status === 'COMPLETED') {
-                        await confirmBooking(data.orderID);
-                    } else {
-                        throw new Error('Zahlung wurde nicht abgeschlossen.');
-                    }
-                } catch (err) {
-                    console.error('Fehler beim Abschließen der Zahlung:', err);
-                    Swal.fire({
-                        title: "Zahlungsfehler",
-                        text: 'Es gab ein Problem beim Abschließen der Zahlung. Bitte versuche es erneut.',
-                        icon: "error",
-                        confirmButtonText: "OK",
-                    });
-                }
-            },
-            onCancel: () => {
-                Swal.fire({
-                    title: "Zahlung abgebrochen",
-                    text: 'Die Zahlung wurde abgebrochen.',
-                    icon: "info",
-                    confirmButtonText: "OK",
-                });
-            },
-            onError: (err) => {
-                console.error('PayPal Fehler:', err);
-                Swal.fire({
-                    title: "Zahlungsfehler",
-                    text: 'Es gab ein Problem mit der Zahlung. Bitte versuche es erneut.',
-                    icon: "error",
-                    confirmButtonText: "OK",
-                });
-            }
-        }).render(paypalContainer); // Verwende die gebundene Referenz
-    }
-
-    // Funktion zum Gruppieren der Sitzplätze nach Reihen mit Platzhaltern für fehlende Sitze
     function groupSeatsByRowWithGaps(seats) {
         const rowsSet = new Set();
         const seatNumbersSet = new Set();
-
-        // Sammle alle vorhandenen Reihen und Sitznummern
         seats.forEach(seat => {
             rowsSet.add(seat.row);
             seatNumbersSet.add(seat.number);
         });
 
-        // Bestimme den Bereich aller Reihen und Sitznummern
         const allRowLabels = generateAllRowLabels(Array.from(rowsSet));
         const allSeatNumbers = generateAllSeatNumbers(Array.from(seatNumbersSet));
 
-        // Erstelle eine Map für schnellen Zugriff auf Sitzdaten
         const seatMap = {};
         seats.forEach(seat => {
             seatMap[`${seat.row}-${seat.number}`] = seat;
         });
 
-        // Baue den Sitzplan mit Platzhaltern für fehlende Sitze
         const rowsWithGaps = {};
         allRowLabels.forEach(rowLabel => {
             const rowSeats = [];
-            allSeatNumbers.forEach(seatNumber => {
-                const key = `${rowLabel}-${seatNumber}`;
+            allSeatNumbers.forEach(num => {
+                const key = `${rowLabel}-${num}`;
                 if (seatMap[key]) {
                     rowSeats.push(seatMap[key]);
                 } else {
-                    // Platzhalter für fehlenden Sitz einfügen
-                    rowSeats.push({ 
-                        row: rowLabel, 
-                        number: seatNumber, 
-                        status: 'missing', 
-                        seat_id: null, 
-                        type: null, 
-                        price: 0.00 
-                    });
+                    rowSeats.push({ row: rowLabel, number: num, status: 'missing', seat_id: null, type: null, price: 0.00 });
                 }
             });
             rowsWithGaps[rowLabel] = rowSeats;
         });
-
         return rowsWithGaps;
     }
 
-    // Hilfsfunktion zur Generierung aller Reihenbezeichnungen
     function generateAllRowLabels(existingRows) {
         if (existingRows.length === 0) return [];
         const minRowCharCode = Math.min(...existingRows.map(r => r.charCodeAt(0)));
@@ -281,98 +124,225 @@
         return allRows;
     }
 
-    // Hilfsfunktion zur Generierung aller Sitznummern
-    function generateAllSeatNumbers(existingSeatNumbers) {
-        if (existingSeatNumbers.length === 0) return [];
-        const minSeatNumber = Math.min(...existingSeatNumbers);
-        const maxSeatNumber = Math.max(...existingSeatNumbers);
-        const allSeatNumbers = [];
-        for (let num = minSeatNumber; num <= maxSeatNumber; num++) {
-            allSeatNumbers.push(num);
+    function generateAllSeatNumbers(existingNumbers) {
+        if (existingNumbers.length === 0) return [];
+        const min = Math.min(...existingNumbers);
+        const max = Math.max(...existingNumbers);
+        const all = [];
+        for (let i = min; i <= max; i++) {
+            all.push(i);
         }
-        return allSeatNumbers;
+        return all;
     }
 
-    // Funktion zum Auswählen/Abwählen von Sitzplätzen
-    function toggleSeatSelection(seat) {
-        if (seat.status !== 'available') {
+    function getSeatTypeColor(typeName) {
+        const type = seatTypesList.find(st => st.name === typeName);
+        return type ? type.color : '#678be0';
+    }
+
+    function getSeatTypeIcon(typeName) {
+        const type = seatTypesList.find(st => st.name === typeName);
+        return type ? type.icon : null;
+    }
+
+    // Funktion zur Überprüfung, ob ein Sitzplatz in der aktuellen Vorstellung im Warenkorb ist
+    function isSelectedBySelf(seat) {
+        return $cart.some(s => s.seat_id === seat.seat_id && s.showtime_id === showtime_id);
+    }
+
+    async function toggleSeatSelection(seat) {
+        console.log('Toggling seat:', seat);
+        if (seat.status !== 'available' && !isSelectedBySelf(seat)) {
+            // Nur wenn verfügbar oder bereits von uns ausgewählt
+            return;
+        }
+        if (isSelectedBySelf(seat)) {
+            await removeFromCart(seat.seat_id, showtime_id); // showtime_id übergeben
+            // Toast-Benachrichtigung anzeigen
+            showToast(`Sitzplatz ${seat.row}${seat.number} wurde aus dem Warenkorb entfernt.`);
+        } else {
+            await addToCart(seat, showtime_id);
+            // Toast-Benachrichtigung anzeigen
+            showToast(`Sitzplatz ${seat.row}${seat.number} wurde zum Warenkorb hinzugefügt.`);
+        }
+
+        console.log('Selected Seats after toggle:', $cart);
+    }
+
+    function showToast(message) {
+        const Toast = Swal.mixin({
+            toast: true,
+            position: "top-end",
+            showConfirmButton: false,
+            timer: 3000,
+            timerProgressBar: true,
+            didOpen: (toast) => {
+                toast.onmouseenter = Swal.stopTimer;
+                toast.onmouseleave = Swal.resumeTimer;
+            }
+        });
+        Toast.fire({
+            icon: "success",
+            title: message
+        });
+    }
+
+    function calculateTotalPrice() {
+        totalPrice = $cart.reduce((sum, seat) => sum + seat.price, 0);
+    }
+
+    function initializePayPalButtons() {
+        if (!PAYPAL_CLIENT_ID) {
+            Swal.fire({title: "Fehler", text: 'PayPal Client ID ist nicht gesetzt.', icon: "error"});
             return;
         }
 
-        if (isSelected(seat.seat_id)) {
-            // Sitzplatz abwählen
-            removeFromCart(seat.seat_id);
-            Swal.fire({
-                title: 'Entfernt!',
-                text: `Sitzplatz ${seat.row}-${seat.number} wurde aus dem Warenkorb entfernt.`,
-                icon: 'success',
-                timer: 1500,
-                showConfirmButton: false
-            });
+        if (window.paypal) {
+            renderPayPalButtons();
         } else {
-            // Sitzplatz auswählen und zum Warenkorb hinzufügen
-            addToCart(seat);
-            Swal.fire({
-                title: 'Hinzugefügt!',
-                text: `Sitzplatz ${seat.row}-${seat.number} wurde zum Warenkorb hinzugefügt.`,
-                icon: 'success',
-                timer: 1500,
-                showConfirmButton: false
+            const script = document.createElement('script');
+            script.src = `https://www.paypal.com/sdk/js?client-id=${PAYPAL_CLIENT_ID}&currency=EUR`;
+            script.addEventListener('load', () => {
+                if (!window.paypal) {
+                    Swal.fire({title:"Fehler", text:'PayPal SDK konnte nicht geladen werden.', icon:"error"});
+                    return;
+                }
+                renderPayPalButtons();
             });
+            script.addEventListener('error', () => {
+                Swal.fire({title:"Fehler", text:'PayPal SDK Fehler.', icon:"error"});
+            });
+            document.body.appendChild(script);
+        }
+    }
+
+    function renderPayPalButtons() {
+        if (!paypalContainer) {
+            Swal.fire({title:"Zahlungsfehler",text:'PayPal Container nicht gefunden.',icon:"error"});
+            return;
         }
 
-        // Gesamtpreis neu berechnen
-        calculateTotalPrice();
+        window.paypal.Buttons({
+            style: {
+                layout: 'vertical',
+                color:  'blue',
+                shape:  'rect',
+                label:  'paypal'
+            },
+            createOrder: async (data, actions) => {
+                if ($cart.length === 0) {
+                    Swal.fire({title:"Keine Sitze",text:"Bitte wähle mindestens einen Sitzplatz aus.",icon:"warning"});
+                    throw new Error('Keine Sitzplätze ausgewählt');
+                }
+
+                try {
+                    const token = get(authStore).token;
+                    if (!token) throw new Error('Nicht authentifiziert');
+                    const response = await createPayPalOrder(showtime_id, $cart, token);
+                    return response.orderID;
+                } catch (err) {
+                    console.error('Fehler beim Erstellen der PayPal-Order:', err);
+                    Swal.fire({title:"Fehler",text:'Problem beim Erstellen der Zahlung.',icon:"error"});
+                    throw err;
+                }
+            },
+            onApprove: async (data, actions) => {
+                try {
+                    const token = get(authStore).token;
+                    if (!token) throw new Error('Nicht authentifiziert');
+                    const captureResult = await capturePayPalOrder(data.orderID, token);
+                    if (captureResult.status === 'COMPLETED') {
+                        await confirmBooking(data.orderID);
+                    } else {
+                        throw new Error('Zahlung nicht abgeschlossen');
+                    }
+                } catch (err) {
+                    console.error('Fehler beim Abschließen der Zahlung:', err);
+                    Swal.fire({title:"Zahlungsfehler",text:'Problem beim Abschließen der Zahlung.',icon:"error"});
+                }
+            },
+            onCancel: () => {
+                Swal.fire({title:"Abgebrochen",text:'Zahlung abgebrochen.',icon:"info"});
+            },
+            onError: (err) => {
+                console.error('PayPal Fehler:', err);
+                Swal.fire({title:"Zahlungsfehler",text:'Problem mit der Zahlung.',icon:"error"});
+            }
+        }).render(paypalContainer);
     }
 
-    // Funktion zur Berechnung des Gesamtpreises
-    function calculateTotalPrice() {
-        totalPrice = selectedSeats.reduce((sum, seat) => sum + seat.price, 0);
-    }
-
-    // Funktion zur Überprüfung, ob ein Sitz ausgewählt ist
-    function isSelected(seat_id) {
-        return selectedSeats.some(seat => seat.seat_id === seat_id);
-    }
-
-    // Funktion zur Bestätigung der Buchung mit PayPal
     async function confirmBooking(orderID) {
-        if (selectedSeats.length === 0) {
-            Swal.fire({
-                title: "Keine Sitzplätze ausgewählt",
-                text: "Bitte wähle mindestens einen Sitzplatz aus.",
-                icon: "warning",
-                confirmButtonText: "OK",
-            });
+        if ($cart.length === 0) {
+            Swal.fire({title:"Keine Sitzplätze",text:"Bitte wähle mindestens einen Sitzplatz aus.",icon:"warning"});
             return;
         }
 
         try {
             const token = get(authStore).token;
-            const seatIds = selectedSeats.map(seat => seat.seat_id);
+            const seatIds = $cart.map(seat => seat.seat_id);
             const booking = await createBooking(showtime_id, seatIds, token, orderID);
-            Swal.fire({
-                title: "Buchung erfolgreich",
-                text: "Deine Tickets wurden erfolgreich gebucht.",
-                icon: "success",
-                confirmButtonText: "OK",
-            }).then(() => {
-                clearCart(); // Warenkorb leeren nach erfolgreicher Buchung
-                navigate('/'); // Zurück zur Startseite oder einer anderen Seite
+            Swal.fire({title:"Buchung erfolgreich",text:"Tickets gebucht.",icon:"success"})
+            .then(() => {
+                clearCart();
+                navigate('/');
             });
         } catch (err) {
             console.error('Fehler bei der Buchung:', err);
-            Swal.fire({
-                title: "Fehler",
-                text: err.message || 'Es gab ein Problem bei der Buchung. Bitte versuche es erneut.',
-                icon: "error",
-                confirmButtonText: "OK",
-            });
+            Swal.fire({title:"Fehler",text:'Problem bei der Buchung.',icon:"error"});
         }
+    }
+
+    function calculateTimeLeft() {
+        if ($cart.length === 0) {
+            timeLeft = 0;
+            warning = false;
+            return;
+        }
+
+        const now = new Date();
+        const reservationTimes = $cart.map(seat => new Date(seat.reserved_until));
+        const earliest = new Date(Math.min(...reservationTimes));
+        timeLeft = Math.max(0, Math.floor((earliest - now) / 1000));
+        warning = timeLeft <= 60;
+    }
+
+    function startTimer() {
+        clearInterval(timer);
+        if (timeLeft > 0) {
+            timer = setInterval(() => {
+                if (timeLeft > 0) {
+                    timeLeft -= 1;
+                }
+                if (timeLeft === 60 && !warning) {
+                    showWarning();
+                }
+                if (timeLeft <= 0) {
+                    clearInterval(timer);
+                    loadCart(); // Aktualisiere den Warenkorb, um abgelaufene Sitze zu entfernen
+                }
+            }, 1000);
+        }
+    }
+
+    function showWarning() {
+        Swal.fire({
+            title: 'Achtung!',
+            text: 'Ihre Reservierung läuft in weniger als einer Minute ab.',
+            icon: 'warning',
+            timer: 3000,
+            showConfirmButton: false
+        });
+    }
+
+    function formatTime(seconds) {
+        const min = Math.floor(seconds / 60);
+        const sec = seconds % 60;
+        return `${min}:${sec < 10 ? '0' : ''}${sec}`;
     }
 </script>
 
 <style>
+    /* Ihr CSS bleibt unverändert */
     .booking-container {
         padding: 2rem;
         font-family: Arial, sans-serif;
@@ -544,19 +514,15 @@
     {:else}
         <h1>Tickets für Vorstellung #{showtime_id}</h1>
 
-        <!-- Legende -->
         <div class="legend">
-            <!-- Generische Legenden für Sitzstatus -->
             <div class="legend-item">
                 <div class="legend-box selected"></div>
                 <span>Ausgewählt</span>
             </div>
             <div class="legend-item">
                 <div class="legend-box unavailable"></div>
-                <span>Besetzt</span>
+                <span>Besetzt/Reserviert</span>
             </div>
-
-            <!-- Dynamische Legenden für Sitztypen -->
             {#each seatTypesList as seatType}
                 <div class="legend-item">
                     <div 
@@ -573,30 +539,28 @@
             {/each}
         </div>
 
-        <!-- Sitzplan -->
+        {#if timeLeft > 0}
+            <p>Ihre Reservierung läuft in: {formatTime(timeLeft)}</p>
+        {/if}
+
         <div class="seating-chart">
             {#each Object.keys(seatsByRow) as row}
                 <div class="seat-row">
-                    <!-- Reihenlabel -->
                     <div class="row-label">{row}</div>
-                    <!-- Sitzplätze -->
                     {#each seatsByRow[row] as seat (row + '-' + seat.number)}
                         {#if seat.status !== 'missing'}
-                            <div 
-                                class="seat {seat.status} {seat.type} {isSelected(seat.seat_id) ? 'selected' : ''}" 
+                            <div
+                                class="seat {seat.status} {seat.type} {isSelectedBySelf(seat) ? 'selected' : ''}"
                                 on:click={() => toggleSeatSelection(seat)}
                                 title={`Reihe ${seat.row}, Sitz ${seat.number}${seat.type ? `, Typ: ${seat.type}, Preis: ${seat.price.toFixed(2)}€` : ''}`}
                                 style={seat.type ? `background-color: ${getSeatTypeColor(seat.type)};` : ''}
                             >
-                                {#if seat.status === 'unavailable'}
-                                    <!-- Icon für besetzte Sitze -->
+                                {#if seat.status === 'unavailable' && !isSelectedBySelf(seat)}
                                     <i class="fas fa-user"></i>
-                                {:else if seat.type && getSeatTypeIcon(seat.type)}
-                                    <!-- Icon basierend auf dem Sitztyp -->
-                                    <i class={`fas ${getSeatTypeIcon(seat.type)}`}></i>
-                                {:else if isSelected(seat.seat_id)}
-                                    <!-- Icon für ausgewählte Sitze -->
+                                {:else if isSelectedBySelf(seat)}
                                     <i class="fas fa-check"></i>
+                                {:else if seat.type && getSeatTypeIcon(seat.type)}
+                                    <i class={`fas ${getSeatTypeIcon(seat.type)}`}></i>
                                 {:else}
                                     {seat.number}
                                 {/if}
@@ -609,12 +573,9 @@
             {/each}
         </div>
 
-        <!-- Anzeige des Gesamtpreises -->
         <p>Gesamtpreis: {totalPrice.toFixed(2)}€</p>
-
-        <!-- PayPal Button Container -->
         <div id="paypal-button-container" bind:this={paypalContainer}></div>
-    {/if}
 
-    <button on:click={() => navigate('/adminkinosaal')}>Zurück zu Überblick der Kinosäle</button>
+        <button on:click={() => navigate('/adminkinosaal')}>Zurück zu Überblick der Kinosäle</button>
+    {/if}
 </main>

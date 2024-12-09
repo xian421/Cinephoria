@@ -241,20 +241,24 @@ export const fetchShowtimesPublic = async (screenId = null) => {
     return data;
 };
 
+export const fetchMovieDetails = async (movie_id) => {
+    try {
+        const response = await fetch(`${API_BASE_URL}/movies/${movie_id}`, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+        });
 
-export const fetchMovieDetails = async (movie_ID) => {
-    const response = await fetch(`${API_BASE_URL}/movies/${movie_ID}`, {
-        method: 'GET',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-    });
-
-    const data = await response.json();
-    if (!response.ok) {
-        throw new Error(data.error || 'Fehler beim Abrufen des Films');
+        const data = await response.json();
+        if (!response.ok) {
+            throw new Error(data.error || 'Fehler beim Abrufen des Films');
+        }
+        return data; // TMDB Movie details
+    } catch (error) {
+        console.error('Fehler beim Abrufen der Filmdetails:', error);
+        throw error;
     }
-    return data;
 };
 
 
@@ -545,3 +549,183 @@ export const updateSeatType = async (token, seatTypeId, updates) => {
         throw error;
     }
 };
+
+
+
+// Hilfsfunktion, um guest_id zu holen
+function getGuestId() {
+    let guest_id = localStorage.getItem('guest_id');
+    if (!guest_id) {
+        guest_id = crypto.randomUUID();
+        localStorage.setItem('guest_id', guest_id);
+    }
+    return guest_id;
+}
+
+// USER CART FUNCTIONS
+export async function fetchUserCart(token) {
+    const response = await fetch(`${API_BASE_URL}/user/cart`, {
+        headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${token}`
+        }
+    });
+    const data = await response.json();
+    if (!response.ok) {
+        throw new Error(data.error || 'Fehler beim Abrufen des User-Warenkorbs');
+    }
+    return data.cart_items || [];
+}
+
+export async function addToUserCart(token, seat_id, price, showtime_id) {
+    const response = await fetch(`${API_BASE_URL}/user/cart`, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${token}`
+        },
+        body: JSON.stringify({ seat_id, price, showtime_id }) // showtime_id hinzufügen
+    });
+
+    const data = await response.json();
+    if (!response.ok) {
+        throw new Error(data.error || 'Fehler beim Hinzufügen zum User-Warenkorb');
+    }
+    return data;
+}
+
+export async function removeFromUserCart(token, showtime_id, seat_id) {
+    const response = await fetch(`${API_BASE_URL}/user/cart/${showtime_id}/${seat_id}`, {
+        method: "DELETE",
+        headers: {
+            "Authorization": `Bearer ${token}`
+        },
+    });
+    const data = await response.json();
+    if (!response.ok) {
+        throw new Error(data.error || 'Fehler beim Entfernen aus dem User-Warenkorb');
+    }
+    return data;
+}
+
+export async function clearUserCart(token) {
+    const response = await fetch(`${API_BASE_URL}/user/cart`, {
+        method: "DELETE",
+        headers: {
+            "Authorization": `Bearer ${token}`
+        }
+    });
+    const data = await response.json();
+    if (!response.ok) {
+        throw new Error(data.error || 'Fehler beim Leeren des User-Warenkorbs');
+    }
+    return data;
+}
+
+// GUEST CART FUNCTIONS
+export async function fetchGuestCart() {
+    const guest_id = getGuestId();
+    const response = await fetch(`${API_BASE_URL}/guest/cart?guest_id=${guest_id}`);
+    const data = await response.json();
+    if (!response.ok) {
+        throw new Error(data.error || 'Fehler beim Abrufen des Guest-Warenkorbs');
+    }
+    return data.cart_items || [];
+}
+
+
+export async function addToGuestCart(seat_id, price, showtime_id) {
+    const guest_id = getGuestId();
+    const response = await fetch(`${API_BASE_URL}/guest/cart`, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ guest_id, seat_id, price, showtime_id }) // showtime_id hinzufügen
+    });
+    const data = await response.json();
+    if (!response.ok) {
+        throw new Error(data.error || 'Fehler beim Hinzufügen zum Guest-Warenkorb');
+    }
+    return data;
+}
+
+export async function removeFromGuestCart(showtime_id, seat_id) {
+    const guest_id = getGuestId();
+    const response = await fetch(`${API_BASE_URL}/guest/cart/${showtime_id}/${seat_id}?guest_id=${guest_id}`, {
+        method: "DELETE"
+    });
+    const data = await response.json();
+    if (!response.ok) {
+        throw new Error(data.error || 'Fehler beim Entfernen aus dem Guest-Warenkorb');
+    }
+    return data;
+}
+
+export async function clearGuestCart() {
+    const guest_id = getGuestId();
+    const response = await fetch(`${API_BASE_URL}/api/guest/cart?guest_id=${guest_id}`, {
+        method: "DELETE"
+    });
+    const data = await response.json();
+    if (!response.ok) {
+        throw new Error(data.error || 'Fehler beim Leeren des Guest-Warenkorbs');
+    }
+    return data;
+}
+
+export async function fetchSeatsWithReservation(showtime_id, token = null, guest_id = null) {
+    const urlParams = token ? '' : `?guest_id=${guest_id}`;
+    const headers = {
+        'Content-Type': 'application/json',
+    };
+    if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+    }
+
+    const response = await fetch(`${API_BASE_URL}/showtimes/${showtime_id}/seats${urlParams}`, {
+        headers,
+    });
+
+    if (!response.ok) {
+        const errData = await response.json().catch(() => ({}));
+        throw new Error(errData.error || 'Fehler beim Laden der Sitzplätze');
+    }
+
+    const data = await response.json();
+    return data;
+}
+
+export async function fetchSeatById(seat_id) {
+    try {
+        const response = await fetch(`${API_BASE_URL}/seats/${seat_id}`);
+        if (!response.ok) {
+            throw new Error(`Error: ${response.statusText}`);
+        }
+        const data = await response.json();
+        return data.seat;
+    } catch (error) {
+        console.error('Fehler beim Abrufen des Sitzes:', error);
+        throw error;
+    }
+}
+
+export const fetchShowtimeDetails = async (showtime_id) => {
+    try {
+        const response = await fetch(`${API_BASE_URL}/showtimes?showtime_id=${showtime_id}`, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+        });
+        const data = await response.json();
+        if (!response.ok) {
+            throw new Error(data.error || 'Fehler beim Abrufen der Showtime-Details');
+        }
+        return data.showtimes.find(st => st.showtime_id === showtime_id); // Passe dies an die Antwortstruktur an
+    } catch (error) {
+        console.error('Fehler beim Abrufen der Showtime-Details:', error);
+        throw error;
+    }
+};
+

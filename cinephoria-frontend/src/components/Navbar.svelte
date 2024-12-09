@@ -1,5 +1,6 @@
+<!-- src/components/Navbar.svelte -->
 <script>
-  import { navigate } from "svelte-routing";
+  import { navigate, useLocation } from "svelte-routing";
   import { authStore } from '../stores/authStore';
   import { get } from 'svelte/store';
 
@@ -10,17 +11,29 @@
       console.log('Navbar aktualisiert mit auth:', auth);
   });
 
-  export let currentPath;
   export let toggleLoginDropdown;
   export let toggleProfileMenu;
   export let logout;
   export let isLoginOpen = false;
   export let isProfileDropdownOpen;
-  export let email;
-  export let password;
   export let handleLogin;
   export let initials;
   export let isLoggedIn;
+
+  // Lokale Zustände für Login
+  let email = "";
+  let password = "";
+
+  const onLoginSubmit = () => {
+      handleLogin(email, password);
+      // Reset der Eingabefelder und Schließen des Dropdowns
+      email = "";
+      password = "";
+      toggleLoginDropdown(false);
+  };
+
+  // Nutzung des useLocation-Hooks
+  const location = useLocation();
 </script>
 
 <style>
@@ -246,28 +259,28 @@
 
   <!-- Navigationsbuttons -->
   <button
-      class="{currentPath === '/' ? 'active' : ''}"
+      class="{location.pathname === '/' ? 'active' : ''}"
       on:click={() => navigate('/')}
   >
       Alle Filme
   </button>
   <button
-      class="{currentPath === '/nowplaying' ? 'active' : ''}"
+      class="{location.pathname === '/nowplaying' ? 'active' : ''}"
       on:click={() => navigate('/nowplaying')}
   >
       Programm
   </button>
   <button
-      class="{currentPath === '/upcoming' ? 'active' : ''}"
+      class="{location.pathname === '/upcoming' ? 'active' : ''}"
       on:click={() => navigate('/upcoming')}
   >
       Upcoming
   </button>
   <button
-      class="{currentPath === '/sitzplan' ? 'active' : ''}"
-      on:click={() => navigate('/sitzplan')}
+      class="{location.pathname === '/warenkorb' ? 'active' : ''}"
+      on:click={() => navigate('/warenkorb')}
   >
-      Sitzplan
+      Warenkorb
   </button>
 
   <!-- Benutzerbereich -->
@@ -283,11 +296,11 @@
           </div>
           <div class="profile-dropdown-menu">
               <ul>
-                  <li on:click={() =>{ navigate('/profile'); toggleProfileMenu(false); }}>Profil anzeigen</li>
-                  <li on:click={() =>{ navigate('/einstellungen'); toggleProfileMenu(false); }}>Einstellungen</li>
+                  <li on:click={() => { navigate('/profile'); toggleProfileMenu(false); }}>Profil anzeigen</li>
+                  <li on:click={() => { navigate('/einstellungen'); toggleProfileMenu(false); }}>Einstellungen</li>
                   <!-- Admin-Menüpunkt hinzufügen -->
                   {#if auth.isAdmin}
-                      <li on:click={() =>{ navigate('/admin'); toggleProfileMenu(false); }}>Admin</li>
+                      <li on:click={() => { navigate('/admin'); toggleProfileMenu(false); }}>Admin</li>
                   {/if}
                   <li on:click={logout}>Abmelden</li>
               </ul>
@@ -296,9 +309,9 @@
   {:else}
       <!-- Login-Dropdown -->
       <div class="dropdown-container {isLoginOpen ? 'open' : ''}">
-          <button on:click={toggleLoginDropdown()}>Login</button>
+          <button on:click={() => toggleLoginDropdown(!isLoginOpen)}>Login</button>
           <div class="dropdown-menu">
-            <form on:submit|preventDefault={() => { handleLogin(); toggleLoginDropdown(false); }}>
+            <form on:submit|preventDefault={onLoginSubmit}>
                   <input type="email" placeholder="E-Mail" bind:value={email} required />
                   <input type="password" placeholder="Passwort" bind:value={password} required />
                   <button type="submit">Einloggen</button>
@@ -307,7 +320,7 @@
                          style="background: none; border: none; color: #007bff; cursor: pointer;">
                           Stattdessen Registrieren
                       </button>
-                      <button type="button" on:click={() =>{ navigate('/forgot-password'); toggleLoginDropdown(false); }}
+                      <button type="button" on:click={() => { navigate('/forgot-password'); toggleLoginDropdown(false); }}
                          style="background: none; border: none; color: #007bff; cursor: pointer;">
                           Passwort vergessen?
                       </button>
