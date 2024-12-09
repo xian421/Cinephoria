@@ -1205,7 +1205,7 @@ def get_user_cart():
 
 @app.route('/user/cart/<int:seat_id>', methods=['DELETE'])
 @token_required
-def remove_from_user_cart(seat_id):
+def remove_from_user_cart(seat_id, showtime_id):
     clear_expired_user_cart_items()  # Optional: Bereinigung vor der Aktion
     user_id = request.user.get('user_id')
     try:
@@ -1219,8 +1219,8 @@ def remove_from_user_cart(seat_id):
                 # Entfernen des Sitzplatzes
                 cursor.execute("""
                     DELETE FROM user_cart_items
-                    WHERE user_id = %s AND seat_id = %s
-                """, (user_id, seat_id))
+                    WHERE user_id = %s AND seat_id = %s AND showtime_id = %s
+                """, (user_id, seat_id, showtime_id))
                 conn.commit()
         return jsonify({'message': 'Sitzplatz aus dem Warenkorb entfernt'}), 200
     except Exception as e:
@@ -1294,9 +1294,9 @@ def add_to_user_cart():
     data = request.get_json()
     seat_id = data.get('seat_id')
     price = data.get('price')
-    showtime_id = data.get('showtime_id')  # Neu hinzugefügt
+    showtime_id = data.get('showtime_id')
 
-    if not seat_id or price is None or not showtime_id:
+    if not user_id or not seat_id or price is None or not showtime_id:
         return jsonify({'error': 'seat_id, price und showtime_id sind erforderlich'}), 400
 
     try:
@@ -1316,7 +1316,7 @@ def add_to_user_cart():
                 cursor.execute("""
                     INSERT INTO user_cart_items (user_id, seat_id, price, reserved_until, showtime_id)
                     VALUES (%s, %s, %s, %s, %s)
-                    ON CONFLICT (user_id, seat_id) DO UPDATE
+                    ON CONFLICT (user_id, seat_id, showtime_id) DO UPDATE
                     SET reserved_until = EXCLUDED.reserved_until, price = EXCLUDED.price, showtime_id = EXCLUDED.showtime_id
                 """, (user_id, seat_id, price, reserved_until, showtime_id))
 
@@ -1350,7 +1350,7 @@ def get_guest_cart():
     
                 # Items abrufen
                 cursor.execute("""
-                    SELECT seat_id, price, reserved_until
+                    SELECT seat_id, price, reserved_until, showtime_id
                     FROM guest_cart_items
                     WHERE guest_id = %s
                 """, (guest_id,))
@@ -1360,7 +1360,8 @@ def get_guest_cart():
                     cart_items.append({
                         'seat_id': item['seat_id'],
                         'price': float(item['price']),
-                        'reserved_until': item['reserved_until'].isoformat()
+                        'reserved_until': item['reserved_until'].isoformat(),
+                        'showtime_id': item['showtime_id']
                     })
         return jsonify({'cart_items': cart_items}), 200
     except Exception as e:
@@ -1374,9 +1375,10 @@ def add_to_guest_cart():
     guest_id = data.get('guest_id')
     seat_id = data.get('seat_id')
     price = data.get('price')
+    showtime_id = data.get('showtime_id')
     
-    if not guest_id or not seat_id or price is None:
-        return jsonify({'error': 'guest_id, seat_id und price sind erforderlich'}), 400
+    if not guest_id or not seat_id or price is None or not showtime_id:
+        return jsonify({'error': 'guest_id, seat_id und price sind erforderlich und showtime'}), 400
     
     try:
         with psycopg2.connect(DATABASE_URL) as conn:
@@ -1395,11 +1397,11 @@ def add_to_guest_cart():
                                """, (valid_until, guest_id))
                 # Hinzufügen des Sitzplatzes mit aktualisiertem `reserved_until`
                 cursor.execute("""
-                    INSERT INTO guest_cart_items (guest_id, seat_id, price, reserved_until)
-                    VALUES (%s, %s, %s, %s)
-                    ON CONFLICT (guest_id, seat_id) DO UPDATE
-                    SET reserved_until = EXCLUDED.reserved_until, price = EXCLUDED.price
-                """, (guest_id, seat_id, price, reserved_until))
+                    INSERT INTO guest_cart_items (guest_id, seat_id, price, reserved_until, showtime_id)
+                    VALUES (%s, %s, %s, %s, %s)
+                    ON CONFLICT (guest_id, seat_id, showtime_id) DO UPDATE
+                    SET reserved_until = EXCLUDED.reserved_until, price = EXCLUDED.price, showtime_id = EXCLUDED.showtime_id
+                """, (guest_id, seat_id, price, reserved_until, showtime_id))
                 conn.commit()
         return jsonify({'message': 'Sitzplatz zum Guest-Warenkorb hinzugefügt', 'reserved_until': reserved_until.isoformat()}), 201
     except Exception as e:
@@ -1407,7 +1409,7 @@ def add_to_guest_cart():
         return jsonify({'error': 'Fehler beim Hinzufügen zum Guest-Warenkorb'}), 500
 
 @app.route('/api/guest/cart/<int:seat_id>', methods=['DELETE'])
-def remove_from_guest_cart(seat_id):
+def remove_from_guest_cart(seat_id, showtime_id):
     clear_expired_guest_cart_items()
     guest_id = request.args.get('guest_id', None)
     valid_until = datetime.now(timezone.utc) + timedelta(minutes=15)
@@ -1424,8 +1426,8 @@ def remove_from_guest_cart(seat_id):
                 # Entfernen des Sitzplatzes
                 cursor.execute("""
                     DELETE FROM guest_cart_items
-                    WHERE guest_id = %s AND seat_id = %s
-                """, (guest_id, seat_id))
+                    WHERE guest_id = %s AND seat_id = %s AND showtime_id = %s
+                """, (guest_id, seat_id, showtime_id))
                 conn.commit()
         return jsonify({'message': 'Sitzplatz aus dem Guest-Warenkorb entfernt'}), 200
     except Exception as e:
