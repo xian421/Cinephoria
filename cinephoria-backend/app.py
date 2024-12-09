@@ -820,8 +820,9 @@ def get_seats_for_showtime(showtime_id):
     # Zuerst abgelaufene Reservierungen löschen
     with psycopg2.connect(DATABASE_URL) as conn:
         with conn.cursor() as cursor:
-            cursor.execute("DELETE FROM guest_cart_items WHERE reserved_until < NOW()")
-            cursor.execute("DELETE FROM user_cart_items WHERE reserved_until < NOW()")
+           # cursor.execute("DELETE FROM guest_cart_items WHERE reserved_until < NOW()")
+            #cursor.execute("DELETE FROM user_cart_items WHERE reserved_until < NOW()")
+            print('Test')
 
     try:
         with psycopg2.connect(DATABASE_URL) as conn:
@@ -848,30 +849,26 @@ def get_seats_for_showtime(showtime_id):
                     SELECT bs.seat_id 
                     FROM booking_seats bs
                     JOIN bookings b ON bs.booking_id = b.booking_id
-                    WHERE b.showtime_id = %s AND b.payment_status = 'completed'
-                """, (showtime_id,))
+                    WHERE b.showtime_id = %s 
+                """, (showtime_id,)) # AND b.payment_status = 'completed'
                 booked_seats = {row['seat_id'] for row in cursor.fetchall()}
 
                 # Reservierte Sitzplätze in user_carts
                 cursor.execute("""
-                    SELECT uci.seat_id, uci.user_id, uci.reserved_until 
+                    SELECT uci.seat_id, uci.user_id, uc.valid_until
                     FROM user_cart_items uci
                     JOIN user_carts uc ON uci.user_id = uc.user_id
-                    WHERE uci.seat_id IN (
-                        SELECT seat_id FROM seats WHERE screen_id = %s
-                    ) AND uci.reserved_until > NOW()
-                """, (screen_id,))
+                    WHERE uci.showtime_id = %s 
+                """, (showtime_id,))
                 user_reserved = cursor.fetchall()
 
                 # Reservierte Sitzplätze in guest_carts
                 cursor.execute("""
-                    SELECT gci.seat_id, gci.guest_id, gci.reserved_until
+                    SELECT gci.seat_id, gci.guest_id, gc.valid_until
                     FROM guest_cart_items gci
                     JOIN guest_carts gc ON gci.guest_id = gc.guest_id
-                    WHERE gci.seat_id IN (
-                        SELECT seat_id FROM seats WHERE screen_id = %s
-                    ) AND gci.reserved_until > NOW()
-                """, (screen_id,))
+                    WHERE gci.showtime_id = %s
+                """, (showtime_id,))
                 guest_reserved = cursor.fetchall()
 
                 # Sets für Reserved Seats erstellen
