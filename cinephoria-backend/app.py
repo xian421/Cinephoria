@@ -1221,7 +1221,7 @@ def clear_expired_guest_cart_items():
             delete_sql = """
                         WITH expired_guests AS (
                             SELECT guest_id
-                            FROM uguest_carts
+                            FROM guest_carts
                             WHERE valid_until < NOW()
                         )
 
