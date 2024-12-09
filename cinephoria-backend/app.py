@@ -556,6 +556,40 @@ def get_seats():
         print(f"Fehler beim Abrufen der Sitze: {e}")
         return jsonify({'error': 'Fehler beim Abrufen der Sitze'}), 500
 
+
+# Neuer Endpunkt zum Abrufen eines spezifischen Sitzes anhand der seat_id
+@app.route('/seats/<seat_id>', methods=['GET'])
+def get_seat(seat_id):
+    try:
+        with psycopg2.connect(DATABASE_URL) as conn:
+            with conn.cursor() as cursor:
+                cursor.execute("""
+                    SELECT s.seat_id, s.screen_id, s.row, s.number, st.name AS seat_type_name, st.price
+                    FROM seats s
+                    JOIN seat_types st ON s.seat_type_id = st.seat_type_id
+                    WHERE s.seat_id = %s
+                """, (seat_id,))
+                seat = cursor.fetchone()
+                
+                if seat:
+                    seat_details = {
+                        'seat_id': seat[0],
+                        'screen_id': seat[1],
+                        'row': seat[2],
+                        'number': seat[3],
+                        'type': seat[4],  # seat_type_name
+                        'price': float(seat[5])
+                    }
+                    return jsonify({'seat': seat_details}), 200
+                else:
+                    return jsonify({'error': 'Sitz nicht gefunden'}), 404
+
+    except Exception as e:
+        print(f"Fehler beim Abrufen des Sitzes: {e}")
+        return jsonify({'error': 'Fehler beim Abrufen des Sitzes'}), 500
+
+
+
 @app.route('/seat_types', methods=['GET'])
 def get_seat_types():
     try:
