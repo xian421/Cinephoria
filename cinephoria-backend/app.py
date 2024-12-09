@@ -413,7 +413,7 @@ def register():
     email = data.get('email')
     password = data.get('password')
 
-    if not vorname and not nachname and not email and not password:
+    if not vorname or not nachname or not email or not password:
         return jsonify({'error': 'Alle Felder sind erforderlich'}), 400
 
     try:
@@ -1202,12 +1202,15 @@ def get_user_cart():
 
 
 
-
-@app.route('/user/cart/<int:seat_id>', methods=['DELETE'])
+@app.route('/user/cart/<int:showtime_id>/<int:seat_id>', methods=['DELETE'])
 @token_required
-def remove_from_user_cart(seat_id, showtime_id):
-    clear_expired_user_cart_items()  # Optional: Bereinigung vor der Aktion
+def remove_from_user_cart(showtime_id, seat_id):
+    clear_expired_user_cart_items()
     user_id = request.user.get('user_id')
+    
+    if not showtime_id:
+        return jsonify({'error': 'showtime_id ist erforderlich'}), 400
+
     try:
         with psycopg2.connect(DATABASE_URL) as conn:
             with conn.cursor() as cursor:
@@ -1215,8 +1218,8 @@ def remove_from_user_cart(seat_id, showtime_id):
 
                 cursor.execute("""
                     UPDATE user_carts SET valid_until = %s WHERE user_id = %s
-                               """, (valid_until, user_id))
-                # Entfernen des Sitzplatzes
+                """, (valid_until, user_id))
+                # Entfernen des Sitzplatzes mit showtime_id
                 cursor.execute("""
                     DELETE FROM user_cart_items
                     WHERE user_id = %s AND seat_id = %s AND showtime_id = %s
@@ -1226,7 +1229,6 @@ def remove_from_user_cart(seat_id, showtime_id):
     except Exception as e:
         print(f"Fehler beim Entfernen aus dem Warenkorb: {e}")
         return jsonify({'error': 'Fehler beim Entfernen aus dem Warenkorb'}), 500
-
 
 
 @app.route('/user/cart', methods=['DELETE'])
@@ -1284,9 +1286,9 @@ def clear_expired_user_cart_items():
             cursor.execute(delete_sql)
             conn.commit()
 
-# app.py
 
-@app.route('/api/user/cart', methods=['POST'])
+
+@app.route('/user/cart', methods=['POST'])
 @token_required
 def add_to_user_cart():
     clear_expired_user_cart_items()
@@ -1317,7 +1319,7 @@ def add_to_user_cart():
                     INSERT INTO user_cart_items (user_id, seat_id, price, reserved_until, showtime_id)
                     VALUES (%s, %s, %s, %s, %s)
                     ON CONFLICT (user_id, seat_id, showtime_id) DO UPDATE
-                    SET reserved_until = EXCLUDED.reserved_until, price = EXCLUDED.price, showtime_id = EXCLUDED.showtime_id
+                    SET reserved_until = EXCLUDED.reserved_until, price = EXCLUDED.price
                 """, (user_id, seat_id, price, reserved_until, showtime_id))
 
                 cursor.execute("""
@@ -1331,7 +1333,7 @@ def add_to_user_cart():
 
 
 # Neue Endpoints für GUEST CART
-@app.route('/api/guest/cart', methods=['GET'])
+@app.route('/guest/cart', methods=['GET'])
 def get_guest_cart():
     clear_expired_guest_cart_items()  # Erst abgelaufene Einträge bereinigen
     guest_id = request.args.get('guest_id', None)
@@ -1368,7 +1370,7 @@ def get_guest_cart():
         print(f"Fehler beim Abrufen des Guest-Warenkorbs: {e}")
         return jsonify({'error': 'Fehler beim Abrufen des Guest-Warenkorbs'}), 500
 
-@app.route('/api/guest/cart', methods=['POST'])
+@app.route('/guest/cart', methods=['POST'])
 def add_to_guest_cart():
     clear_expired_guest_cart_items()  
     data = request.get_json()
@@ -1407,23 +1409,24 @@ def add_to_guest_cart():
     except Exception as e:
         print(f"Fehler beim Hinzufügen zum Guest-Warenkorb: {e}")
         return jsonify({'error': 'Fehler beim Hinzufügen zum Guest-Warenkorb'}), 500
+    
 
-@app.route('/api/guest/cart/<int:seat_id>', methods=['DELETE'])
-def remove_from_guest_cart(seat_id, showtime_id):
+@app.route('/guest/cart/<int:showtime_id>/<int:seat_id>', methods=['DELETE'])
+def remove_from_guest_cart(showtime_id, seat_id):
     clear_expired_guest_cart_items()
     guest_id = request.args.get('guest_id', None)
-    valid_until = datetime.now(timezone.utc) + timedelta(minutes=15)
 
-    if not guest_id:
-        return jsonify({'error': 'guest_id ist erforderlich'}), 400
+    if not guest_id or not showtime_id:
+        return jsonify({'error': 'guest_id und showtime_id sind erforderlich'}), 400
     
     try:
         with psycopg2.connect(DATABASE_URL) as conn:
             with conn.cursor() as cursor:
+                valid_until = datetime.now(timezone.utc) + timedelta(minutes=15)
                 cursor.execute("""
                     UPDATE guest_carts SET valid_until = %s WHERE guest_id = %s
-                               """, (valid_until, guest_id))
-                # Entfernen des Sitzplatzes
+                """, (valid_until, guest_id))
+                # Entfernen des Sitzplatzes mit showtime_id
                 cursor.execute("""
                     DELETE FROM guest_cart_items
                     WHERE guest_id = %s AND seat_id = %s AND showtime_id = %s
@@ -1434,7 +1437,8 @@ def remove_from_guest_cart(seat_id, showtime_id):
         print(f"Fehler beim Entfernen aus dem Guest-Warenkorb: {e}")
         return jsonify({'error': 'Fehler beim Entfernen aus dem Guest-Warenkorb'}), 500
 
-@app.route('/api/guest/cart', methods=['DELETE'])
+
+@app.route('/guest/cart', methods=['DELETE'])
 def clear_guest_cart():
     clear_expired_guest_cart_items()
     guest_id = request.args.get('guest_id', None)
