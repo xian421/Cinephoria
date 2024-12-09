@@ -1296,7 +1296,7 @@ def add_to_user_cart():
     showtime_id = data.get('showtime_id')
 
     if not user_id or not seat_id or price is None or not showtime_id:
-        return jsonify({'error': 'seat_id: {seat_id}, price: {price}, showtime_id: {showtime_id}'}), 400
+        return jsonify({'error': f'seat_id: {seat_id}, price: {price}, showtime_id: {showtime_id}'}), 400
         return jsonify({'error': 'seat_id, price und showtime_id sind erforderlich'}), 400
 
     try:
