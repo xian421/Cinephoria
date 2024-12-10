@@ -1,26 +1,49 @@
 <!-- src/routes/Adminseats.svelte -->
 <script>
     import { onMount } from "svelte";
-    import { fetchSeats, createSeat, deleteAllSeats } from '../services/api.js';
+    import { fetchSeats, batchUpdateSeats, fetchSeatTypes } from '../services/api.js';
     import { navigate } from "svelte-routing";
     import { get } from 'svelte/store';
     import { authStore } from '../stores/authStore.js';
     import Swal from 'sweetalert2';
+    import "@fortawesome/fontawesome-free/css/all.min.css";
 
-    export let screenId; 
+    export let screenId;
+
+    let isEditMode = false;
+    const mode = () => isEditMode ? 'Aktiver Modus: Bearbeiten' : 'Aktiver Modus: Hinzufügen/Löschen';
 
     let grid = [
-        [false, false, false],
-        [false, false, false],
-        [false, false, false],
-    ]; // Initiales 3x3 Raster
-    let rowLabels = ['A', 'B', 'C']; // Anfangszeilenbeschriftungen
+        [null, null, null],
+        [null, null, null],
+        [null, null, null],
+    ];
 
-    let editMode = false;
+    let rowLabels = ['A', 'B', 'C'];
+
     let loading = true;
     let error = "";
 
-    // Hilfsfunktion zum Generieren von Reihenlabels von 'A' bis maxRow
+    let originalSeats = new Map();
+
+    // Neu: Liste aller Sitztypen laden (inkl. color & icon)
+    let seatTypesList = [];
+
+    function standardexisting(){
+    // Überprüft, ob irgendein Sitztyp den Namen 'standard' enthält
+    const hasStandard = seatTypesList.some(st => st.name.includes('Standard'));
+
+    if (hasStandard) {
+        return 'Standard';
+    } else if (seatTypesList.length > 0) {
+        return seatTypesList[0].name;
+    } else {
+        return 'defaultType'; // Fallback-Wert, falls seatTypesList leer ist
+    }
+}
+
+
+
     function generateRowLabels(maxRow) {
         const labels = [];
         const maxCode = maxRow.charCodeAt(0);
@@ -30,69 +53,96 @@
         return labels;
     }
 
-    // Funktionen zum Bearbeiten des Grids
-    function toggleCell(row, col) {
-        if (editMode) {
-            grid[row][col] = !grid[row][col];
-            grid = [...grid]; // Reaktivität sicherstellen
-        }
+    // Hilfsfunktion: Sitztyp nach Namen holen
+    function getSeatType(name) {
+        if (!name) return null;
+        return seatTypesList.find(st => st.name === name) || null;
     }
 
-    function toggleEditMode() {
-        editMode = !editMode;
+    // toggleCell anpassen, um seatTypesList zu verwenden
+    function toggleCell(row, col) {
+        if (seatTypesList.length === 0) {
+            // Wenn noch keine SeatTypes geladen, nichts tun
+            return;
+        }
+
+        const current = grid[row][col];
+
+        if (!isEditMode) {
+            // Add-Modus: null <-> seatTypesList[0].name
+            if (current === null) {
+               // grid[row][col] = seatTypesList[0].name;
+                grid[row][col] = standardexisting();
+
+              //  console.log('Seat type:', seatTypesList);
+            } else {
+                grid[row][col] = null;
+            }
+        } else {
+            // Edit-Modus: zyklisch durch seatTypesList
+            if (current === null) {
+                grid[row][col] = standardexisting();
+            } else {
+                const i = seatTypesList.findIndex(st => st.name === current);
+                const nextIndex = (i + 1) % seatTypesList.length;
+                grid[row][col] = seatTypesList[nextIndex].name;
+            }
+        }
+
+        grid = [...grid];
+    }
+
+    function toggleMode() {
+        isEditMode = !isEditMode;
     }
 
     function toggleRow(row) {
-        if (editMode) {
+        if (!isEditMode && seatTypesList.length > 0) {
             const allActive = grid[row].every(cell => cell);
-            grid[row] = grid[row].map(() => !allActive);
-            grid = [...grid]; // Reaktivität sicherstellen
+            grid[row] = grid[row].map(() => allActive ? null : standardexisting()); //seatTypesList[0].name);
+            grid = [...grid];
         }
     }
 
     function toggleColumn(col) {
-        if (editMode) {
+        if (!isEditMode && seatTypesList.length > 0) {
             const allActive = grid.every(row => row[col]);
             grid = grid.map(row => {
-                row[col] = !allActive;
+                row[col] = allActive ? null : standardexisting(); //seatTypesList[0].name;
                 return row;
             });
-            grid = [...grid]; // Reaktivität sicherstellen
+            grid = [...grid];
         }
     }
 
     function addRow() {
-        if (editMode) {
+        if (!isEditMode) {
             const lastLabel = rowLabels[rowLabels.length - 1];
-            const newRowLabel = String.fromCharCode(lastLabel.charCodeAt(0) + 1); // 'D', 'E', ...
-            const newRow = Array(grid[0].length).fill(false);
+            const newRowLabel = String.fromCharCode(lastLabel.charCodeAt(0) + 1);
+            const newRow = Array(grid[0].length).fill(null);
             grid = [...grid, newRow];
             rowLabels = [...rowLabels, newRowLabel];
         }
     }
 
     function addColumn() {
-        if (editMode) {
-            grid = grid.map(row => [...row, false]);
+        if (!isEditMode) {
+            grid = grid.map(row => [...row, null]);
         }
     }
 
     function removeRow() {
-        if (editMode && grid.length > 1) {
-            const removedLabel = rowLabels.pop();
+        if (!isEditMode && grid.length > 1) {
+            rowLabels.pop();
             grid.pop();
-            grid = [...grid]; // Reaktivität sicherstellen
-
-           
+            grid = [...grid];
         }
     }
 
     function removeColumn() {
-        if (editMode && grid[0].length > 1) {
-            const removedColIndex = grid[0].length; // Spaltenindex vor dem Entfernen
+        if (!isEditMode && grid[0].length > 1) {
             grid = grid.map(row => row.slice(0, -1));
-            grid = [...grid]; // Reaktivität sicherstellen
-
+            grid = [...grid];
         }
     }
 
@@ -100,47 +150,78 @@
         return rowLabels[index];
     }
 
+    function getStandardSeatType() {
+    return seatTypesList.find(st => st.name.toLowerCase() === 'standard');
+    }
+
+
     async function submitChanges() {
         const auth = get(authStore);
         const token = auth.token;
 
         try {
-            // Zeige den Ladebildschirm
             const loadingSwal = Swal.fire({
                 title: 'Lädt...',
                 text: 'Bitte warten, während die Änderungen verarbeitet werden...',
                 icon: 'info',
                 showConfirmButton: false,
                 didOpen: () => {
-                    Swal.showLoading();  // Zeigt den Ladeindikator
+                    Swal.showLoading();
                 },
             });
 
-            // Lösche alle bestehenden Sitze für den Screen
-            await deleteAllSeats(screenId, token);
-
-            // Erstelle alle aktiven Sitze aus dem aktuellen Grid
-            let selectedSeats = [];
+            let currentSeats = new Map();
             for (let rowIndex = 0; rowIndex < grid.length; rowIndex++) {
                 for (let colIndex = 0; colIndex < grid[rowIndex].length; colIndex++) {
                     if (grid[rowIndex][colIndex]) {
                         const rowLabel = getRowLabel(rowIndex);
                         const seatNumber = colIndex + 1;
-                        await createSeat(screenId, rowLabel, seatNumber, 'standard', token);
-                        selectedSeats.push(`(${rowLabel},${seatNumber})`);
+                        currentSeats.set(`${rowLabel},${seatNumber}`, grid[rowIndex][colIndex]);
                     }
                 }
             }
 
-            // Schließe den Ladebildschirm und zeige die Erfolgsnachricht an
+            let seatsToAdd = [];
+            currentSeats.forEach((type, seat) => {
+                if (!originalSeats.has(seat)) {
+                    const [row, number] = seat.split(',');
+                    seatsToAdd.push({ row, number: parseInt(number, 10), type });
+                }
+            });
+
+            let seatsToDelete = [];
+            originalSeats.forEach((type, seat) => {
+                if (!currentSeats.has(seat)) {
+                    const [row, number] = seat.split(',');
+                    seatsToDelete.push({ row, number: parseInt(number, 10) });
+                }
+            });
+
+            let seatsToUpdate = [];
+            currentSeats.forEach((type, seat) => {
+                if (originalSeats.has(seat) && originalSeats.get(seat) !== type) {
+                    const [row, number] = seat.split(',');
+                    seatsToUpdate.push({ row, number: parseInt(number, 10), type });
+                }
+            });
+
+            const result = await batchUpdateSeats(screenId, seatsToAdd, seatsToDelete, seatsToUpdate);
+
             loadingSwal.close();
             Swal.fire({
                 title: "Erfolgreich",
-                text: `Alle Änderungen wurden eingetragen. Ausgewählte Sitze: ${selectedSeats.join(', ')}`,
+                html: `
+                    <p>Zu addierende Sitze: ${seatsToAdd.length > 0 ? seatsToAdd.map(s => `(${s.row},${s.number},${s.type})`).join(', ') : 'Keine'}</p>
+                    <p>Zu löschende Sitze: ${seatsToDelete.length > 0 ? seatsToDelete.map(s => `(${s.row},${s.number})`).join(', ') : 'Keine'}</p>
+                    <p>Zu aktualisierende Sitze: ${seatsToUpdate.length > 0 ? seatsToUpdate.map(s => `(${s.row},${s.number},${s.type})`).join(', ') : 'Keine'}</p>
+                `,
                 icon: "success",
                 timer: 2500,
                 showConfirmButton: false,
             });
+
+            originalSeats = new Map(currentSeats);
+
         } catch (err) {
             console.error("Fehler beim Eintragen der Änderungen:", err);
             Swal.fire({
@@ -162,35 +243,31 @@
         console.log('Is Admin:', isAdmin);
 
         try {
+            // SeatTypes laden, bevor Seats geladen werden
+            seatTypesList = await fetchSeatTypes(token);
+
             const data = await fetchSeats(screenId, token);
             console.log('Fetched seats data:', data);
 
             if (data && data.seats && data.seats.length > 0) {
-                // Bestimme die höchste Reihenbezeichnung
-                const maxRow = data.seats.reduce((max, seat) => {
-                    return seat.row > max ? seat.row : max;
-                }, 'A');
-
-                // Generiere alle Reihenlabels von 'A' bis maxRow
+                const maxRow = data.seats.reduce((max, seat) => seat.row > max ? seat.row : max, 'A');
                 rowLabels = generateRowLabels(maxRow);
-
-                // Bestimme die maximale Spaltenanzahl
                 const cols = Math.max(...data.seats.map(seat => seat.number));
 
-                // Erweitere das Grid auf die aktuelle Anzahl von Reihen und Spalten
                 grid = Array.from({ length: rowLabels.length }, (_, rowIndex) => {
                     return Array.from({ length: cols }, (_, colIndex) => {
                         const seat = data.seats.find(
                             s => s.row === rowLabels[rowIndex] && s.number === colIndex + 1
                         );
-                        return seat ? true : false;
+                        if (seat) {
+                            originalSeats.set(`${seat.row},${seat.number}`, seat.type);
+                            return seat.type;
+                        }
+                        return null;
                     });
                 });
             } else {
-                // Falls keine Sitze vorhanden sind, initialisiere mit mindestens einer Reihe
-                grid = [
-                    [false, false, false],
-                ];
+                grid = [[null, null, null]];
                 rowLabels = ['A'];
             }
         } catch (err) {
@@ -200,29 +277,6 @@
             loading = false;
         }
     });
-
-    function logSelectedSeats() {
-        let selectedSeats = [];
-
-        // Durchlaufe alle Zeilen
-        grid.forEach((row, rowIndex) => {
-            row.forEach((cell, colIndex) => {
-                if (cell) { // Wenn die Zelle aktiv ist
-                    const rowLabel = getRowLabel(rowIndex); // Konvertiere Zeilenindex in Label (A, B, ...)
-                    selectedSeats.push(`(${rowLabel},${colIndex + 1})`); // Füge die Sitzposition hinzu
-                }
-            });
-        });
-
-        // Ausgabe im gewünschten Format
-        console.log(selectedSeats.join(', '));
-        Swal.fire({
-            title: "Ausgewählte Sitze",
-            text: selectedSeats.join(', '),
-            icon: "info",
-            confirmButtonText: "OK",
-        });
-    }
 </script>
 
 <style>
@@ -243,9 +297,8 @@
 
     .column-labels {
         display: grid;
-        grid-template-columns: 50px repeat(auto-fit, 50px);
+        grid-template-columns: 50px repeat(3, 50px); /* Temporärer Wert, dynamisch wird via style */
         gap: 2px;
-        /* margin-bottom: 10px; */
     }
 
     .column-selector {
@@ -264,7 +317,6 @@
     .row {
         display: flex;
         align-items: center;
-        /* margin-bottom: 5px; */
     }
 
     .row-selector {
@@ -277,25 +329,22 @@
         cursor: pointer;
         font-weight: bold;
         border: 1px solid #ddd;
-        /* margin-right: 5px; */
         user-select: none;
     }
 
     .cell {
         width: 50px;
         height: 50px;
-        background-color: rgba(0, 255, 0, 0.2);
         border: 1px solid #ddd;
         cursor: pointer;
         transition: background-color 0.3s;
+        display: flex;
+        align-items: center;
+        justify-content: center;
     }
 
-    .cell.active {
-        background-color: green;
-    }
-
-    .cell:hover:not(.active) {
-        background-color: #a5d6a7;
+    .cell.null {
+        background-color: rgba(0, 0, 0, 0.05);
     }
 
     .error {
@@ -331,7 +380,75 @@
         gap: 10px;
     }
 
-    /* Responsive Design */
+    .add-buttons {
+        background-color: rgb(0, 114, 28);
+    }
+
+    .remove-buttons {
+        background-color: darkred;
+    }
+
+    .submit-button {
+        background-color: white;
+        color: black;
+        border: 3px solid #1976d2;
+        font-weight: bold;
+        font-size: 18px;
+        font-family: Arial, sans-serif;
+    }
+
+    .switch {
+        position: relative;
+        display: inline-block;
+        width: 60px;
+        height: 30px;
+        margin: 0 10px;
+    }
+
+    .switch input {
+        opacity: 0;
+        width: 0;
+        height: 0;
+    }
+
+    .slider {
+        position: absolute;
+        cursor: pointer;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: green;
+        transition: 0.4s;
+        border-radius: 30px;
+    }
+
+    .slider:before {
+        position: absolute;
+        content: "";
+        height: 24px;
+        width: 24px;
+        left: 3px;
+        bottom: 3px;
+        background-color: white;
+        transition: 0.4s;
+        border-radius: 50%;
+    }
+
+    input:checked + .slider {
+        background-color: #1976d2;
+    }
+
+    input:checked + .slider:before {
+        transform: translateX(30px);
+    }
+
+    .mode-label {
+        font-size: 18px;
+        font-weight: bold;
+        color: #333;
+    }
+
     @media (max-width: 600px) {
         .cell, .row-selector, .column-selector {
             width: 40px;
@@ -354,53 +471,68 @@
         <h1>Kinositz-Editor für Screen {screenId}</h1>
 
         <div class="controls">
-            <button on:click={submitChanges}>EINTRAGEN</button>
-            <button on:click={toggleEditMode}>
-                Bearbeitungsmodus: {editMode ? "Ein" : "Aus"}
-            </button>
-            <button on:click={addRow} disabled={!editMode}>Zeile hinzufügen</button>
-            <button on:click={addColumn} disabled={!editMode}>Spalte hinzufügen</button>
-            <button on:click={removeRow} disabled={!editMode || grid.length <= 1}>Zeile entfernen</button>
-            <button on:click={removeColumn} disabled={!editMode || grid[0].length <= 1}>Spalte entfernen</button>
-            <button on:click={logSelectedSeats}>Ausgewählte Sitze anzeigen</button>
+            <button on:click={submitChanges} class="submit-button">EINTRAGEN</button>
+            <button on:click={addRow} class="add-buttons" disabled={isEditMode}>Zeile hinzufügen</button>
+            <button on:click={addColumn} class="add-buttons" disabled={isEditMode}>Spalte hinzufügen</button>
+            <button on:click={removeRow} class="remove-buttons" disabled={isEditMode || grid.length <= 1}>Zeile entfernen</button>
+            <button on:click={removeColumn} class="remove-buttons" disabled={isEditMode || grid[0].length <= 1}>Spalte entfernen</button>
         </div>
+        
+        <div class="mode-switch">
+            <label class="switch">
+                <input type="checkbox" bind:checked={isEditMode}>
+                <span class="slider"></span>
+            </label>
+            <span class="mode-label">{mode()}</span>
+        </div>
+        
         <p> LEINWAND <br>
-   _____________________________________ </p>
+        _____________________________________ </p>
 
         <div class="grid-container">
-            <!-- Spaltennummern -->
-            <div
-                class="column-labels"
-                style="grid-template-columns: 50px repeat({grid[0].length}, 50px);"
-            >
+            <!-- Dynamische Spaltenanzahl mit korrektem Template Literal -->
+            <div class="column-labels" style={`grid-template-columns: 50px repeat(${grid[0].length}, 50px);`}>
                 <div></div>
                 {#each grid[0] as _, colIndex}
-                    <div
-                        class="column-selector"
-                        on:click={() => toggleColumn(colIndex)}
-                        title="Klicke, um die gesamte Spalte auszuwählen/deaktivieren"
-                    >
+                    <div class="column-selector"
+                         on:click={() => toggleColumn(colIndex)}
+                         title="Klicke, um die gesamte Spalte auszuwählen/deaktivieren">
                         {colIndex + 1}
                     </div>
                 {/each}
             </div>
 
-            <!-- Sitzplan -->
             {#each grid as row, rowIndex}
                 <div class="row">
-                    <div
-                        class="row-selector"
-                        on:click={() => toggleRow(rowIndex)}
-                        title="Klicke, um die gesamte Zeile auszuwählen/deaktivieren"
-                    >
+                    <div class="row-selector"
+                         on:click={() => toggleRow(rowIndex)}
+                         title="Klicke, um die gesamte Zeile auszuwählen/deaktivieren">
                         {getRowLabel(rowIndex)}
                     </div>
                     {#each row as cell, colIndex}
-                        <div
-                            class="cell {cell ? 'active' : ''}"
-                            on:click={() => toggleCell(rowIndex, colIndex)}
-                            title={`Reihe: ${getRowLabel(rowIndex)}, Sitz: ${colIndex + 1}`}
-                        ></div>
+                        {#if cell !== null}
+                            {#if getSeatType(cell)}
+                                <div class="cell"
+                                     style="background-color: {getSeatType(cell).color};"
+                                     on:click={() => toggleCell(rowIndex, colIndex)}
+                                     title={`Reihe: ${getRowLabel(rowIndex)}, Sitz: ${colIndex + 1}, Typ: ${getSeatType(cell).name}, Preis: ${getSeatType(cell).price}€`}
+                                >
+                                    {#if getSeatType(cell).icon}
+                                        <i class={`fas ${getSeatType(cell).icon}`}></i>
+                                    {/if}
+                                </div>
+                            {:else}
+                                <div class="cell null"
+                                     on:click={() => toggleCell(rowIndex, colIndex)}
+                                     title={`Reihe: ${getRowLabel(rowIndex)}, Sitz: ${colIndex + 1}`}
+                                ></div>
+                            {/if}
+                        {:else}
+                            <div class="cell null"
+                                 on:click={() => toggleCell(rowIndex, colIndex)}
+                                 title={`Reihe: ${getRowLabel(rowIndex)}, Sitz: ${colIndex + 1}`}
+                            ></div>
+                        {/if}
                     {/each}
                 </div>
             {/each}

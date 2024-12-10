@@ -71,12 +71,14 @@ export async function fetchSeats(screen_id, token) {
         }
 
         const data = await response.json();
-        return data; // Stelle sicher, dass data das Feld 'seats' enthält
+        // Stellen Sie sicher, dass 'data.seats' die Felder 'type' und 'price' enthält
+        return data; 
     } catch (error) {
         console.error('Error fetching seats:', error);
         throw error;
     }
 }
+
 
 // Funktion zum Erstellen eines neuen Sitzes
 export const createSeat = async (screen_id, row, number, type = 'standard') => {
@@ -239,20 +241,24 @@ export const fetchShowtimesPublic = async (screenId = null) => {
     return data;
 };
 
+export const fetchMovieDetails = async (movie_id) => {
+    try {
+        const response = await fetch(`${API_BASE_URL}/movies/${movie_id}`, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+        });
 
-export const fetchMovieDetails = async (movie_ID) => {
-    const response = await fetch(`${API_BASE_URL}/movies/${movie_ID}`, {
-        method: 'GET',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-    });
-
-    const data = await response.json();
-    if (!response.ok) {
-        throw new Error(data.error || 'Fehler beim Abrufen des Films');
+        const data = await response.json();
+        if (!response.ok) {
+            throw new Error(data.error || 'Fehler beim Abrufen des Films');
+        }
+        return data; // TMDB Movie details
+    } catch (error) {
+        console.error('Fehler beim Abrufen der Filmdetails:', error);
+        throw error;
     }
-    return data;
 };
 
 
@@ -305,8 +311,10 @@ export const fetchSeatsForShowtime = async (showtimeId, token) => {
     if (!response.ok) {
         throw new Error(data.error || 'Fehler beim Abrufen der Sitzplätze.');
     }
+    // 'data.seats' enthält jetzt 'type' und 'price'
     return data;
 };
+
 
 // Funktion zum Erstellen einer Buchung
 export const createBooking = async (showtime_id, seatIds, token, orderID) => {
@@ -375,7 +383,6 @@ export const capturePayPalOrder = async (orderID, token) => {
     const data = await response.json();
     return data; // { status: 'COMPLETED' }
 };
-
 export const fetchProfile = async (token) => {
     try {
         const response = await fetch(`${API_BASE_URL}/profile`, {
@@ -393,6 +400,331 @@ export const fetchProfile = async (token) => {
         return data;
     } catch (error) {
         console.error('Error fetching profile:', error);
+        throw error;
+    }
+};
+
+// Funktion zum Aktualisieren des Profilbildes
+export const updateProfileImage = async (token, profileImage) => {
+    try {
+        const response = await fetch(`${API_BASE_URL}/profile/image`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ profile_image: profileImage })
+        });
+
+        const data = await response.json();
+        if (!response.ok) {
+            throw new Error(data.error || 'Fehler beim Aktualisieren des Profilbildes');
+        }
+        return data;
+    } catch (error) {
+        console.error('Error updating profile image:', error);
+        throw error;
+    }
+};
+
+// Funktion zum Abrufen der verfügbaren Profilbilder
+export const fetchAvailableProfileImages = async (token) => {
+    try {
+        const response = await fetch(`${API_BASE_URL}/profile/images`, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            }
+        });
+
+        const data = await response.json();
+        if (!response.ok) {
+            throw new Error(data.error || 'Fehler beim Abrufen der Profilbilder');
+        }
+        return data.images;
+    } catch (error) {
+        console.error('Error fetching available profile images:', error);
+        throw error;
+    }
+};
+
+// Funktion zum Aktualisieren des Profils
+export const batchUpdateSeats = async (screenId, seatsToAdd, seatsToDelete, seatsToUpdate) => {
+    try {
+        const token = get(authStore).token;
+        const response = await fetch(`${API_BASE_URL}/seats/batch_update`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`,
+            },
+            body: JSON.stringify({
+                screen_id: screenId,
+                seats_to_add: seatsToAdd,       // Array von {row: 'A', number: 1, type: 'standard'}
+                seats_to_delete: seatsToDelete, // Array von {row: 'B', number: 2}
+                seats_to_update: seatsToUpdate, // Array von {row: 'C', number: 3, type: 'vip'}
+
+            }),
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            throw new Error(data.error || 'Fehler beim Aktualisieren der Sitze');
+        }
+
+        return data;
+    } catch (error) {
+        console.error('Error updating seats:', error);
+        throw error;
+    }
+};
+
+// Funktion zum Abrufen aller Sitztypen
+export const fetchSeatTypes = async (token) => {
+    try {
+        const response = await fetch(`${API_BASE_URL}/seat_types`, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            }
+        });
+
+        const data = await response.json();
+        if (!response.ok) {
+            throw new Error(data.error || 'Fehler beim Abrufen der Sitztypen');
+        }
+        return data.seat_types; // Hier wird das Array direkt zurückgegeben
+    } catch (error) {
+        console.error('Error fetching seat types:', error);
+        throw error;
+    }
+};
+
+
+// Funktion zum Hinzufügen eines neuen Sitztyps
+export const addSeatType = async (token, name, price, color, icon) => {
+    try {
+        const response = await fetch(`${API_BASE_URL}/seat_types`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({name, price, color, icon})
+        });
+
+        const data = await response.json();
+        if (!response.ok) {
+            throw new Error(data.error || 'Fehler beim Hinzufügen des Sitztyps');
+        }
+        return data; // Gibt die Nachricht und seat_type_id zurück
+    } catch (error) {
+        console.error('Error adding seat type:', error);
+        throw error;
+    }
+};
+
+// Funktion zum Aktualisieren eines bestehenden Sitztyps
+export const updateSeatType = async (token, seatTypeId, updates) => {
+    try {
+        const response = await fetch(`${API_BASE_URL}/seat_types/${seatTypeId}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify(updates) // updates enthält { name, price }
+        });
+
+        const data = await response.json();
+        if (!response.ok) {
+            throw new Error(data.error || 'Fehler beim Aktualisieren des Sitztyps');
+        }
+        return data; // Gibt die Nachricht zurück
+    } catch (error) {
+        console.error('Error updating seat type:', error);
+        throw error;
+    }
+};
+
+
+
+// Hilfsfunktion, um guest_id zu holen
+function getGuestId() {
+    let guest_id = localStorage.getItem('guest_id');
+    if (!guest_id) {
+        guest_id = crypto.randomUUID();
+        localStorage.setItem('guest_id', guest_id);
+    }
+    return guest_id;
+}
+
+// USER CART FUNCTIONS
+export async function fetchUserCart(token) {
+    const response = await fetch(`${API_BASE_URL}/user/cart`, {
+        headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${token}`
+        }
+    });
+    const data = await response.json();
+    if (!response.ok) {
+        throw new Error(data.error || 'Fehler beim Abrufen des User-Warenkorbs');
+    }
+    return data.cart_items || [];
+}
+
+export async function addToUserCart(token, seat_id, price, showtime_id) {
+    const response = await fetch(`${API_BASE_URL}/user/cart`, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${token}`
+        },
+        body: JSON.stringify({ seat_id, price, showtime_id }) // showtime_id hinzufügen
+    });
+
+    const data = await response.json();
+    if (!response.ok) {
+        throw new Error(data.error || 'Fehler beim Hinzufügen zum User-Warenkorb');
+    }
+    return data;
+}
+
+export async function removeFromUserCart(token, showtime_id, seat_id) {
+    const response = await fetch(`${API_BASE_URL}/user/cart/${showtime_id}/${seat_id}`, {
+        method: "DELETE",
+        headers: {
+            "Authorization": `Bearer ${token}`
+        },
+    });
+    const data = await response.json();
+    if (!response.ok) {
+        throw new Error(data.error || 'Fehler beim Entfernen aus dem User-Warenkorb');
+    }
+    return data;
+}
+
+export async function clearUserCart(token) {
+    const response = await fetch(`${API_BASE_URL}/user/cart`, {
+        method: "DELETE",
+        headers: {
+            "Authorization": `Bearer ${token}`
+        }
+    });
+    const data = await response.json();
+    if (!response.ok) {
+        throw new Error(data.error || 'Fehler beim Leeren des User-Warenkorbs');
+    }
+    return data;
+}
+
+// GUEST CART FUNCTIONS
+export async function fetchGuestCart() {
+    const guest_id = getGuestId();
+    const response = await fetch(`${API_BASE_URL}/guest/cart?guest_id=${guest_id}`);
+    const data = await response.json();
+    if (!response.ok) {
+        throw new Error(data.error || 'Fehler beim Abrufen des Guest-Warenkorbs');
+    }
+    return data.cart_items || [];
+}
+
+
+export async function addToGuestCart(seat_id, price, showtime_id) {
+    const guest_id = getGuestId();
+    const response = await fetch(`${API_BASE_URL}/guest/cart`, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ guest_id, seat_id, price, showtime_id }) // showtime_id hinzufügen
+    });
+    const data = await response.json();
+    if (!response.ok) {
+        throw new Error(data.error || 'Fehler beim Hinzufügen zum Guest-Warenkorb');
+    }
+    return data;
+}
+
+export async function removeFromGuestCart(showtime_id, seat_id) {
+    const guest_id = getGuestId();
+    const response = await fetch(`${API_BASE_URL}/guest/cart/${showtime_id}/${seat_id}?guest_id=${guest_id}`, {
+        method: "DELETE"
+    });
+    const data = await response.json();
+    if (!response.ok) {
+        throw new Error(data.error || 'Fehler beim Entfernen aus dem Guest-Warenkorb');
+    }
+    return data;
+}
+
+export async function clearGuestCart() {
+    const guest_id = getGuestId();
+    const response = await fetch(`${API_BASE_URL}/guest/cart?guest_id=${guest_id}`, {
+        method: "DELETE"
+    });
+    const data = await response.json();
+    if (!response.ok) {
+        throw new Error(data.error || 'Fehler beim Leeren des Guest-Warenkorbs');
+    }
+    return data;
+}
+
+export async function fetchSeatsWithReservation(showtime_id, token = null, guest_id = null) {
+    const urlParams = token ? '' : `?guest_id=${guest_id}`;
+    const headers = {
+        'Content-Type': 'application/json',
+    };
+    if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+    }
+
+    const response = await fetch(`${API_BASE_URL}/showtimes/${showtime_id}/seats${urlParams}`, {
+        headers,
+    });
+
+    if (!response.ok) {
+        const errData = await response.json().catch(() => ({}));
+        throw new Error(errData.error || 'Fehler beim Laden der Sitzplätze');
+    }
+
+    const data = await response.json();
+    return data;
+}
+
+export async function fetchSeatById(seat_id) {
+    try {
+        const response = await fetch(`${API_BASE_URL}/seats/${seat_id}`);
+        if (!response.ok) {
+            throw new Error(`Error: ${response.statusText}`);
+        }
+        const data = await response.json();
+        return data.seat;
+    } catch (error) {
+        console.error('Fehler beim Abrufen des Sitzes:', error);
+        throw error;
+    }
+}
+
+export const fetchShowtimeDetails = async (showtime_id) => {
+    try {
+        const response = await fetch(`${API_BASE_URL}/showtimes?showtime_id=${showtime_id}`, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+        });
+        const data = await response.json();
+        if (!response.ok) {
+            throw new Error(data.error || 'Fehler beim Abrufen der Showtime-Details');
+        }
+        return data.showtimes.find(st => st.showtime_id === showtime_id); // Passe dies an die Antwortstruktur an
+    } catch (error) {
+        console.error('Fehler beim Abrufen der Showtime-Details:', error);
         throw error;
     }
 };
