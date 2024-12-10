@@ -2,28 +2,22 @@
 <script>
   import { navigate, useLocation } from "svelte-routing";
   import { authStore } from '../stores/authStore';
-  import { get } from 'svelte/store';
-
-  // Abonniere den authStore
-  let auth = get(authStore);
-  authStore.subscribe(value => {
-      auth = value;
-      console.log('Navbar aktualisiert mit auth:', auth);
-  });
-
+  
   export let toggleLoginDropdown;
   export let toggleProfileMenu;
   export let logout;
   export let isLoginOpen = false;
   export let isProfileDropdownOpen;
   export let handleLogin;
-  export let initials;
-  export let isLoggedIn;
-
+  
+  // Reaktive Variable für authStore
+  // Durch das Präfix '$' wird Svelte die Variable automatisch abonnieren und aktualisieren
+  $: auth = $authStore;
+  
   // Lokale Zustände für Login
   let email = "";
   let password = "";
-
+  
   const onLoginSubmit = () => {
       handleLogin(email, password);
       // Reset der Eingabefelder und Schließen des Dropdowns
@@ -31,10 +25,11 @@
       password = "";
       toggleLoginDropdown(false);
   };
-
+  
   // Nutzung des useLocation-Hooks
   const location = useLocation();
 </script>
+
 
 <style>
   /* Navbar-Stile */
@@ -249,7 +244,9 @@
       border-radius: 50%;
       object-fit: cover;
   }
-</style>
+
+  </style>
+
 
 <nav>
   <!-- Logo -->
@@ -284,14 +281,14 @@
   </button>
 
   <!-- Benutzerbereich -->
-  {#if auth.isLoggedIn}
+  {#if $authStore.isLoggedIn}
       <!-- Profil-Dropdown -->
       <div class="profile-dropdown-container {isProfileDropdownOpen ? 'open' : ''}">
           <div class="profile-container" on:click={toggleProfileMenu}>
-              {#if auth.profile_image && auth.profile_image !== 'default.png'}
-                  <img src={`/Profilbilder/${auth.profile_image}`} alt="Profilbild" class="profile-image" />
+              {#if $authStore.profile_image && $authStore.profile_image !== 'default.png'}
+                  <img src={`/Profilbilder/${$authStore.profile_image}`} alt="Profilbild" class="profile-image" />
               {:else}
-                  <div class="profile-initials">{auth.initials}</div>
+                  <div class="profile-initials">{$authStore.initials}</div>
               {/if}
           </div>
           <div class="profile-dropdown-menu">
@@ -299,14 +296,14 @@
                   <li on:click={() => { navigate('/profile'); toggleProfileMenu(false); }}>Profil anzeigen</li>
                   <li on:click={() => { navigate('/einstellungen'); toggleProfileMenu(false); }}>Einstellungen</li>
                   <!-- Admin-Menüpunkt hinzufügen -->
-                  {#if auth.isAdmin}
+                  {#if $authStore.isAdmin}
                       <li on:click={() => { navigate('/admin'); toggleProfileMenu(false); }}>Admin</li>
                   {/if}
                   <li on:click={logout}>Abmelden</li>
               </ul>
           </div>
       </div>
-  {:else}
+{:else}
       <!-- Login-Dropdown -->
       <div class="dropdown-container {isLoginOpen ? 'open' : ''}">
           <button on:click={() => toggleLoginDropdown(!isLoginOpen)}>Login</button>
@@ -328,5 +325,5 @@
               </form>
           </div>
       </div>
-  {/if}
+{/if}
 </nav>
