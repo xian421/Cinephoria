@@ -604,6 +604,6 @@
         <p>Gesamtpreis: {totalPrice.toFixed(2)}€</p>
         <div id="paypal-button-container" bind:this={paypalContainer}></div>
 
-        <button on:click={() => navigate('/adminkinosaal')}>Zurück zu Überblick der Kinosäle</button>
+        <button on:click={() => navigate('/warenkorb')}>Warenkorb</button>
     {/if}
 </main>
