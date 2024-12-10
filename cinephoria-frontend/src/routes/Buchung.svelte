@@ -18,7 +18,6 @@
 
     export let showtime_id;
 
-
     let seats = [];
     let isLoading = true;
     let error = null;
@@ -26,8 +25,7 @@
     let seatsByRow = {};
     let payPalInitialized = false;
     let paypalContainer;
-    let test = [];
-    
+
     let totalPrice = 0.0;
     let timer = null;
     let timeLeft = 0; // in Sekunden
@@ -69,38 +67,29 @@
         }
     }
 
-    // Reaktive Fehleranzeige mit Zurücksetzen von cartError
+    // Reaktive Fehleranzeige mit angepasstem SweetAlert
     $: if ($cartError) {
-    Swal.fire({
-        title: "Fehler",
-        text: $cartError,
-        icon: "error",
-        confirmButtonText: "Neu Laden",
-        allowOutsideClick: false, // Verhindert das Schließen des Popups durch Klicken außerhalb
-    }).then((result) => {
-        if (result.isConfirmed) {
-            loadCart(); // Aktualisiert den Warenkorb und die Sitzplatzkarte
-        }
-        cartError.set(null); // Setzt den Fehler zurück
-    });
-}
-
+        Swal.fire({
+            title: "Fehler",
+            text: $cartError,
+            icon: "error",
+            confirmButtonText: "Neu Laden",
+            allowOutsideClick: false, // Optional: Verhindert das Schließen durch Klicken außerhalb
+        }).then(async (result) => {
+            if (result.isConfirmed) {
+                await loadCart();
+                await loadSeats(); // Aktualisiert die Sitzplatzkarte
+            }
+            cartError.set(null); // Setzt den Fehler zurück
+        });
+    }
 
     onMount(async () => {
         isLoading = true;
         try {
-            const token = get(authStore).token;
-            let guest_id = localStorage.getItem('guest_id') || crypto.randomUUID();
-            localStorage.setItem('guest_id', guest_id);
-
-            seatTypesList = await fetchSeatTypes(token);
-            const seatData = await fetchSeatsWithReservation(showtime_id, token, guest_id);
-            seats = seatData.seats;
-            seatsByRow = groupSeatsByRowWithGaps(seats);
-
+            await loadSeats();
             // Warenkorb laden, damit $cart aktuell ist
             await loadCart();
-
         } catch (err) {
             console.error('Fehler beim Laden der Sitze oder Sitztypen:', err);
             error = err.message || 'Fehler beim Laden.';
@@ -117,6 +106,23 @@
     onDestroy(() => {
         clearInterval(timer);
     });
+
+    // Funktion zum Laden der Sitzplatzdaten
+    async function loadSeats() {
+        try {
+            const token = get(authStore).token;
+            let guest_id = localStorage.getItem('guest_id') || crypto.randomUUID();
+            localStorage.setItem('guest_id', guest_id);
+
+            seatTypesList = await fetchSeatTypes(token);
+            const seatData = await fetchSeatsWithReservation(showtime_id, token, guest_id);
+            seats = seatData.seats;
+            seatsByRow = groupSeatsByRowWithGaps(seats);
+        } catch (err) {
+            console.error('Fehler beim Laden der Sitze oder Sitztypen:', err);
+            error = err.message || 'Fehler beim Laden.';
+        }
+    }
 
     function groupSeatsByRowWithGaps(seats) {
         const rowsSet = new Set();
@@ -188,34 +194,35 @@
     }
 
     async function toggleSeatSelection(seat) {
-    console.log('Toggling seat:', seat);
-    if (seat.status !== 'available' && !isSelectedBySelf(seat)) {
-        // Nur wenn verfügbar oder bereits von uns ausgewählt
-        return;
-    }
-    if (isSelectedBySelf(seat)) {
-        try {
-            await removeFromCart(seat.seat_id, showtime_id); // showtime_id übergeben
-            // Toast-Benachrichtigung anzeigen
-            showToast(`Sitzplatz ${seat.row}${seat.number} wurde aus dem Warenkorb entfernt.`);
-        } catch (error) {
-            // Fehler wird bereits über cartError behandelt
-            console.error('Fehler beim Entfernen aus dem Warenkorb:', error);
+        console.log('Toggling seat:', seat);
+        if (seat.status !== 'available' && !isSelectedBySelf(seat)) {
+            // Nur wenn verfügbar oder bereits von uns ausgewählt
+            return;
         }
-    } else {
-        try {
-            await addToCart(seat, showtime_id);
-            // Toast-Benachrichtigung anzeigen
-            showToast(`Sitzplatz ${seat.row}${seat.number} wurde zum Warenkorb hinzugefügt.`);
-        } catch (error) {
-            // Fehler wird bereits über cartError behandelt
-            console.error('Fehler beim Hinzufügen zum Warenkorb:', error);
+        if (isSelectedBySelf(seat)) {
+            try {
+                console.log(`Entferne Sitzplatz ${seat.seat_id} von Showtime ${showtime_id} aus dem Warenkorb.`);
+                await removeFromCart(seat.seat_id, showtime_id); // showtime_id übergeben
+                // Toast-Benachrichtigung anzeigen
+                showToast(`Sitzplatz ${seat.row}${seat.number} wurde aus dem Warenkorb entfernt.`);
+            } catch (error) {
+                // Fehler wird bereits über cartError behandelt
+                console.error('Fehler beim Entfernen aus dem Warenkorb:', error);
+            }
+        } else {
+            try {
+                console.log(`Füge Sitzplatz ${seat.seat_id} zu Showtime ${showtime_id} dem Warenkorb hinzu.`);
+                await addToCart(seat, showtime_id);
+                // Toast-Benachrichtigung anzeigen
+                showToast(`Sitzplatz ${seat.row}${seat.number} wurde zum Warenkorb hinzugefügt.`);
+            } catch (error) {
+                // Fehler wird bereits über cartError behandelt
+                console.error('Fehler beim Hinzufügen zum Warenkorb:', error);
+            }
         }
+
+        console.log('Selected Seats after toggle:', $cart);
     }
-
-    console.log('Selected Seats after toggle:', $cart);
-}
-
 
     function showToast(message) {
         const Toast = Swal.mixin({
@@ -334,20 +341,6 @@
             console.error('Fehler bei der Buchung:', err);
             Swal.fire({title:"Fehler",text:'Problem bei der Buchung.',icon:"error"});
         }
-    }
-
-    function calculateTimeLeft() {
-        if ($cart.length === 0) {
-            timeLeft = 0;
-            warning = false;
-            return;
-        }
-
-        const now = new Date();
-        const reservationTimes = $cart.map(seat => new Date(seat.reserved_until));
-        const earliest = new Date(Math.min(...reservationTimes));
-        timeLeft = Math.max(0, Math.floor((earliest - now) / 1000));
-        warning = timeLeft <= 60;
     }
 
     function showWarning() {
