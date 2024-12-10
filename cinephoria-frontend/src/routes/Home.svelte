@@ -1,3 +1,4 @@
+<!-- src/routes/Home.svelte -->
 <script>
   import { onMount } from 'svelte';
   import { navigate } from 'svelte-routing'; // Hinzugefügt

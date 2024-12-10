@@ -94,7 +94,13 @@ export async function addToCart(seat, showtime_id) {
         await loadCart();
     } catch (error) {
         console.error('Fehler beim Hinzufügen zum Warenkorb:', error);
-        cartError.set(error.message || 'Fehler beim Hinzufügen zum Warenkorb.');
+        // Spezifische Fehlerbehandlung
+        if (error.message === 'Der Sitzplatz ist bereits reserviert.') {
+            cartError.set('Der gewählte Sitzplatz ist bereits reserviert.');
+        } else {
+            cartError.set(error.message || 'Fehler beim Hinzufügen zum Warenkorb.');
+        }
+        throw error; // Fehler weiterwerfen
     }
 }
 

@@ -664,7 +664,7 @@ export async function removeFromGuestCart(showtime_id, seat_id) {
 
 export async function clearGuestCart() {
     const guest_id = getGuestId();
-    const response = await fetch(`${API_BASE_URL}/api/guest/cart?guest_id=${guest_id}`, {
+    const response = await fetch(`${API_BASE_URL}/guest/cart?guest_id=${guest_id}`, {
         method: "DELETE"
     });
     const data = await response.json();

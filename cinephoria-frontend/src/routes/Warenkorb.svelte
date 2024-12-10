@@ -1,4 +1,3 @@
-<!-- src/routes/Warenkorb.svelte -->
 <script>
     import { navigate } from 'svelte-routing';
     import { cart, cartError, removeFromCart, clearCart } from '../stores/cartStore.js';
@@ -10,13 +9,15 @@
     // Reaktive Berechnung des Gesamtpreises
     $: totalPrice = $cart.reduce((sum, seat) => sum + (seat.price || 0), 0);
 
-    // Reaktive Fehlerbehandlung
+    // Reaktive Fehlerbehandlung mit Zurücksetzen von cartError
     $: if ($cartError) {
         Swal.fire({
             title: "Fehler",
             text: $cartError,
             icon: "error",
             confirmButtonText: "OK"
+        }).then(() => {
+            cartError.set(null);
         });
     }
 

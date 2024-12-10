@@ -35,19 +35,56 @@
 
     const PAYPAL_CLIENT_ID = 'AXWfRwPPgPCoOBZzqI-r4gce1HuWZXDnFqUdES0bP8boKSv5KkkPvZrMFwcCDShXjC3aTdChUjOhwxhW';
 
-    // Reaktive Abhängigkeiten mit Svelte's $-Syntax
-    $: calculateTimeLeft();
-    $: calculateTotalPrice();
-    $: startTimer(); // Timer neu starten bei jeder Aktualisierung
+    // Reaktive Abhängigkeiten mit direkter Zuweisung
+    $: totalPrice = $cart.reduce((sum, seat) => sum + seat.price, 0);
 
-    // Reaktive Fehleranzeige
-    $: if ($cartError) {
-        Swal.fire({
-            title: "Fehler",
-            text: $cartError,
-            icon: "error"
-        });
+    $: {
+        if ($cart.length === 0) {
+            timeLeft = 0;
+            warning = false;
+        } else {
+            const now = new Date();
+            const reservationTimes = $cart.map(seat => new Date(seat.reserved_until));
+            const earliest = new Date(Math.min(...reservationTimes));
+            timeLeft = Math.max(0, Math.floor((earliest - now) / 1000));
+            warning = timeLeft <= 60;
+        }
     }
+
+    $: {
+        clearInterval(timer);
+        if (timeLeft > 0) {
+            timer = setInterval(() => {
+                if (timeLeft > 0) {
+                    timeLeft -= 1;
+                }
+                if (timeLeft === 60 && !warning) {
+                    showWarning();
+                }
+                if (timeLeft <= 0) {
+                    clearInterval(timer);
+                    loadCart(); // Aktualisiere den Warenkorb, um abgelaufene Sitze zu entfernen
+                }
+            }, 1000);
+        }
+    }
+
+    // Reaktive Fehleranzeige mit Zurücksetzen von cartError
+    $: if ($cartError) {
+    Swal.fire({
+        title: "Fehler",
+        text: $cartError,
+        icon: "error",
+        confirmButtonText: "Neu Laden",
+        allowOutsideClick: false, // Verhindert das Schließen des Popups durch Klicken außerhalb
+    }).then((result) => {
+        if (result.isConfirmed) {
+            loadCart(); // Aktualisiert den Warenkorb und die Sitzplatzkarte
+        }
+        cartError.set(null); // Setzt den Fehler zurück
+    });
+}
+
 
     onMount(async () => {
         isLoading = true;
@@ -151,23 +188,34 @@
     }
 
     async function toggleSeatSelection(seat) {
-        console.log('Toggling seat:', seat);
-        if (seat.status !== 'available' && !isSelectedBySelf(seat)) {
-            // Nur wenn verfügbar oder bereits von uns ausgewählt
-            return;
-        }
-        if (isSelectedBySelf(seat)) {
+    console.log('Toggling seat:', seat);
+    if (seat.status !== 'available' && !isSelectedBySelf(seat)) {
+        // Nur wenn verfügbar oder bereits von uns ausgewählt
+        return;
+    }
+    if (isSelectedBySelf(seat)) {
+        try {
             await removeFromCart(seat.seat_id, showtime_id); // showtime_id übergeben
             // Toast-Benachrichtigung anzeigen
             showToast(`Sitzplatz ${seat.row}${seat.number} wurde aus dem Warenkorb entfernt.`);
-        } else {
+        } catch (error) {
+            // Fehler wird bereits über cartError behandelt
+            console.error('Fehler beim Entfernen aus dem Warenkorb:', error);
+        }
+    } else {
+        try {
             await addToCart(seat, showtime_id);
             // Toast-Benachrichtigung anzeigen
             showToast(`Sitzplatz ${seat.row}${seat.number} wurde zum Warenkorb hinzugefügt.`);
+        } catch (error) {
+            // Fehler wird bereits über cartError behandelt
+            console.error('Fehler beim Hinzufügen zum Warenkorb:', error);
         }
-
-        console.log('Selected Seats after toggle:', $cart);
     }
+
+    console.log('Selected Seats after toggle:', $cart);
+}
+
 
     function showToast(message) {
         const Toast = Swal.mixin({
@@ -185,10 +233,6 @@
             icon: "success",
             title: message
         });
-    }
-
-    function calculateTotalPrice() {
-        totalPrice = $cart.reduce((sum, seat) => sum + seat.price, 0);
     }
 
     function initializePayPalButtons() {
@@ -273,7 +317,7 @@
 
     async function confirmBooking(orderID) {
         if ($cart.length === 0) {
-            Swal.fire({title:"Keine Sitzplätze",text:"Bitte wähle mindestens einen Sitzplatz aus.",icon:"warning"});
+            Swal.fire({title:"Keine Sitzplätze",text:"Bitte füge mindestens einen Sitzplatz zum Warenkorb hinzu.",icon:"warning"});
             return;
         }
 
@@ -304,24 +348,6 @@
         const earliest = new Date(Math.min(...reservationTimes));
         timeLeft = Math.max(0, Math.floor((earliest - now) / 1000));
         warning = timeLeft <= 60;
-    }
-
-    function startTimer() {
-        clearInterval(timer);
-        if (timeLeft > 0) {
-            timer = setInterval(() => {
-                if (timeLeft > 0) {
-                    timeLeft -= 1;
-                }
-                if (timeLeft === 60 && !warning) {
-                    showWarning();
-                }
-                if (timeLeft <= 0) {
-                    clearInterval(timer);
-                    loadCart(); // Aktualisiere den Warenkorb, um abgelaufene Sitze zu entfernen
-                }
-            }, 1000);
-        }
     }
 
     function showWarning() {
@@ -451,6 +477,15 @@
         justify-content: center;
         gap: 10px;
         margin-bottom: 2rem;
+    }
+
+    button {
+        padding: 0.5rem 1rem;
+        font-size: 1rem;
+        cursor: pointer;
+        border: none;
+        border-radius: 5px;
+        transition: background-color 0.3s;
     }
 
     .legend-box.available {
