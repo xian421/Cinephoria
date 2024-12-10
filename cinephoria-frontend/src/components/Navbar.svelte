@@ -1,3 +1,4 @@
+
 <!-- src/components/Navbar.svelte -->
 <script>
   import { navigate, useLocation } from "svelte-routing";
@@ -10,10 +11,11 @@
   export let isProfileDropdownOpen;
   export let handleLogin;
   
-  // Reaktive Variable für authStore
-  // Durch das Präfix '$' wird Svelte die Variable automatisch abonnieren und aktualisieren
-  $: auth = $authStore;
-  
+  // Reaktive Variable für authStore mit der $-Syntax
+  // Svelte übernimmt automatisch das Abonnieren und Aktualisieren
+  // Kein Bedarf für manuelle Subscription oder `get`-Funktion
+  // Verwenden Sie $authStore direkt im Template
+
   // Lokale Zustände für Login
   let email = "";
   let password = "";
@@ -246,7 +248,6 @@
   }
 
   </style>
-
 
 <nav>
   <!-- Logo -->
