@@ -10,11 +10,16 @@ import jwt
 from datetime import datetime, timedelta, timezone
 from functools import wraps
 import uuid
+import logging
+
 
 
 
 
 app = Flask(__name__, static_folder='public', static_url_path='')
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 CORS(app, resources={
     r"/*": {
@@ -1284,7 +1289,6 @@ def clear_expired_user_cart_items():
             conn.commit()
 
 
-
 @app.route('/user/cart', methods=['POST'])
 @token_required
 def add_to_user_cart():
@@ -1296,7 +1300,7 @@ def add_to_user_cart():
     showtime_id = data.get('showtime_id')
 
     if not user_id or not seat_id or price is None or not showtime_id:
-        return jsonify({'error': f'seat_id: {seat_id}, price: {price}, showtime_id: {showtime_id}'}), 400
+        # Entfernen des doppelten return
         return jsonify({'error': 'seat_id, price und showtime_id sind erforderlich'}), 400
 
     try:
@@ -1312,22 +1316,32 @@ def add_to_user_cart():
                 # Reserviere den Sitzplatz
                 reserved_until = datetime.now(timezone.utc) + timedelta(minutes=15)
 
-                # Hinzufügen des Sitzplatzes mit showtime_id
+                # Versuch, den Sitzplatz hinzuzufügen
                 cursor.execute("""
                     INSERT INTO user_cart_items (user_id, seat_id, price, reserved_until, showtime_id)
                     VALUES (%s, %s, %s, %s, %s)
-                    ON CONFLICT (user_id, seat_id, showtime_id) DO UPDATE
-                    SET reserved_until = EXCLUDED.reserved_until, price = EXCLUDED.price
+                    ON CONFLICT (seat_id, showtime_id) DO NOTHING
+                    RETURNING seat_id
                 """, (user_id, seat_id, price, reserved_until, showtime_id))
 
+                result = cursor.fetchone()
+
+                if result is None:
+                    # Der Sitzplatz ist bereits reserviert
+                    return jsonify({'error': 'Der Sitzplatz ist bereits reserviert'}), 409
+
+                # Aktualisieren Sie das gültige Ablaufdatum des Warenkorbs
                 cursor.execute("""
                     UPDATE user_carts SET valid_until = %s WHERE user_id = %s
                 """, (valid_until, user_id))
                 conn.commit()
+
         return jsonify({'message': 'Sitzplatz zum Warenkorb hinzugefügt', 'reserved_until': reserved_until.isoformat()}), 201
+
     except Exception as e:
         print(f"Fehler beim Hinzufügen zum Warenkorb: {e}")
         return jsonify({'error': 'Fehler beim Hinzufügen zum Warenkorb'}), 500
+
 
 
 # Neue Endpoints für GUEST CART
@@ -1368,6 +1382,7 @@ def get_guest_cart():
         print(f"Fehler beim Abrufen des Guest-Warenkorbs: {e}")
         return jsonify({'error': 'Fehler beim Abrufen des Guest-Warenkorbs'}), 500
 
+
 @app.route('/guest/cart', methods=['POST'])
 def add_to_guest_cart():
     clear_expired_guest_cart_items()  
@@ -1378,34 +1393,55 @@ def add_to_guest_cart():
     showtime_id = data.get('showtime_id')
     
     if not guest_id or not seat_id or price is None or not showtime_id:
-        return jsonify({'error': 'guest_id, seat_id und price sind erforderlich und showtime'}), 400
+        return jsonify({'error': 'guest_id, seat_id und price sind erforderlich und showtime_id'}), 400
     
     try:
         with psycopg2.connect(DATABASE_URL) as conn:
             with conn.cursor() as cursor:
                 valid_until = datetime.now(timezone.utc) + timedelta(minutes=15)
-                # Sicherstellen, dass guest_cart existiert
+                
+                # Sicherstellen, dass guest_carts existiert
                 cursor.execute("SELECT guest_id FROM guest_carts WHERE guest_id = %s", (guest_id,))
                 if cursor.fetchone() is None:
-                    cursor.execute("INSERT INTO guest_carts (guest_id, valid_until) VALUES (%s, %s)", (guest_id, valid_until,))
-                    conn.commit()
-                
+                    cursor.execute(
+                        "INSERT INTO guest_carts (guest_id, valid_until) VALUES (%s, %s)",
+                        (guest_id, valid_until,)
+                    )
+    
                 # Reserviere den Sitzplatz
                 reserved_until = datetime.now(timezone.utc) + timedelta(minutes=15)
+    
+                # Versuch, den Sitzplatz hinzuzufügen
+                try:
+                    cursor.execute("""
+                        INSERT INTO guest_cart_items (guest_id, seat_id, price, reserved_until, showtime_id)
+                        VALUES (%s, %s, %s, %s, %s)
+                        RETURNING seat_id
+                    """, (guest_id, seat_id, price, reserved_until, showtime_id))
+                except IntegrityError:
+                    conn.rollback()
+                    logger.warning(f"Sitzplatz {seat_id} für Showtime {showtime_id} ist bereits reserviert.")
+                    return jsonify({'error': 'Der Sitzplatz ist bereits reserviert'}), 409
+    
+                result = cursor.fetchone()
+    
+                if result is None:
+                    # Der Sitzplatz ist bereits reserviert (falls using DO NOTHING RETURNING)
+                    return jsonify({'error': 'Der Sitzplatz ist bereits reserviert'}), 409
+    
+                # Aktualisieren Sie das gültige Ablaufdatum des Warenkorbs
                 cursor.execute("""
                     UPDATE guest_carts SET valid_until = %s WHERE guest_id = %s
-                               """, (valid_until, guest_id))
-                # Hinzufügen des Sitzplatzes mit aktualisiertem `reserved_until`
-                cursor.execute("""
-                    INSERT INTO guest_cart_items (guest_id, seat_id, price, reserved_until, showtime_id)
-                    VALUES (%s, %s, %s, %s, %s)
-                    ON CONFLICT (guest_id, seat_id, showtime_id) DO UPDATE
-                    SET reserved_until = EXCLUDED.reserved_until, price = EXCLUDED.price, showtime_id = EXCLUDED.showtime_id
-                """, (guest_id, seat_id, price, reserved_until, showtime_id))
-                conn.commit()
+                """, (valid_until, guest_id))
+    
         return jsonify({'message': 'Sitzplatz zum Guest-Warenkorb hinzugefügt', 'reserved_until': reserved_until.isoformat()}), 201
+    
+    except IntegrityError as ie:
+        # Spezifisches Abfangen von IntegrityError, falls nicht bereits behandelt
+        logger.error(f"IntegrityError beim Hinzufügen zum Guest-Warenkorb: {ie}")
+        return jsonify({'error': 'Der Sitzplatz ist bereits reserviert'}), 409
     except Exception as e:
-        print(f"Fehler beim Hinzufügen zum Guest-Warenkorb: {e}")
+        logger.error(f"Fehler beim Hinzufügen zum Guest-Warenkorb: {e}")
         return jsonify({'error': 'Fehler beim Hinzufügen zum Guest-Warenkorb'}), 500
     
 
