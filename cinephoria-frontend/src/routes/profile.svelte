@@ -144,6 +144,22 @@
     position: relative;
 }
 
+
+.noinitials {
+    width: 100px;
+    height: 100px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    background-color: white;
+    color: white;
+    font-size: 2rem;
+    font-weight: bold;
+    cursor: pointer;
+    position: relative;
+}
+
 .profile-details {
     flex-grow: 1;
 }
@@ -346,11 +362,15 @@
   {:else}
       <div class="profile-container">
           <div class="profile-header">
-              <div class="initials" on:click={openModal}>
                   {#if profile.profile_image && profile.profile_image !== 'default.png'}
+                    <div class="noinitials" on:click={openModal}>
+
                       <img src={`/Profilbilder/${profile.profile_image}`} alt="Profilbild" class="profile-image" />
+                    </div>
                   {:else}
+                    <div class="initials" on:click={openModal}>
                       {getInitials(profile.vorname, profile.nachname)}
+                    </div>
                   {/if}
               </div>
               <div class="profile-details">
@@ -381,7 +401,6 @@
           <div class="profile-actions">
               <button on:click={() => navigate('/edit-profile')}>Profil bearbeiten</button>
           </div>
-      </div>
       <button class="back-button" on:click={() => navigate('/')}>Zurück zur Startseite</button>
 
       {#if isModalOpen}
