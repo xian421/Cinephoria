@@ -24,7 +24,7 @@
     import Warenkorb from './routes/Warenkorb.svelte';
     import Einstellung from "./routes/einstellung.svelte";
     import Admin from './routes/Admin.svelte';
-    import Checkout from './routes/Checkout.svelte';
+    import Checkout from './routes/checkout.svelte';
   
     // Import von Svelte Stores
     import { authStore, setAuth, updateAuth } from './stores/authStore.js';
