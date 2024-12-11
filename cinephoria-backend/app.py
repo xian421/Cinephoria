@@ -1499,5 +1499,30 @@ def clear_guest_cart():
         return jsonify({'error': 'Fehler beim Leeren des Guest-Warenkorbs'}), 500
 
 
+@app.route('/discounts', methods=['GET'])
+def get_discounts():
+    try:
+        with psycopg2.connect(DATABASE_URL) as conn:  
+            with conn.cursor() as cursor:            
+                cursor.execute("SELECT discount_id, name, description FROM discounts")
+                result = cursor.fetchall()
+
+                discounts = [
+                    {
+                        'discount_id': row[0],
+                        'name': row[1],
+                        'description': row[2]
+                    }
+                    for row in result
+                ]
+
+        return jsonify({'Discounts': discounts}), 200
+
+    except Exception as e:
+        print(f"Fehler: {e}")
+        return jsonify({'error': 'Fehler beim Abrufen der Discounts'}), 500
+
+
+
 if __name__ == '__main__':
     app.run(debug=True)
