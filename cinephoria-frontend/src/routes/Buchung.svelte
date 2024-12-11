@@ -15,7 +15,6 @@
     import { cart, cartError, addToCart, removeFromCart, clearCart, loadCart } from '../stores/cartStore.js';
 
     import "@fortawesome/fontawesome-free/css/all.min.css";
-    import SeatModal from '../components/SeatModal.svelte'; // Importiere die Modal-Komponente
 
     export let showtime_id: string;
 
@@ -618,10 +617,6 @@
         <button on:click={() => navigate('/warenkorb')}>Zum Warenkorb</button>
         <div id="paypal-button-container" bind:this={paypalContainer}></div>
 
-        <!-- Einbinden der Modal-Komponente -->
-        <SeatModal 
-            seat={selectedSeat} 
-            on:close={closeModalHandler} 
-        />
+        
     {/if}
 </main>

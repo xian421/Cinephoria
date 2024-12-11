@@ -729,3 +729,171 @@ export const fetchShowtimeDetails = async (showtime_id) => {
     }
 };
 
+
+
+
+
+export const fetchDiscounts = async () => {
+    try {
+        const response = await fetch(`${API_BASE_URL}/discounts`, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+        });
+        const data = await response.json();
+        if (!response.ok) {
+            throw new Error(data.error || 'Fehler beim Abrufen der Discounts (Api.js)');
+        }
+        return data.discounts;
+    } catch (error) {
+        console.error('Fehler beim Abrufen der Details (Api.js)', error);
+        throw error;
+    }
+};
+// Funktion zum Hinzufügen eines neuen Discounts
+export const addDiscount = async (token, name, description) => {
+    try {
+        const response = await fetch(`${API_BASE_URL}/discounts`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ name, description })
+        });
+
+        const data = await response.json();
+        if (!response.ok) {
+            throw new Error(data.error || 'Fehler beim Hinzufügen des Discounts');
+        }
+        return data; // { message: 'Discount hinzugefügt', discount_id: ... }
+    } catch (error) {
+        console.error('Error adding discount:', error);
+        throw error;
+    }
+};
+
+
+// Funktion zum Aktualisieren eines Discounts
+export const updateDiscount = async (token, discountId, name, description) => {
+    try {
+        const response = await fetch(`${API_BASE_URL}/discounts/${discountId}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ name, description })
+        });
+
+        const data = await response.json();
+        if (!response.ok) {
+            throw new Error(data.error || 'Fehler beim Aktualisieren des Discounts');
+        }
+        return data; // { message: 'Discount aktualisiert' }
+    } catch (error) {
+        console.error('Error updating discount:', error);
+        throw error;
+    }
+};
+
+
+// Funktion zum Löschen eines Discounts
+export const deleteDiscount = async (token, discountId) => {
+    try {
+        const response = await fetch(`${API_BASE_URL}/discounts/${discountId}`, {
+            method: 'DELETE',
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+
+        const data = await response.json();
+        if (!response.ok) {
+            throw new Error(data.error || 'Fehler beim Löschen des Discounts');
+        }
+        return data; // { message: 'Discount gelöscht' }
+    } catch (error) {
+        console.error('Error deleting discount:', error);
+        throw error;
+    }
+};
+
+
+// Funktion zum Zuweisen eines Discounts zu einem Sitztyp
+export const assignDiscountToSeatType = async (token, seatTypeId, discountId, discountAmount = null, discountPercentage = null) => {
+    try {
+        const response = await fetch(`${API_BASE_URL}/seat_type_discounts`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({
+                seat_type_id: seatTypeId,
+                discount_id: discountId,
+                discount_amount: discountAmount,
+                discount_percentage: discountPercentage
+            })
+        });
+
+        const data = await response.json();
+        if (!response.ok) {
+            throw new Error(data.error || 'Fehler beim Zuweisen des Discounts zu Sitztyp');
+        }
+        return data; // { message: 'Discount dem Sitztyp zugewiesen' }
+    } catch (error) {
+        console.error('Error assigning discount to seat type:', error);
+        throw error;
+    }
+};
+
+
+// Funktion zum Entfernen eines Discounts von einem Sitztyp
+export const removeDiscountFromSeatType = async (token, seatTypeId, discountId) => {
+    try {
+        const response = await fetch(`${API_BASE_URL}/seat_type_discounts`, {
+            method: 'DELETE',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({
+                seat_type_id: seatTypeId,
+                discount_id: discountId
+            })
+        });
+
+        const data = await response.json();
+        if (!response.ok) {
+            throw new Error(data.error || 'Fehler beim Entfernen des Discounts von Sitztyp');
+        }
+        return data; // { message: 'Discount vom Sitztyp entfernt' }
+    } catch (error) {
+        console.error('Error removing discount from seat type:', error);
+        throw error;
+    }
+};
+
+
+// Funktion zum Abrufen von Sitztypen mit ihren Discounts
+export const fetchSeatTypesWithDiscounts = async () => {
+    try {
+        const response = await fetch(`${API_BASE_URL}/seat_types_with_discounts`, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        });
+
+        const data = await response.json();
+        if (!response.ok) {
+            throw new Error(data.error || 'Fehler beim Abrufen der Sitztypen mit Discounts');
+        }
+        return data.seat_types; // Array von Sitztypen mit Discounts
+    } catch (error) {
+        console.error('Error fetching seat types with discounts:', error);
+        throw error;
+    }
+};

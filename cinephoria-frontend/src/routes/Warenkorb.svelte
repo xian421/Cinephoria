@@ -1,6 +1,7 @@
 <script>
     import { navigate } from 'svelte-routing';
     import { cart, cartError, removeFromCart, clearCart } from '../stores/cartStore.js';
+    import { fetchDiscounts } from '../services/api.js';
     import Swal from 'sweetalert2';
     import "@fortawesome/fontawesome-free/css/all.min.css";
 
@@ -9,6 +10,14 @@
     // Reaktive Berechnung des Gesamtpreises
     $: totalPrice = $cart.reduce((sum, seat) => sum + (seat.price || 0), 0);
 
+    let discountdata = [];
+
+    async function loadDiscounts() {
+        discountdata = await fetchDiscounts();
+        console.log(discountdata);
+    }
+
+    loadDiscounts();
     // Reaktive Fehlerbehandlung mit Zurücksetzen von cartError
     $: if ($cartError) {
         Swal.fire({
@@ -117,6 +126,8 @@
         }
         navigate('/checkout'); // Passe den Pfad entsprechend an
     }
+
+
 </script>
 
 <style>
@@ -229,7 +240,7 @@
 </style>
 
 <main class="cart-container">
-    <h1>Warenkorb</h1>
+    <h1>Warenkorb: {totalPrice.toFixed(2)} €</h1>
 
     {#if $cart.length === 0}
         <p>Dein Warenkorb ist leer.</p>

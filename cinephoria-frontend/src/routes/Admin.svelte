@@ -97,5 +97,11 @@
             <p>Preise für verschiedene Sitztypen festlegen.</p>
             <button>Preise verwalten</button>
         </div>
+
+        <!-- Karte für Discounts -->
+        <div class="card" on:click={() => navigate('/admindiscount')}>
+            <h2>Discounts</h2>
+            <p>Neue Discounts hinzufügen und verwalten.</p>
+            <button>Discounts verwalten</button>
     </div>
 </main>

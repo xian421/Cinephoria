@@ -25,6 +25,7 @@
     import Einstellung from "./routes/einstellung.svelte";
     import Admin from './routes/Admin.svelte';
     import Checkout from './routes/checkout.svelte';
+    import Admindiscount from './routes/Admindiscount.svelte';
   
     // Import von Svelte Stores
     import { authStore, setAuth, updateAuth } from './stores/authStore.js';
@@ -246,6 +247,12 @@
         <Route path="/admin" let:params>
             <ProtectedRoute admin={true}>
                 <Admin />
+            </ProtectedRoute>
+        </Route>
+
+        <Route path="/admindiscount" let:params>
+            <ProtectedRoute admin={true}>
+                <Admindiscount />
             </ProtectedRoute>
         </Route>
   
