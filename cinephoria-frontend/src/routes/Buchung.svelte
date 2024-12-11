@@ -1,5 +1,5 @@
 <!-- src/routes/Buchung.svelte -->
-<script>
+<script lang="ts">
     import { onMount, onDestroy, tick } from 'svelte';
     import { navigate } from 'svelte-routing';
     import Swal from 'sweetalert2';
@@ -15,19 +15,20 @@
     import { cart, cartError, addToCart, removeFromCart, clearCart, loadCart } from '../stores/cartStore.js';
 
     import "@fortawesome/fontawesome-free/css/all.min.css";
+    import SeatModal from '../components/SeatModal.svelte'; // Importiere die Modal-Komponente
 
-    export let showtime_id;
+    export let showtime_id: string;
 
     let seats = [];
     let isLoading = true;
-    let error = null;
+    let error: string | null = null;
     let seatTypesList = [];
     let seatsByRow = {};
     let payPalInitialized = false;
-    let paypalContainer;
+    let paypalContainer: HTMLElement;
 
     let totalPrice = 0.0;
-    let timer = null;
+    let timer: ReturnType<typeof setInterval> | null = null;
     let timeLeft = 0; // in Sekunden
     let warning = false;
 
@@ -44,7 +45,7 @@
             const now = new Date();
             const reservationTimes = $cart.map(seat => new Date(seat.reserved_until));
             const earliest = new Date(Math.min(...reservationTimes));
-            timeLeft = Math.max(0, Math.floor((earliest - now) / 1000));
+            timeLeft = Math.max(0, Math.floor((earliest.getTime() - now.getTime()) / 1000));
             warning = timeLeft <= 60;
         }
     }
@@ -60,7 +61,7 @@
                     showWarning();
                 }
                 if (timeLeft <= 0) {
-                    clearInterval(timer);
+                    clearInterval(timer!);
                     loadCart(); // Aktualisiere den Warenkorb, um abgelaufene Sitze zu entfernen
                 }
             }, 1000);
@@ -90,7 +91,7 @@
             await loadSeats();
             // Warenkorb laden, damit $cart aktuell ist
             await loadCart();
-        } catch (err) {
+        } catch (err: any) {
             console.error('Fehler beim Laden der Sitze oder Sitztypen:', err);
             error = err.message || 'Fehler beim Laden.';
         } finally {
@@ -104,7 +105,7 @@
     });
 
     onDestroy(() => {
-        clearInterval(timer);
+        clearInterval(timer!);
     });
 
     // Funktion zum Laden der Sitzplatzdaten
@@ -118,13 +119,13 @@
             const seatData = await fetchSeatsWithReservation(showtime_id, token, guest_id);
             seats = seatData.seats;
             seatsByRow = groupSeatsByRowWithGaps(seats);
-        } catch (err) {
+        } catch (err: any) {
             console.error('Fehler beim Laden der Sitze oder Sitztypen:', err);
             error = err.message || 'Fehler beim Laden.';
         }
     }
 
-    function groupSeatsByRowWithGaps(seats) {
+    function groupSeatsByRowWithGaps(seats: any[]) {
         const rowsSet = new Set();
         const seatNumbersSet = new Set();
         seats.forEach(seat => {
@@ -135,14 +136,14 @@
         const allRowLabels = generateAllRowLabels(Array.from(rowsSet));
         const allSeatNumbers = generateAllSeatNumbers(Array.from(seatNumbersSet));
 
-        const seatMap = {};
+        const seatMap: Record<string, any> = {};
         seats.forEach(seat => {
             seatMap[`${seat.row}-${seat.number}`] = seat;
         });
 
-        const rowsWithGaps = {};
+        const rowsWithGaps: Record<string, any[]> = {};
         allRowLabels.forEach(rowLabel => {
-            const rowSeats = [];
+            const rowSeats: any[] = [];
             allSeatNumbers.forEach(num => {
                 const key = `${rowLabel}-${num}`;
                 if (seatMap[key]) {
@@ -156,7 +157,7 @@
         return rowsWithGaps;
     }
 
-    function generateAllRowLabels(existingRows) {
+    function generateAllRowLabels(existingRows: string[]) {
         if (existingRows.length === 0) return [];
         const minRowCharCode = Math.min(...existingRows.map(r => r.charCodeAt(0)));
         const maxRowCharCode = Math.max(...existingRows.map(r => r.charCodeAt(0)));
@@ -167,7 +168,7 @@
         return allRows;
     }
 
-    function generateAllSeatNumbers(existingNumbers) {
+    function generateAllSeatNumbers(existingNumbers: number[]) {
         if (existingNumbers.length === 0) return [];
         const min = Math.min(...existingNumbers);
         const max = Math.max(...existingNumbers);
@@ -178,22 +179,29 @@
         return all;
     }
 
-    function getSeatTypeColor(typeName) {
-        const type = seatTypesList.find(st => st.name === typeName);
+    function getSeatTypeColor(typeName: string) {
+        const type = seatTypesList.find((st: any) => st.name === typeName);
         return type ? type.color : '#678be0';
     }
 
-    function getSeatTypeIcon(typeName) {
-        const type = seatTypesList.find(st => st.name === typeName);
+    function getSeatTypeIcon(typeName: string) {
+        const type = seatTypesList.find((st: any) => st.name === typeName);
         return type ? type.icon : null;
     }
 
     // Funktion zur Überprüfung, ob ein Sitzplatz in der aktuellen Vorstellung im Warenkorb ist
-    function isSelectedBySelf(seat) {
+    function isSelectedBySelf(seat: any) {
         return $cart.some(s => s.seat_id === seat.seat_id && s.showtime_id === showtime_id);
     }
 
-    async function toggleSeatSelection(seat) {
+    let selectedSeat: {
+        row: string;
+        number: number;
+        type?: string;
+        price: number;
+    } | null = null; // Neue Variable für das ausgewählte Sitzobjekt
+
+    async function toggleSeatSelection(seat: any) {
         console.log('Toggling seat:', seat);
         if (seat.status !== 'available' && !isSelectedBySelf(seat)) {
             // Nur wenn verfügbar oder bereits von uns ausgewählt
@@ -215,6 +223,7 @@
                 await addToCart(seat, showtime_id);
                 // Toast-Benachrichtigung anzeigen
                 showToast(`Sitzplatz ${seat.row}${seat.number} wurde zum Warenkorb hinzugefügt.`);
+                selectedSeat = seat; // Setze das ausgewählte Sitzobjekt, um die Modal zu öffnen
             } catch (error) {
                 // Fehler wird bereits über cartError behandelt
                 console.error('Fehler beim Hinzufügen zum Warenkorb:', error);
@@ -224,7 +233,7 @@
         console.log('Selected Seats after toggle:', $cart);
     }
 
-    function showToast(message) {
+    function showToast(message: string) {
         const Toast = Swal.mixin({
             toast: true,
             position: "top-end",
@@ -280,7 +289,7 @@
                 shape:  'rect',
                 label:  'paypal'
             },
-            createOrder: async (data, actions) => {
+            createOrder: async (data: any, actions: any) => {
                 if ($cart.length === 0) {
                     Swal.fire({title:"Keine Sitze",text:"Bitte wähle mindestens einen Sitzplatz aus.",icon:"warning"});
                     throw new Error('Keine Sitzplätze ausgewählt');
@@ -297,7 +306,7 @@
                     throw err;
                 }
             },
-            onApprove: async (data, actions) => {
+            onApprove: async (data: any, actions: any) => {
                 try {
                     const token = get(authStore).token;
                     if (!token) throw new Error('Nicht authentifiziert');
@@ -315,14 +324,14 @@
             onCancel: () => {
                 Swal.fire({title:"Abgebrochen",text:'Zahlung abgebrochen.',icon:"info"});
             },
-            onError: (err) => {
+            onError: (err: any) => {
                 console.error('PayPal Fehler:', err);
                 Swal.fire({title:"Zahlungsfehler",text:'Problem mit der Zahlung.',icon:"error"});
             }
         }).render(paypalContainer);
     }
 
-    async function confirmBooking(orderID) {
+    async function confirmBooking(orderID: string) {
         if ($cart.length === 0) {
             Swal.fire({title:"Keine Sitzplätze",text:"Bitte füge mindestens einen Sitzplatz zum Warenkorb hinzu.",icon:"warning"});
             return;
@@ -337,7 +346,7 @@
                 clearCart();
                 navigate('/');
             });
-        } catch (err) {
+        } catch (err: any) {
             console.error('Fehler bei der Buchung:', err);
             Swal.fire({title:"Fehler",text:'Problem bei der Buchung.',icon:"error"});
         }
@@ -353,15 +362,19 @@
         });
     }
 
-    function formatTime(seconds) {
+    function formatTime(seconds: number) {
         const min = Math.floor(seconds / 60);
         const sec = seconds % 60;
         return `${min}:${sec < 10 ? '0' : ''}${sec}`;
     }
+
+    function closeModalHandler() {
+        selectedSeat = null;
+    }
 </script>
 
 <style>
-    /* Ihr CSS bleibt unverändert */
+    /* Dein bestehendes CSS bleibt unverändert */
     .booking-container {
         padding: 2rem;
         font-family: Arial, sans-serif;
@@ -602,8 +615,13 @@
         </div>
 
         <p>Gesamtpreis: {totalPrice.toFixed(2)}€</p>
+        <button on:click={() => navigate('/warenkorb')}>Zum Warenkorb</button>
         <div id="paypal-button-container" bind:this={paypalContainer}></div>
 
-        <button on:click={() => navigate('/warenkorb')}>Warenkorb</button>
+        <!-- Einbinden der Modal-Komponente -->
+        <SeatModal 
+            seat={selectedSeat} 
+            on:close={closeModalHandler} 
+        />
     {/if}
 </main>

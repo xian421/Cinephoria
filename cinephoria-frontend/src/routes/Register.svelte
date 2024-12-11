@@ -1,3 +1,4 @@
+<!-- src/routes/Register.svelte -->
 <script>
   import Swal from "sweetalert2";
 
