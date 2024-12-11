@@ -24,6 +24,7 @@
     import Warenkorb from './routes/Warenkorb.svelte';
     import Einstellung from "./routes/einstellung.svelte";
     import Admin from './routes/Admin.svelte';
+    import Checkout from './routes/Checkout.svelte';
   
     // Import von Svelte Stores
     import { authStore, setAuth, updateAuth } from './stores/authStore.js';
@@ -213,6 +214,7 @@
         <Route path="/adminshowtime" component={Adminshowtime} />
         <Route path="/register" component={Register} />
         <Route path="/forgot-password" component={Forgotpassword} />
+        <Route path="/checkout" component={Checkout} />
         
         <!-- Korrigierte Buchung Route -->
         <Route path="/buchung/:showtime_id" let:params>
