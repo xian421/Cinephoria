@@ -1516,7 +1516,7 @@ def get_discounts():
                     for row in result
                 ]
 
-        return jsonify({'Discounts': discounts}), 200
+        return jsonify({'discounts': discounts}), 200
 
     except Exception as e:
         print(f"Fehler: {e}")
