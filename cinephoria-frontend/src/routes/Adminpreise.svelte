@@ -157,117 +157,307 @@
             });
         }
     }
+
+
+    function deleteSeatType(index) {
+    Swal.fire({
+        title: 'Sind Sie sicher?',
+        text: 'Dieser Sitztyp wird dauerhaft gelöscht!',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#d33',
+        cancelButtonColor: '#3085d6',
+        confirmButtonText: 'Ja, löschen!',
+        cancelButtonText: 'Abbrechen',
+    }).then((result) => {
+        if (result.isConfirmed) {
+            seatTypes.splice(index, 1);
+            seatTypes = [...seatTypes]; // Reaktivität auslösen
+            Swal.fire(
+                'Gelöscht!',
+                'Der Sitztyp wurde gelöscht.',
+                'success'
+            );
+        }
+    });
+}
 </script>
 
 <style>
-    @import "@fortawesome/fontawesome-free/css/all.min.css";
+   @import "@fortawesome/fontawesome-free/css/all.min.css";
 
-    main {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        font-family: Arial, sans-serif;
-        padding: 20px;
-    }
+main {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    font-family: 'Roboto', sans-serif;
+    padding: 20px;
+    background-color: #f7f9fc;
+    border-radius: 10px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+}
 
-    h1, h2 {
-        margin-bottom: 20px;
-    }
+h1 {
+    font-size: 2.5rem;
+    color: #2c3e50;
+    margin-bottom: 1rem;
+    text-align: center;
+    border-bottom: 2px solid #3498db;
+    display: inline-block;
+    padding-bottom: 0.5rem;
+}
 
-    table {
-        border-collapse: collapse;
-        width: 100%;
-        max-width: 800px;
-        margin-bottom: 20px;
-    }
+h2 {
+    font-size: 1.8rem;
+    color: #34495e;
+    margin-top: 2rem;
+    margin-bottom: 1rem;
+    text-align: center;
+}
 
-    th, td {
-        text-align: left;
-        padding: 12px;
-        border-bottom: 1px solid #ddd;
-    }
+table {
+    border-collapse: collapse;
+    width: 100%;
+    max-width: 800px;
+    margin-bottom: 20px;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+    background-color: #ffffff;
+    border-radius: 8px;
+    overflow: hidden;
+}
 
-    th {
-        background-color: #1976d2;
-        color: white;
-    }
+th, td {
+    text-align: left;
+    padding: 15px;
+    border-bottom: 1px solid #ddd;
+    font-size: 1rem;
+    vertical-align: middle;
+}
 
+th {
+    background-color: #3498db;
+    color: white;
+    font-weight: bold;
+    text-transform: uppercase;
+    white-space: nowrap;
+    padding: 15px;
+    text-align: center;
+}
+
+td {
+    color: #555;
+}
+
+.actions-column {
+    text-align: center;
+    width: 100px;
+}
+
+input[type="number"], input[type="color"], select, input[type="text"] {
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    margin-right: 10px;
+    font-size: 1rem;
+    width: 100%;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    transition: all 0.3s ease;
+}
+
+input[type="number"]:focus, input[type="color"]:focus, select:focus, input[type="text"]:focus {
+    border-color: #3498db;
+    outline: none;
+    box-shadow: 0 2px 6px rgba(52, 152, 219, 0.3);
+}
+
+.icon-container {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.icon-background {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 60px;
+    height: 40px;
+    background-color: var(--bg-color, #3498db);
+    border-radius: 10%;
+    transition: background-color 0.3s, transform 0.3s;
+    cursor: pointer;
+    position: relative;
+}
+
+.icon-background i {
+    color: white;
+    font-size: 18px;
+}
+
+.icon-background:hover {
+    transform: scale(1.1);
+}
+
+.icon-background input[type="color"] {
+    opacity: 0;
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    cursor: pointer;
+}
+
+
+
+
+.delete-button {
+    padding: 8px 16px;
+    font-size: 0.9rem;
+    cursor: pointer;
+    border: none;
+    background-color: #e74c3c;
+    color: white;
+    border-radius: 5px;
+    transition: background-color 0.3s ease, transform 0.3s ease;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+.delete-button:hover {
+    background-color: #c0392b;
+    transform: translateY(-2px);
+}
+
+select {
+    padding: 10px;
+    border-radius: 8px;
+    border: 1px solid #ddd;
+    background-color: #f7f9fc;
+    font-size: 1rem;
+    transition: border-color 0.3s, box-shadow 0.3s;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    width: 100%;
+}
+
+select:focus {
+    border-color: #3498db;
+    box-shadow: 0 2px 6px rgba(52, 152, 219, 0.3);
+    outline: none;
+}
+
+button {
+    padding: 12px 24px;
+    font-size: 1rem;
+    cursor: pointer;
+    border: none;
+    background-color: #3498db;
+    color: white;
+    border-radius: 8px;
+    transition: background-color 0.3s ease, transform 0.3s ease;
+    margin: 5px;
+    font-weight: bold;
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
+}
+
+button:hover {
+    background-color: #2980b9;
+    transform: translateY(-3px);
+}
+
+.button-container {
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+    flex-wrap: wrap;
+}
+
+.new-seat-type {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 15px;
+    background-color: #ffffff;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    margin-top: 2rem;
+    width: 100%;
+    max-width: 800px;
+}
+
+.new-seat-type .row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 15px;
+}
+
+.new-seat-type .row > div {
+    flex: 1;
+    min-width: 200px;
+}
+
+.new-seat-type button {
+    grid-column: 1 / -1;
+    justify-self: center;
+    margin-top: 15px;
+}
+
+@media (max-width: 600px) {
     input[type="number"], input[type="color"], select {
-        padding: 8px;
-        margin-right: 10px;
-    }
-
-    input[type="text"] {
-        padding: 8px;
-        margin-right: 10px;
-    }
-
-    /* Neue Klasse für den Icon-Container */
-    .icon-container {
-        display: flex;
-        align-items: center;
-    }
-
-    .icon-background {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        width: 40px;
-        height: 40px;
-        background-color: var(--bg-color, #000000);
-        border-radius: 5px;
-        margin-right: 10px;
-        transition: background-color 0.3s;
-    }
-
-    .icon-background i {
-        color: white;
-        font-size: 20px;
-    }
-
-    button {
-        padding: 10px 20px;
-        font-size: 16px;
-        cursor: pointer;
-        border: none;
-        background-color: #1976d2;
-        color: white;
-        border-radius: 5px;
-        transition: background-color 0.3s;
-        margin: 5px;
-    }
-
-    button:hover {
-        background-color: #1565c0;
-    }
-
-    .button-container {
-        display: flex;
-        justify-content: center;
-        gap: 10px;
-    }
-
-    .new-seat-type {
-        display: flex;
-        flex-direction: column;
-        align-items: flex-start;
-    }
-
-    .new-seat-type label {
+        width: 100%;
         margin-bottom: 10px;
     }
 
-    @media (max-width: 600px) {
-        input[type="number"], input[type="color"], select {
-            width: 100%;
-            margin-bottom: 10px;
-        }
-
-        button {
-            padding: 8px 16px;
-            font-size: 14px;
-        }
+    button {
+        padding: 8px 16px;
+        font-size: 14px;
     }
+
+    .new-seat-type {
+        grid-template-columns: 1fr;
+    }
+}
+
+
+.new-seat-type {
+    display: flex;
+    flex-direction: column;
+    text-align: center;
+    gap: 15px;
+    background-color: #ffffff;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    margin-top: 2rem;
+    width: 100%;
+    max-width: 500px;
+}
+
+.field {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    width: 95%;
+}
+
+.field label {
+    font-size: 0.9rem;
+    color: #34495e;
+    font-weight: bold;
+}
+
+.field input, .field select {
+    padding: 10px;
+    font-size: 1rem;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.field input:focus, .field select:focus {
+    border-color: #3498db;
+    box-shadow: 0 2px 6px rgba(52, 152, 219, 0.3);
+    outline: none;
+}
+
+
 </style>
 
 <main>
@@ -283,55 +473,56 @@
                 <tr>
                     <th>Sitztyp</th>
                     <th>Preis (€)</th>
-                    <th>Farbe</th>
                     <th>Icon</th>
+                    <th>Löschen</th>
                 </tr>
             </thead>
             <tbody>
                 {#each seatTypes as seat, index}
-                    <tr>
-                        <td>
-                            <input
-                                type="text"
-                                bind:value={seat.name}
-                            />
-                        </td>
-                        
-                        <td>
-                            <input
-                                type="number"
-                                min="0"
-                                step="0.01"
-                                bind:value={seat.price}
-                            />
-                        </td>
-                        <td>
-                            <input
-                                type="color"
-                                bind:value={seat.color}
-                            />
-                        </td>
-                        <td>
-                            <div class="icon-container">
-                                <!-- Icon-Container mit farbigem Hintergrund -->
-                                <div
-                                    class="icon-background"
-                                    style="--bg-color: {seat.color};"
-                                >
-                                    <i class={`fas ${seat.icon}`}></i>
-                                </div>
-                                <!-- Auswahl des Icons -->
-                                <select
-                                    bind:value={seat.icon}
-                                >
-                                    {#each availableIcons as icon}
-                                        <option value={icon}>{icon}</option>
-                                    {/each}
-                                </select>
-                            </div>
-                        </td>
-                    </tr>
-                {/each}
+        <tr>
+            <td>
+                <input
+                    type="text"
+                    bind:value={seat.name}
+                />
+            </td>
+            
+            <td>
+                <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    bind:value={seat.price}
+                />
+            </td>
+            
+            <td>
+                <div class="icon-container">
+                    <!-- Icon-Container mit farbigem Hintergrund -->
+                    <div class="icon-background" style="--bg-color: {seat.color};">
+                        <i class={`fas ${seat.icon}`}></i>
+                        <input type="color" bind:value={seat.color} />
+                    </div>
+                    <!-- Auswahl des Icons -->
+                    <select
+                        bind:value={seat.icon}
+                    >
+                        {#each availableIcons as icon}
+                            <option value={icon}>{icon}</option>
+                        {/each}
+                    </select>
+                </div>
+            </td>
+            <td>
+                <button
+                    class="delete-button"
+                    on:click={() => deleteSeatType(index)}
+                >
+                    Löschen
+                </button>
+            </td>
+        </tr>
+    {/each}
             </tbody>
         </table>
 
@@ -342,27 +533,30 @@
 
         <h2>Neuen Sitztyp hinzufügen</h2>
         <div class="new-seat-type">
-            <label>
-                Name:
-                <input type="text" bind:value={newSeatTypeName} />
-            </label>
-            <label>
-                Preis (€):
-                <input type="number" min="0" step="0.01" bind:value={newSeatTypePrice} />
-            </label>
-            <label>
-                Farbe:
-                <input type="color" bind:value={newSeatTypeColor} />
-            </label>
-            <label>
-                Icon:
-                <select bind:value={newSeatTypeIcon}>
-                    {#each availableIcons as icon}
-                        <option value={icon}>{icon}</option>
-                    {/each}
-                </select>
-            </label>
+            <div class="field">
+                <label for="seat-name">Name:</label>
+                <input id="seat-name" type="text" bind:value={newSeatTypeName} />
+            </div>
+            <div class="field">
+                <label for="seat-price">Preis (€):</label>
+                <input id="seat-price" type="number" min="0" step="0.01" bind:value={newSeatTypePrice} />
+            </div>
+            <div class="field">
+                <label for="seat-icon">Icon & Farbe:</label>
+                <div class="icon-container">
+                    <div class="icon-background" style="--bg-color: {newSeatTypeColor};">
+                        <i class={`fas ${newSeatTypeIcon}`}></i>
+                        <input id="seat-color" type="color" bind:value={newSeatTypeColor} />
+                    </div>
+                    <select id="seat-icon" bind:value={newSeatTypeIcon}>
+                        {#each availableIcons as icon}
+                            <option value={icon}>{icon}</option>
+                        {/each}
+                    </select>
+                </div>
+            </div>
             <button on:click={addNewSeatType}>Hinzufügen</button>
         </div>
+        
     {/if}
 </main>
