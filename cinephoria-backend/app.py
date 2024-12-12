@@ -1167,37 +1167,87 @@ def update_seat_type(seat_type_id):
         return jsonify({'error': 'Fehler beim Aktualisieren des Sitztyps'}), 500
 
 
-# app.py
 
 @app.route('/user/cart', methods=['GET'])
 @token_required
-def get_user_cart():
+def get_user_cart_enriched():
     clear_expired_user_cart_items()
     user_id = request.user.get('user_id')
     try:
         with psycopg2.connect(DATABASE_URL) as conn:
             with conn.cursor(cursor_factory=psycopg2.extras.DictCursor) as cursor:
-                # Überprüfen, ob der Benutzer einen Warenkorb hat
+                # Sicherstellen, dass der Warenkorb existiert
                 cursor.execute("SELECT user_id FROM user_carts WHERE user_id = %s", (user_id,))
                 if cursor.fetchone() is None:
                     cursor.execute("INSERT INTO user_carts (user_id) VALUES (%s)", (user_id,))
                     conn.commit()
 
-                # Abrufen der Warenkorb-Elemente mit showtime_id
                 cursor.execute("""
-                    SELECT seat_id, price, reserved_until, showtime_id
-                    FROM user_cart_items
-                    WHERE user_id = %s
+                    SELECT uci.seat_id, uci.price AS base_price, uci.reserved_until, uci.showtime_id, uci.seat_type_discount_id,
+                           s.row, s.number, st.price AS seat_type_price, st.name AS seat_type_name,
+                           std.discount_amount, std.discount_percentage,
+                           d.name AS discount_name
+                    FROM user_cart_items uci
+                    JOIN seats s ON uci.seat_id = s.seat_id
+                    JOIN seat_types st ON s.seat_type_id = st.seat_type_id
+                    LEFT JOIN seat_type_discounts std ON uci.seat_type_discount_id = std.seat_type_discount_id
+                    LEFT JOIN discounts d ON std.discount_id = d.discount_id
+                    WHERE uci.user_id = %s
                 """, (user_id,))
                 items = cursor.fetchall()
+
                 cart_items = []
                 for item in items:
+                    # Debug-Logs hinzufügen
+                    print(f"Verarbeite Sitz: {item['seat_id']}, Showtime ID: {item['showtime_id']}")
+
+                    # Showtime-Daten abrufen
+                    cursor.execute("""
+                        SELECT showtime_id, movie_id, screen_id, start_time, end_time 
+                        FROM showtimes 
+                        WHERE showtime_id = %s
+                    """, (item['showtime_id'],))
+                    showtime = cursor.fetchone()
+
+                    # Debug-Log für Showtime-Abfrage
+                    print(f"Showtime Daten für Showtime ID {item['showtime_id']}: {showtime}")
+
+                    if showtime:
+                        showtime_data = {
+                            'showtime_id': showtime['showtime_id'],
+                            'movie_id': showtime['movie_id'],
+                            'screen_id': showtime['screen_id'],
+                            'start_time': showtime['start_time'].isoformat(),
+                            'end_time': showtime['end_time'].isoformat() if showtime['end_time'] else None
+                        }
+                        movie_data = {'movie_id': showtime['movie_id']}
+                    else:
+                        showtime_data = None
+                        movie_data = None
+
+                    # Preisberechnung
+                    seat_price = float(item['seat_type_price'])
+                    if item['discount_amount'] is not None:
+                        final_price = max(0, seat_price - float(item['discount_amount']))
+                    elif item['discount_percentage'] is not None:
+                        final_price = seat_price * (1 - float(item['discount_percentage']) / 100.0)
+                    else:
+                        final_price = seat_price
+
+                    # Hinzufügen zum Cart
                     cart_items.append({
                         'seat_id': item['seat_id'],
-                        'price': float(item['price']),
+                        'row': item['row'],
+                        'number': item['number'],
+                        'type': item['seat_type_name'],
+                        'original_price': seat_price,
+                        'final_price': round(final_price, 2),
+                        'discount_name': item['discount_name'],
                         'reserved_until': item['reserved_until'].isoformat(),
-                        'showtime_id': item['showtime_id']
+                        'showtime': showtime_data,
+                        'movie': movie_data
                     })
+
         return jsonify({'cart_items': cart_items}), 200
     except Exception as e:
         print(f"Fehler beim Abrufen des Warenkorbs: {e}")
