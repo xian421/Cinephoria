@@ -1,23 +1,20 @@
 <script>
     import { navigate } from 'svelte-routing';
     import { cart, cartError, removeFromCart, clearCart } from '../stores/cartStore.js';
-    import { fetchDiscounts } from '../services/api.js';
     import Swal from 'sweetalert2';
     import "@fortawesome/fontawesome-free/css/all.min.css";
-
     import { derived } from 'svelte/store';
 
-    // Reaktive Berechnung des Gesamtpreises
-    $: totalPrice = $cart.reduce((sum, seat) => sum + (seat.price || 0), 0);
+    // Rabattoptionen
+    const discountOptions = [
+        { id: 'none', label: 'Kein Rabatt', amount: 0 },
+        { id: 'student', label: 'Student', amount: 5 }, // 5 Euro Rabatt
+        { id: 'senior', label: 'Senior', amount: 3 }    // 3 Euro Rabatt
+    ];
 
-    let discountdata = [];
+    // Reaktive Berechnung des Gesamtpreises unter Berücksichtigung der Rabatte
+    $: totalPrice = $cart.reduce((sum, seat) => sum + (seat.price - (seat.discount?.amount || 0)), 0);
 
-    async function loadDiscounts() {
-        discountdata = await fetchDiscounts();
-        console.log(discountdata);
-    }
-
-    loadDiscounts();
     // Reaktive Fehlerbehandlung mit Zurücksetzen von cartError
     $: if ($cartError) {
         Swal.fire({
@@ -127,7 +124,49 @@
         navigate('/checkout'); // Passe den Pfad entsprechend an
     }
 
+    // Funktion zum Anwenden eines Rabatts auf einen Sitzplatz
+    function applyDiscount(seat) {
+        Swal.fire({
+            title: "Rabatt auswählen",
+            html: `
+                <select id="discount-select" class="swal2-select">
+                    ${discountOptions.map(d => `<option value="${d.id}" ${seat.discount?.id === d.id ? 'selected' : ''}>${d.label}</option>`).join('')}
+                </select>
+                <p style="margin-top: 1rem;">Bitte bringe deinen ${seat.discount?.label || 'Ausweis'} mit.</p>
+            `,
+            showCancelButton: true,
+            confirmButtonText: 'Anwenden',
+            preConfirm: () => {
+                const select = document.getElementById('discount-select');
+                return select.value;
+            }
+        }).then(result => {
+            if (result.isConfirmed) {
+                const selectedId = result.value;
+                const selectedDiscount = discountOptions.find(d => d.id === selectedId) || { id: 'none', label: 'Kein Rabatt', amount: 0 };
+                
+                // Update des Sitzplatzes mit dem ausgewählten Rabatt
+                seat.discount = selectedId !== 'none' ? selectedDiscount : null;
+                cart.set([...$cart]); // Aktualisieren des Stores
 
+                if (selectedId !== 'none') {
+                    Swal.fire({
+                        title: "Rabatt angewendet",
+                        text: `Du hast einen Rabatt von ${selectedDiscount.amount} € für diesen Sitzplatz ausgewählt. Bitte bringe deinen ${selectedDiscount.label}-Ausweis mit.`,
+                        icon: "success",
+                        confirmButtonText: "OK"
+                    });
+                } else {
+                    Swal.fire({
+                        title: "Rabatt entfernt",
+                        text: `Der Rabatt für diesen Sitzplatz wurde entfernt.`,
+                        icon: "info",
+                        confirmButtonText: "OK"
+                    });
+                }
+            }
+        });
+    }
 </script>
 
 <style>
@@ -237,6 +276,20 @@
     .showtime-details p {
         margin: 0.25rem 0;
     }
+
+    /* Stil für den Rabatt-Button */
+    .discount-btn {
+        background: none;
+        border: none;
+        color: #3498db;
+        cursor: pointer;
+        font-size: 1rem;
+        text-decoration: underline;
+    }
+
+    .discount-btn:hover {
+        color: #2980b9;
+    }
 </style>
 
 <main class="cart-container">
@@ -284,7 +337,11 @@
                                 </div>
                             </td>
                             <td>{seat.type ? seat.type.charAt(0).toUpperCase() + seat.type.slice(1) : 'Standard'}</td>
-                            <td>{seat.price.toFixed(2)} €</td>
+                            <td>
+                                <span on:click={() => applyDiscount(seat)} style="cursor: pointer;">
+                                    {seat.price.toFixed(2)} € {seat.discount ? `(-${seat.discount.amount} €)` : ''}
+                                </span>
+                            </td>
                             <td>
                                 <button class="remove-btn" on:click={() => handleRemove(seat.seat_id, seat.showtime_id)}>
                                     <i class="fas fa-trash"></i> Entfernen

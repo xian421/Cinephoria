@@ -735,19 +735,22 @@ export const fetchShowtimeDetails = async (showtime_id) => {
 
 export const fetchDiscounts = async () => {
     try {
+        const token = get(authStore).token; // Falls Authentifizierung erforderlich ist
         const response = await fetch(`${API_BASE_URL}/discounts`, {
             method: 'GET',
             headers: {
                 'Content-Type': 'application/json',
-            },
+                'Authorization': `Bearer ${token}` // Entfernen, wenn nicht benötigt
+            }
         });
+
         const data = await response.json();
         if (!response.ok) {
-            throw new Error(data.error || 'Fehler beim Abrufen der Discounts (Api.js)');
+            throw new Error(data.error || 'Fehler beim Abrufen der Discounts');
         }
-        return data.discounts;
+        return data; // Erwartet { discounts: [...] }
     } catch (error) {
-        console.error('Fehler beim Abrufen der Details (Api.js)', error);
+        console.error('Error fetching discounts:', error);
         throw error;
     }
 };
