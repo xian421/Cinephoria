@@ -1775,5 +1775,33 @@ def get_discount_for_seat_type(seat_type_id):
         logger.error(f"Fehler beim Abrufen des Discounts für Sitztyp: {e}")
         return jsonify({'error': 'Fehler beim Abrufen des Discounts für Sitztyp'}), 500
 
+
+
+
+@app.route('/movie/<int:movie_id>/trailer_url', methods=['GET'])
+def get_movie_trailer_url(movie_id):
+    # URL für die TMDB-API mit der spezifischen Film-ID
+    url = f"{TMDB_API_URL}/{movie_id}/videos?language=de-DE"
+
+
+    # Anfrage an die API senden
+    response = requests.get(url, headers=HEADERS)
+    
+    # Erfolgreiche Antwort zurückgeben
+    if response.status_code == 200:
+        # JSON-Antwort parsen
+        data = response.json()
+        
+        # Filtere nur den Eintrag mit 'iso_3166_1': 'DE'
+        trailer = next((item for item in data['results'] if item['type'] == 'Trailer'), None)
+        
+        if trailer:
+            return jsonify(trailer.get('key')), 200
+        else:
+            return jsonify({"error": "No Trailer found."}), 404
+    else:
+        # Fehler behandeln und Fehlermeldung zurückgeben
+        return jsonify({"error": f"Unable to fetch Trailer for movie ID {movie_id}"}), response.status_code
+
 if __name__ == '__main__':
     app.run(debug=True)
