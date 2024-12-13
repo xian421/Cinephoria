@@ -51,9 +51,10 @@ export async function loadCart() {
                 console.log('seatDetails:', seatDetails);
                 console.log('showtimeDetails:', showtimeDetails);
                 console.log('movieDetails:', movieDetails);
+                console.log('seatDetails:', seatDetails);
                 return {
                     ...item,
-                    ...seatDetails, // Fügt 'row', 'number', 'type' und 'price' hinzu
+                    ...seatDetails, // Fügt 'row', 'number', 'type' und 'price' hinzu und jetzt auch noch discount und so (siehedef get_seat(seat_id) bei app.py)
                     showtime: showtimeDetails,
                     movie: movieDetails
                 };
@@ -66,6 +67,9 @@ export async function loadCart() {
                     number: null,
                     type: null,
                     price: item.price || 0.00,
+                    discount_name : null,
+                    discount_amount: null,
+                    discount_percentage: null,
                     showtime: null,
                     movie: null
                 };
