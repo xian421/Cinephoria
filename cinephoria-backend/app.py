@@ -1783,7 +1783,6 @@ def get_movie_trailer_url(movie_id):
     # URL für die TMDB-API mit der spezifischen Film-ID
     url = f"{TMDB_API_URL}/{movie_id}/videos?language=de-DE"
 
-
     # Anfrage an die API senden
     response = requests.get(url, headers=HEADERS)
     
@@ -1792,11 +1791,12 @@ def get_movie_trailer_url(movie_id):
         # JSON-Antwort parsen
         data = response.json()
         
-        # Filtere nur den Eintrag mit 'iso_3166_1': 'DE'
-        trailer = next((item for item in data['results'] if item['type'] == 'Trailer'), None)
+        # Filtere nur den Eintrag mit 'type' == 'Trailer' und 'site' == 'YouTube'
+        trailer = next((item for item in data.get('results', []) if item.get('type') == 'Trailer' and item.get('site') == 'YouTube'), None)
         
-        if trailer:
-            return jsonify(trailer.get('key')), 200
+        if trailer and 'key' in trailer:
+            embed_url = f"https://www.youtube.com/embed/{trailer['key']}"
+            return jsonify({"trailer_url": embed_url}), 200
         else:
             return jsonify({"error": "No Trailer found."}), 404
     else:
