@@ -900,3 +900,63 @@ export const fetchSeatTypesWithDiscounts = async () => {
         throw error;
     }
 };
+
+
+// // Funktion zum Abrufen von Discounts für einen Sitztyp
+// export const fetchDiscountsForSeatType = async (seatTypeId) => {
+//     try {
+//         const response = await fetch(`${API_BASE_URL}/seat_type_discounts?seat_type_id=${seatTypeId}`, {
+//             method: 'GET',
+//             headers: {
+//                 'Content-Type': 'application/json',
+//             }
+//         });
+
+//         const data = await response.json();
+//         if (!response.ok) {
+//             throw new Error(data.error || 'Fehler beim Abrufen der Discounts für Sitztyp');
+//         }
+//         return data.discounts; // Array von Discounts
+//     } catch (error) {
+//         console.error('Error fetching discounts for seat type:', error);
+//         throw error;
+//     }
+// };
+
+
+export async function deleteSeatType(token, seat_type_id) {
+    const response = await fetch(`${API_BASE_URL}/seat_types/${seat_type_id}`, {
+        method: 'DELETE',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
+        },
+    });
+
+    if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Fehler beim Löschen des Sitztyps');
+    }
+
+    return response.json();
+}
+
+// src/services/api.js
+
+export async function fetchMovieTrailerUrl(token, movie_id) {
+    const response = await fetch(`${API_BASE_URL}/movie/${movie_id}/trailer_url`, {
+        method: 'GET',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`, // Falls benötigt
+        },
+    });
+
+    if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Fehler beim Abrufen der Trailer-URL');
+    }
+
+    const data = await response.json();
+    return data.trailer_url;
+}
