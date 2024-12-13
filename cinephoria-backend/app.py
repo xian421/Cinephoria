@@ -1182,6 +1182,25 @@ def update_seat_type(seat_type_id):
         print(f"Fehler beim Aktualisieren des Sitztyps: {e}")
         return jsonify({'error': 'Fehler beim Aktualisieren des Sitztyps'}), 500
 
+@app.route('/seat_types/<int:seat_type_id>', methods=['DELETE'])
+@admin_required
+def delete_seat_type(seat_type_id):
+    try:
+        with psycopg2.connect(DATABASE_URL) as conn:
+            with conn.cursor() as cursor:
+                cursor.execute("""
+                    DELETE FROM seat_types
+                    WHERE seat_type_id = %s
+                """, (seat_type_id,))
+                if cursor.rowcount == 0:
+                    return jsonify({'error': 'Sitztyp nicht gefunden'}), 404
+
+        return jsonify({'message': 'Sitztyp gelöscht'}), 200
+
+    except Exception as e:
+        print(f"Fehler beim Löschen des Sitzes: {e}")
+        return jsonify({'error': 'Fehler beim Löschen des Sitzes'}), 500
+
 
 # app.py
 
