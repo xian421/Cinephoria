@@ -542,7 +542,6 @@ def get_seats():
                     SELECT s.seat_id, s.screen_id, s.row, s.number, st.name AS seat_type_name, st.price
                     FROM seats s
                     JOIN seat_types st ON s.seat_type_id = st.seat_type_id
-                    JOIN
                     WHERE s.screen_id = %s
                 """, (screen_id,))
                 seats = cursor.fetchall()
