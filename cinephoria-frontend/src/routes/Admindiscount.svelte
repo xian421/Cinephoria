@@ -340,119 +340,244 @@
 </script>
 
 <style>
-    @import "@fortawesome/fontawesome-free/css/all.min.css";
+   @import "@fortawesome/fontawesome-free/css/all.min.css";
 
-    main {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        font-family: Arial, sans-serif;
-        padding: 20px;
+/* Basis-Layout */
+main {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    font-family: 'Roboto', sans-serif;
+    padding: 30px;
+    background: linear-gradient(120deg, #f0f9ff, #cfefff);
+    border-radius: 10px;
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+}
+
+/* Überschriften */
+h1, h2 {
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+h1 {
+    font-size: 2.8rem;
+    color: #34495e;
+    margin-bottom: 15px;
+    border-bottom: 4px solid #3498db;
+    display: inline-block;
+    padding-bottom: 10px;
+}
+
+h2 {
+    font-size: 2rem;
+    color: #2c3e50;
+}
+
+/* Tabellen */
+table {
+    width: 100%;
+    max-width: 900px;
+    border-collapse: collapse;
+    margin: 20px 0;
+    border-radius: 8px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+}
+
+th, td {
+    padding: 20px;
+    text-align: left;
+    border-bottom: 1px solid #ddd;
+    font-size: 1rem;
+    vertical-align: middle;
+}
+
+th {
+    background-color: #2c3e50;
+    color: #ffffff;
+    text-transform: uppercase;
+    font-weight: bold;
+}
+
+td {
+    color: #555;
+    background-color: #ffffff;
+}
+
+td:last-child {
+    text-align: center;
+}
+
+/* Eingabefelder */
+input, select, textarea {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    font-size: 1rem;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+    transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+input:focus, select:focus, textarea:focus {
+    border-color: #3498db;
+    box-shadow: 0 2px 10px rgba(52, 152, 219, 0.3);
+    outline: none;
+}
+
+/* Buttons */
+button {
+    background: linear-gradient(45deg, #3498db, #1abc9c);
+    color: white;
+    padding: 12px 20px;
+    font-size: 1rem;
+    border: none;
+    border-radius: 25px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+button:hover {
+    background: linear-gradient(45deg, #2980b9, #16a085);
+    transform: translateY(-3px);
+}
+
+/* Sektionen */
+.form-section {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    width: 100%;
+    max-width: 800px;
+    background-color: #ffffff;
+    padding: 30px;
+    border-radius: 10px;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+    margin-bottom: 30px;
+    animation: fadeIn 0.5s ease-out;
+}
+
+.form-section h2 {
+    font-size: 1.8rem;
+    color: #34495e;
+}
+
+/* Icon-Auswahl */
+.icon-container {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.icon-background {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    background-color: var(--bg-color, #3498db);
+    position: relative;
+    cursor: pointer;
+    transition: transform 0.3s ease, background-color 0.3s ease;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+}
+
+.icon-background input[type="color"] {
+    opacity: 0;
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    cursor: pointer;
+}
+
+.icon-background:hover {
+    transform: scale(1.2);
+    background-color: #1abc9c;
+}
+
+.icon-background i {
+    color: white;
+    font-size: 1.5rem;
+}
+
+/* Nachrichten */
+.success-message, .error-message {
+    font-size: 1rem;
+    padding: 10px 15px;
+    border-radius: 8px;
+    margin: 20px 0;
+    text-align: center;
+    font-weight: bold;
+}
+
+.success-message {
+    color: #27ae60;
+    background-color: #dff0d8;
+}
+
+.error-message {
+    color: #c0392b;
+    background-color: #f8d7da;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    h1 {
+        font-size: 2rem;
     }
 
-    h1, h2 {
-        margin-bottom: 20px;
+    h2 {
+        font-size: 1.5rem;
     }
 
     table {
-        border-collapse: collapse;
-        width: 100%;
-        max-width: 1000px;
-        margin-bottom: 20px;
-    }
-
-    th, td {
-        text-align: left;
-        padding: 12px;
-        border-bottom: 1px solid #ddd;
-    }
-
-    th {
-        background-color: #4CAF50;
-        color: white;
-    }
-
-    input[type="text"], textarea, select, input[type="number"] {
-        padding: 8px;
-        margin-right: 10px;
-        width: 100%;
-        box-sizing: border-box;
+        font-size: 0.9rem;
     }
 
     button {
-        padding: 10px 20px;
-        font-size: 14px;
-        cursor: pointer;
-        border: none;
-        background-color: #4CAF50;
-        color: white;
-        border-radius: 5px;
-        transition: background-color 0.3s;
-        margin: 5px;
-    }
-
-    button:hover {
-        background-color: #45a049;
+        font-size: 0.9rem;
+        padding: 10px 15px;
     }
 
     .form-section {
-        width: 100%;
-        max-width: 800px;
-        margin-bottom: 40px;
+        padding: 20px;
     }
+}
 
-    .form-section h2 {
-        margin-bottom: 15px;
+/* Animationen */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
     }
-
-    .discount-list {
-        width: 100%;
-        max-width: 1000px;
+    to {
+        opacity: 1;
+        transform: translateY(0);
     }
+}
 
-    .assign-section {
-        margin-top: 20px;
-    }
+.delete-button {
+    padding: 10px 20px;
+    font-size: 1rem;
+    cursor: pointer;
+    border: none;
+    background-color: #e74c3c;
+    color: white;
+    border-radius: 25px;
+    transition: background-color 0.3s ease, transform 0.3s ease;
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
+}
 
-    .assign-section table {
-        margin-top: 10px;
-    }
+.delete-button:hover {
+    background-color: #c0392b;
+    transform: translateY(-3px);
+}
 
-    /* Responsive Design */
-    @media (max-width: 800px) {
-        table, .form-section, .discount-list {
-            width: 100%;
-        }
 
-        th, td {
-            padding: 8px;
-        }
 
-        button {
-            padding: 8px 16px;
-            font-size: 12px;
-        }
-    }
-
-    /* Icon Styling */
-    .icon-display {
-        display: flex;
-        align-items: center;
-    }
-
-    .icon-display i {
-        margin-right: 8px;
-        font-size: 18px;
-    }
-
-    /* Fehler- und Erfolgsnachrichten */
-    .error {
-        color: red;
-    }
-
-    .success {
-        color: green;
-    }
 </style>
 
 <main>
@@ -495,6 +620,8 @@
                                 <button on:click={() => handleDeleteDiscount(discount.discount_id)}>
                                     <i class="fas fa-trash-alt"></i> Löschen
                                 </button>
+                                
+
                             </td>
                         </tr>
                     {/each}
