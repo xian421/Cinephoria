@@ -428,7 +428,7 @@ input:focus, select:focus, textarea:focus {
 
 /* Buttons */
 button {
-    background: linear-gradient(45deg, #3498db, #1abc9c);
+    background: #3498db;
     color: white;
     padding: 12px 20px;
     font-size: 1rem;
@@ -440,7 +440,6 @@ button {
 }
 
 button:hover {
-    background: linear-gradient(45deg, #2980b9, #16a085);
     transform: translateY(-3px);
 }
 
@@ -566,14 +565,14 @@ button:hover {
     border: none;
     background-color: #e74c3c;
     color: white;
-    border-radius: 25px;
+    border-radius: 10px;
     transition: background-color 0.3s ease, transform 0.3s ease;
     box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
 }
 
 .delete-button:hover {
-    background-color: #c0392b;
-    transform: translateY(-3px);
+    background-color: #c0392b !important;
+    transform: translateY(-3px) !important;
 }
 
 
@@ -617,7 +616,7 @@ button:hover {
                                 <button on:click={() => handleUpdateDiscount(discount)}>
                                     <i class="fas fa-save"></i> Speichern
                                 </button>
-                                <button on:click={() => handleDeleteDiscount(discount.discount_id)}>
+                                <button class="delete-button" on:click={() => handleDeleteDiscount(discount.discount_id)}>
                                     <i class="fas fa-trash-alt"></i> Löschen
                                 </button>
                                 
@@ -680,7 +679,7 @@ button:hover {
                                 <td>{seatType.name}</td>
                                 <td colspan="3">Keine Discounts zugewiesen</td>
                                 <td>
-                                    <button on:click={() => handleAssignDiscount(seatType, null)}>
+                                    <button class="delete-button" on:click={() => handleAssignDiscount(seatType, null)}>
                                         <i class="fas fa-plus-circle"></i> Zuweisen
                                     </button>
                                 </td>
