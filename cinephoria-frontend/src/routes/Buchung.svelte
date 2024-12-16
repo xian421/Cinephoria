@@ -61,7 +61,7 @@
                 }
                 if (timeLeft <= 0) {
                     clearInterval(timer!);
-                    loadCart(); // Aktualisiere den Warenkorb, um abgelaufene Sitze zu entfernen
+                    loadCart();
                 }
             }, 1000);
         }
@@ -74,13 +74,13 @@
             text: $cartError,
             icon: "error",
             confirmButtonText: "Neu Laden",
-            allowOutsideClick: false, // Optional: Verhindert das Schließen durch Klicken außerhalb
+            allowOutsideClick: false,
         }).then(async (result) => {
             if (result.isConfirmed) {
                 await loadCart();
                 await loadSeats(); // Aktualisiert die Sitzplatzkarte
             }
-            cartError.set(null); // Setzt den Fehler zurück
+            cartError.set(null);
         });
     }
 
@@ -95,7 +95,7 @@
             error = err.message || 'Fehler beim Laden.';
         } finally {
             isLoading = false;
-            await tick(); // Warten, bis DOM-Änderungen abgeschlossen sind
+            await tick();
             if (!payPalInitialized) {
                 initializePayPalButtons();
                 payPalInitialized = true;
