@@ -1,9 +1,10 @@
+
 <!-- src/routes/Adminpreise.svelte -->
 <script>
     import { onMount } from 'svelte';
     import { navigate } from 'svelte-routing';
     import Swal from 'sweetalert2';
-    import { fetchSeatTypes, updateSeatType, addSeatType } from '../services/api.js';
+    import { fetchSeatTypes, updateSeatType, addSeatType, deleteSeatType as apiDeleteSeatType } from '../services/api.js';
     import { get } from 'svelte/store';
     import { authStore } from '../stores/authStore.js';
 
@@ -18,30 +19,29 @@
 
     // Beispielhafte Liste von Font Awesome Icons
     const availableIcons = [
-    '',
-    'fa-chair',
-    'fa-wheelchair',
-    'fa-star',
-    'fa-user',
-    'fa-crown',
-    'fa-heart',
-    'fa-music',
-    'fa-lock',        // Reservierte Plätze
-    'fa-tag',         // Ermäßigte Sitze
-    'fa-table',       // Sitze mit Tisch
-    'fa-plug',        // Sitze mit Stromversorgung
-    'fa-fire',        // Beheizte Sitze
-    'fa-eye',         // Beste Sicht (erste Reihe)
-    'fa-users',       // Familienbereich
-    'fa-users-cog',   // Bereich für Gruppen
-    'fa-throne',      // Luxus-Sitze
-    'fa-tree',        // Outdoor-Kino
-    'fa-glasses',     // 3D-Erlebnis
-    'fa-ticket-alt',  // Spezialplätze oder Events
-    'fa-bed',         // Relax-Sitze
-    'fa-solid fa-couch' // Alternative für Entspannungssitze
-];
-
+        '',
+        'fa-chair',
+        'fa-wheelchair',
+        'fa-star',
+        'fa-user',
+        'fa-crown',
+        'fa-heart',
+        'fa-music',
+        'fa-lock',        // Reservierte Plätze
+        'fa-tag',         // Ermäßigte Sitze
+        'fa-table',       // Sitze mit Tisch
+        'fa-plug',        // Sitze mit Stromversorgung
+        'fa-fire',        // Beheizte Sitze
+        'fa-eye',         // Beste Sicht (erste Reihe)
+        'fa-users',       // Familienbereich
+        'fa-users-cog',   // Bereich für Gruppen
+        'fa-throne',      // Luxus-Sitze
+        'fa-tree',        // Outdoor-Kino
+        'fa-glasses',     // 3D-Erlebnis
+        'fa-ticket-alt',  // Spezialplätze oder Events
+        'fa-bed',         // Relax-Sitze
+        'fa-solid fa-couch' // Alternative für Entspannungssitze
+    ];
 
     // Daten vom Backend laden
     onMount(async () => {
@@ -158,29 +158,45 @@
         }
     }
 
+    // Funktion zum Löschen eines Sitztyps
+    async function handleDeleteSeatType(index) {
+        const seat = seatTypes[index];
+        const seat_type_id = seat.seat_type_id;
 
-    function deleteSeatType(index) {
-    Swal.fire({
-        title: 'Sind Sie sicher?',
-        text: 'Dieser Sitztyp wird dauerhaft gelöscht!',
-        icon: 'warning',
-        showCancelButton: true,
-        confirmButtonColor: '#d33',
-        cancelButtonColor: '#3085d6',
-        confirmButtonText: 'Ja, löschen!',
-        cancelButtonText: 'Abbrechen',
-    }).then((result) => {
-        if (result.isConfirmed) {
-            seatTypes.splice(index, 1);
-            seatTypes = [...seatTypes]; // Reaktivität auslösen
-            Swal.fire(
-                'Gelöscht!',
-                'Der Sitztyp wurde gelöscht.',
-                'success'
-            );
-        }
-    });
-}
+        Swal.fire({
+            title: 'Sind Sie sicher?',
+            text: 'Dieser Sitztyp wird dauerhaft gelöscht!',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#d33',
+            cancelButtonColor: '#3085d6',
+            confirmButtonText: 'Ja, löschen!',
+            cancelButtonText: 'Abbrechen',
+        }).then(async (result) => {
+            if (result.isConfirmed) {
+                try {
+                    const token = get(authStore).token;
+                    await apiDeleteSeatType(token, seat_type_id);
+                    // Entfernen des Sitztyps aus der Liste
+                    seatTypes.splice(index, 1);
+                    seatTypes = [...seatTypes];
+                    Swal.fire(
+                        'Gelöscht!',
+                        'Der Sitztyp wurde gelöscht.',
+                        'success'
+                    );
+                } catch (err) {
+                    console.error('Fehler beim Löschen des Sitztyps:', err);
+                    Swal.fire({
+                        title: 'Fehler',
+                        text: err.message || 'Fehler beim Löschen des Sitztyps.',
+                        icon: 'error',
+                        confirmButtonText: 'OK',
+                    });
+                }
+            }
+        });
+    }
 </script>
 
 <style>
@@ -479,50 +495,50 @@ button:hover {
             </thead>
             <tbody>
                 {#each seatTypes as seat, index}
-        <tr>
-            <td>
-                <input
-                    type="text"
-                    bind:value={seat.name}
-                />
-            </td>
-            
-            <td>
-                <input
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    bind:value={seat.price}
-                />
-            </td>
-            
-            <td>
-                <div class="icon-container">
-                    <!-- Icon-Container mit farbigem Hintergrund -->
-                    <div class="icon-background" style="--bg-color: {seat.color};">
-                        <i class={`fas ${seat.icon}`}></i>
-                        <input type="color" bind:value={seat.color} />
-                    </div>
-                    <!-- Auswahl des Icons -->
-                    <select
-                        bind:value={seat.icon}
-                    >
-                        {#each availableIcons as icon}
-                            <option value={icon}>{icon}</option>
-                        {/each}
-                    </select>
-                </div>
-            </td>
-            <td>
-                <button
-                    class="delete-button"
-                    on:click={() => deleteSeatType(index)}
-                >
-                    Löschen
-                </button>
-            </td>
-        </tr>
-    {/each}
+                    <tr>
+                        <td>
+                            <input
+                                type="text"
+                                bind:value={seat.name}
+                            />
+                        </td>
+                        
+                        <td>
+                            <input
+                                type="number"
+                                min="0"
+                                step="0.01"
+                                bind:value={seat.price}
+                            />
+                        </td>
+                        
+                        <td>
+                            <div class="icon-container">
+                                <!-- Icon-Container mit farbigem Hintergrund -->
+                                <div class="icon-background" style="--bg-color: {seat.color};">
+                                    <i class={`fas ${seat.icon}`}></i>
+                                    <input type="color" bind:value={seat.color} />
+                                </div>
+                                <!-- Auswahl des Icons -->
+                                <select
+                                    bind:value={seat.icon}
+                                >
+                                    {#each availableIcons as icon}
+                                        <option value={icon}>{icon}</option>
+                                    {/each}
+                                </select>
+                            </div>
+                        </td>
+                        <td>
+                            <button
+                                class="delete-button"
+                                on:click={() => handleDeleteSeatType(index)}
+                            >
+                                Löschen
+                            </button>
+                        </td>
+                    </tr>
+                {/each}
             </tbody>
         </table>
 

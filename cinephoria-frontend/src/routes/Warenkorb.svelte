@@ -4,7 +4,7 @@
     import Swal from 'sweetalert2';
     import "@fortawesome/fontawesome-free/css/all.min.css";
     import { derived } from 'svelte/store';
-
+    
     // Rabattoptionen
     const discountOptions = [
         { id: 'none', label: 'Kein Rabatt', amount: 0 },
@@ -124,48 +124,36 @@
         navigate('/checkout'); // Passe den Pfad entsprechend an
     }
 
-    // Funktion zum Anwenden eines Rabatts auf einen Sitzplatz
-    function applyDiscount(seat) {
-        Swal.fire({
-            title: "Rabatt auswählen",
-            html: `
-                <select id="discount-select" class="swal2-select">
-                    ${discountOptions.map(d => `<option value="${d.id}" ${seat.discount?.id === d.id ? 'selected' : ''}>${d.label}</option>`).join('')}
-                </select>
-                <p style="margin-top: 1rem;">Bitte bringe deinen ${seat.discount?.label || 'Ausweis'} mit.</p>
-            `,
-            showCancelButton: true,
-            confirmButtonText: 'Anwenden',
-            preConfirm: () => {
-                const select = document.getElementById('discount-select');
-                return select.value;
-            }
-        }).then(result => {
-            if (result.isConfirmed) {
-                const selectedId = result.value;
-                const selectedDiscount = discountOptions.find(d => d.id === selectedId) || { id: 'none', label: 'Kein Rabatt', amount: 0 };
-                
-                // Update des Sitzplatzes mit dem ausgewählten Rabatt
-                seat.discount = selectedId !== 'none' ? selectedDiscount : null;
-                cart.set([...$cart]); // Aktualisieren des Stores
+    // Funktion zum Aktualisieren des Rabatts eines Sitzplatzes
+    function handleDiscountChange(seat, event) {
+        const selectedId = event.target.value;
+        const selectedDiscount = discountOptions.find(d => d.id === selectedId) || { id: 'none', label: 'Kein Rabatt', amount: 0 };
 
-                if (selectedId !== 'none') {
-                    Swal.fire({
-                        title: "Rabatt angewendet",
-                        text: `Du hast einen Rabatt von ${selectedDiscount.amount} € für diesen Sitzplatz ausgewählt. Bitte bringe deinen ${selectedDiscount.label}-Ausweis mit.`,
-                        icon: "success",
-                        confirmButtonText: "OK"
-                    });
-                } else {
-                    Swal.fire({
-                        title: "Rabatt entfernt",
-                        text: `Der Rabatt für diesen Sitzplatz wurde entfernt.`,
-                        icon: "info",
-                        confirmButtonText: "OK"
-                    });
-                }
-            }
-        });
+        // Update des Sitzplatzes mit dem ausgewählten Rabatt
+        const updatedSeat = { ...seat, discount: selectedId !== 'none' ? selectedDiscount : null };
+
+        // Aktualisieren des Stores immutabel
+        const updatedCart = $cart.map(s => s.seat_id === seat.seat_id && s.showtime_id === seat.showtime_id ? updatedSeat : s);
+        cart.set(updatedCart);
+
+        // Optional: Anzeige einer Bestätigung
+        if (selectedId !== 'none') {
+            Swal.fire({
+                title: "Rabatt angewendet",
+                text: `Du hast einen Rabatt von ${selectedDiscount.amount} € für diesen Sitzplatz ausgewählt. Bitte bringe deinen ${selectedDiscount.label}-Ausweis mit.`,
+                icon: "success",
+                timer: 2000,
+                showConfirmButton: false
+            });
+        } else {
+            Swal.fire({
+                title: "Rabatt entfernt",
+                text: `Der Rabatt für diesen Sitzplatz wurde entfernt.`,
+                icon: "info",
+                timer: 2000,
+                showConfirmButton: false
+            });
+        }
     }
 </script>
 
@@ -277,18 +265,12 @@
         margin: 0.25rem 0;
     }
 
-    /* Stil für den Rabatt-Button */
-    .discount-btn {
-        background: none;
-        border: none;
-        color: #3498db;
-        cursor: pointer;
+    /* Stil für den Rabatt-Select */
+    .discount-select {
+        padding: 0.5rem;
+        border-radius: 5px;
+        border: 1px solid #ccc;
         font-size: 1rem;
-        text-decoration: underline;
-    }
-
-    .discount-btn:hover {
-        color: #2980b9;
     }
 </style>
 
@@ -313,6 +295,7 @@
                         <th>Sitzplatz</th>
                         <th>Typ</th>
                         <th>Preis</th>
+                        <th>Ermäßigung auswählen</th>
                         <th>Aktion</th>
                     </tr>
                 </thead>
@@ -337,10 +320,13 @@
                                 </div>
                             </td>
                             <td>{seat.type ? seat.type.charAt(0).toUpperCase() + seat.type.slice(1) : 'Standard'}</td>
+                            <td>{seat.price.toFixed(2)} € {seat.discount ? `(-${seat.discount.amount} €)` : ''}</td>
                             <td>
-                                <span on:click={() => applyDiscount(seat)} style="cursor: pointer;">
-                                    {seat.price.toFixed(2)} € {seat.discount ? `(-${seat.discount.amount} €)` : ''}
-                                </span>
+                                <select class="discount-select" value={seat.discount?.id || 'none'} on:change={(e) => handleDiscountChange(seat, e)}>
+                                    {#each discountOptions as discount}
+                                        <option value="{discount.id}">{discount.label}</option>
+                                    {/each}
+                                </select>
                             </td>
                             <td>
                                 <button class="remove-btn" on:click={() => handleRemove(seat.seat_id, seat.showtime_id)}>

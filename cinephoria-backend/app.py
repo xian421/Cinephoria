@@ -542,6 +542,7 @@ def get_seats():
                     SELECT s.seat_id, s.screen_id, s.row, s.number, st.name AS seat_type_name, st.price
                     FROM seats s
                     JOIN seat_types st ON s.seat_type_id = st.seat_type_id
+                    JOIN
                     WHERE s.screen_id = %s
                 """, (screen_id,))
                 seats = cursor.fetchall()
@@ -570,10 +571,21 @@ def get_seat(seat_id):
         with psycopg2.connect(DATABASE_URL) as conn:
             with conn.cursor() as cursor:
                 cursor.execute("""
-                    SELECT s.seat_id, s.screen_id, s.row, s.number, st.name AS seat_type_name, st.price
-                    FROM seats s
-                    JOIN seat_types st ON s.seat_type_id = st.seat_type_id
-                    WHERE s.seat_id = %s
+                SELECT s.seat_id
+                     , s.screen_id
+                     , s.row
+                     , s.number
+                     , st.name AS seat_type_name
+                     , st.price
+                     , std.discount_id
+                     , d.name AS discount_name
+                     , std.discount_amount
+                     , std.discount_percentage
+                FROM seats s
+                JOIN seat_types st ON s.seat_type_id = st.seat_type_id
+                LEFT JOIN seat_type_discounts std On std.seat_type_id = st.seat_type_id
+                LEFT JOIN discounts d ON std.discount_id = d.discount_id
+                WHERE s.seat_id = %s
                 """, (seat_id,))
                 seat = cursor.fetchone()
                 
@@ -584,7 +596,11 @@ def get_seat(seat_id):
                         'row': seat[2],
                         'number': seat[3],
                         'type': seat[4],  # seat_type_name
-                        'price': float(seat[5])
+                        'price': float(seat[5]),
+                        'discount_id': seat[6],
+                        'discount_name': seat[7],
+                        'discount_amount': float(seat[8]) if seat[8] else None,
+                        'discount_percentage': float(seat[9]) if seat[9] else None
                     }
                     return jsonify({'seat': seat_details}), 200
                 else:
@@ -1166,6 +1182,25 @@ def update_seat_type(seat_type_id):
         print(f"Fehler beim Aktualisieren des Sitztyps: {e}")
         return jsonify({'error': 'Fehler beim Aktualisieren des Sitztyps'}), 500
 
+@app.route('/seat_types/<int:seat_type_id>', methods=['DELETE'])
+@admin_required
+def delete_seat_type(seat_type_id):
+    try:
+        with psycopg2.connect(DATABASE_URL) as conn:
+            with conn.cursor() as cursor:
+                cursor.execute("""
+                    DELETE FROM seat_types
+                    WHERE seat_type_id = %s
+                """, (seat_type_id,))
+                if cursor.rowcount == 0:
+                    return jsonify({'error': 'Sitztyp nicht gefunden'}), 404
+
+        return jsonify({'message': 'Sitztyp gelöscht'}), 200
+
+    except Exception as e:
+        print(f"Fehler beim Löschen des Sitzes: {e}")
+        return jsonify({'error': 'Fehler beim Löschen des Sitzes'}), 500
+
 
 # app.py
 
@@ -1707,281 +1742,66 @@ def get_seat_types_with_discounts():
 
 
 
-
-
-@app.route('/seats/<int:seat_id>/available_discounts', methods=['GET'])
-def get_available_discounts_for_seat(seat_id):
+@app.route('/discount/<int:seat_type_id>', methods=['GET'])
+def get_discount_for_seat_type(seat_type_id):
     try:
         with psycopg2.connect(DATABASE_URL) as conn:
             with conn.cursor(cursor_factory=psycopg2.extras.DictCursor) as cursor:
-                # Seat_type_id für diesen seat holen
                 cursor.execute("""
-                    SELECT s.seat_id, s.seat_type_id, st.name, st.price
-                    FROM seats s
-                    JOIN seat_types st ON s.seat_type_id = st.seat_type_id
-                    WHERE s.seat_id = %s
-                """, (seat_id,))
-                seat = cursor.fetchone()
-                if not seat:
-                    return jsonify({'error': 'Sitz nicht gefunden'}), 404
-
-                seat_type_id = seat['seat_type_id']
-
-                # Alle Discounts für diesen seat_type
-                cursor.execute("""
-                    SELECT std.seat_type_discount_id, d.name, d.description, std.discount_amount, std.discount_percentage
+                    SELECT 
+                        std.discount_id,
+                        d.name AS discount_name,
+                        d.description,
+                        std.discount_amount,
+                        std.discount_percentage
                     FROM seat_type_discounts std
                     JOIN discounts d ON std.discount_id = d.discount_id
                     WHERE std.seat_type_id = %s
                 """, (seat_type_id,))
-                rows = cursor.fetchall()
+                results = cursor.fetchall()
 
                 discounts = []
-                for r in rows:
+                for row in results:
                     discounts.append({
-                        'seat_type_discount_id': r['seat_type_discount_id'],
-                        'name': r['name'],
-                        'description': r['description'],
-                        'discount_amount': float(r['discount_amount']) if r['discount_amount'] else None,
-                        'discount_percentage': float(r['discount_percentage']) if r['discount_percentage'] else None
+                        'discount_id': row['discount_id'],
+                        'name': row['discount_name'],
+                        'description': row['description'],
+                        'discount_amount': float(row['discount_amount']) if row['discount_amount'] else None,
+                        'discount_percentage': float(row['discount_percentage']) if row['discount_percentage'] else None
                     })
 
         return jsonify({'discounts': discounts}), 200
-
     except Exception as e:
-        print(f"Fehler beim Abrufen der Discounts: {e}")
-        return jsonify({'error': 'Fehler beim Abrufen der Discounts'}), 500
-
-
-@app.route('/user/cart', methods=['GET'])
-@token_required
-def get_user_cart_enriched():
-    clear_expired_user_cart_items()
-    user_id = request.user.get('user_id')
-    try:
-        with psycopg2.connect(DATABASE_URL) as conn:
-            with conn.cursor(cursor_factory=psycopg2.extras.DictCursor) as cursor:
-                # Sicherstellen, dass der Warenkorb existiert
-                cursor.execute("SELECT user_id FROM user_carts WHERE user_id = %s", (user_id,))
-                if cursor.fetchone() is None:
-                    cursor.execute("INSERT INTO user_carts (user_id) VALUES (%s)", (user_id,))
-                    conn.commit()
-
-                cursor.execute("""
-                    SELECT uci.seat_id, uci.price AS base_price, uci.reserved_until, uci.showtime_id, uci.seat_type_discount_id,
-                           s.row, s.number, st.price AS seat_type_price, st.name AS seat_type_name,
-                           std.discount_amount, std.discount_percentage,
-                           d.name AS discount_name
-                    FROM user_cart_items uci
-                    JOIN seats s ON uci.seat_id = s.seat_id
-                    JOIN seat_types st ON s.seat_type_id = st.seat_type_id
-                    LEFT JOIN seat_type_discounts std ON uci.seat_type_discount_id = std.seat_type_discount_id
-                    LEFT JOIN discounts d ON std.discount_id = d.discount_id
-                    WHERE uci.user_id = %s
-                """, (user_id,))
-                items = cursor.fetchall()
-
-                cart_items = []
-                for item in items:
-                    # Endpreis berechnen
-                    seat_price = float(item['seat_type_price'])
-                    if item['discount_amount'] is not None:
-                        final_price = max(0, seat_price - float(item['discount_amount']))
-                    elif item['discount_percentage'] is not None:
-                        final_price = seat_price * (1 - float(item['discount_percentage']) / 100.0)
-                    else:
-                        final_price = seat_price
-
-                    # Showtime Details holen
-                    cursor.execute("SELECT showtime_id, movie_id, screen_id, start_time, end_time FROM showtimes WHERE showtime_id = %s", (item['showtime_id'],))
-                    showtime = cursor.fetchone()
-                    showtime_data = None
-                    movie_data = None
-                    if showtime:
-                        showtime_data = {
-                            'showtime_id': showtime['showtime_id'],
-                            'movie_id': showtime['movie_id'],
-                            'screen_id': showtime['screen_id'],
-                            'start_time': showtime['start_time'].isoformat(),
-                            'end_time': showtime['end_time'].isoformat() if showtime['end_time'] else None
-                        }
-                        # Moviedetails laden (TMDB)
-                        # Hier NUR movie_id zurückgeben, Details lädt Frontend bereits!
-                        # Oder du kannst hier die movie_details holen, wenn du willst.
-                        # Wir nehmen an, du lädst Movie-Details im Frontend über fetchMovieDetails:
-                        movie_data = {'movie_id': showtime['movie_id']}
-
-                    cart_items.append({
-                        'seat_id': item['seat_id'],
-                        'row': item['row'],
-                        'number': item['number'],
-                        'type': item['seat_type_name'],
-                        'original_price': seat_price,
-                        'final_price': round(final_price, 2),
-                        'discount_name': item['discount_name'],
-                        'reserved_until': item['reserved_until'].isoformat(),
-                        'showtime': showtime_data,
-                        'movie': movie_data
-                    })
-
-        return jsonify({'cart_items': cart_items}), 200
-    except Exception as e:
-        print(f"Fehler beim Abrufen des Warenkorbs: {e}")
-        return jsonify({'error': 'Fehler beim Abrufen des Warenkorbs'}), 500
-
-
-@app.route('/guest/cart', methods=['GET'])
-def get_guest_cart_enriched():
-    clear_expired_guest_cart_items()
-    guest_id = request.args.get('guest_id', None)
-    if not guest_id:
-        return jsonify({'error': 'guest_id ist erforderlich'}), 400
-    try:
-        with psycopg2.connect(DATABASE_URL) as conn:
-            with conn.cursor(cursor_factory=psycopg2.extras.DictCursor) as cursor:
-                # Prüfen ob guest_cart existiert
-                cursor.execute("SELECT guest_id FROM guest_carts WHERE guest_id = %s", (guest_id,))
-                if cursor.fetchone() is None:
-                    cursor.execute("INSERT INTO guest_carts (guest_id) VALUES (%s)", (guest_id,))
-                    conn.commit()
-
-                cursor.execute("""
-                    SELECT gci.seat_id, gci.price AS base_price, gci.reserved_until, gci.showtime_id, gci.seat_type_discount_id,
-                           s.row, s.number, st.price AS seat_type_price, st.name AS seat_type_name,
-                           std.discount_amount, std.discount_percentage,
-                           d.name AS discount_name
-                    FROM guest_cart_items gci
-                    JOIN seats s ON gci.seat_id = s.seat_id
-                    JOIN seat_types st ON s.seat_type_id = st.seat_type_id
-                    LEFT JOIN seat_type_discounts std ON gci.seat_type_discount_id = std.seat_type_discount_id
-                    LEFT JOIN discounts d ON std.discount_id = d.discount_id
-                    WHERE gci.guest_id = %s
-                """, (guest_id,))
-                items = cursor.fetchall()
-
-                cart_items = []
-                for item in items:
-                    # Endpreis berechnen
-                    seat_price = float(item['seat_type_price'])
-                    if item['discount_amount'] is not None:
-                        final_price = max(0, seat_price - float(item['discount_amount']))
-                    elif item['discount_percentage'] is not None:
-                        final_price = seat_price * (1 - float(item['discount_percentage']) / 100.0)
-                    else:
-                        final_price = seat_price
-
-                    # Showtime Details
-                    cursor.execute("SELECT showtime_id, movie_id, screen_id, start_time, end_time FROM showtimes WHERE showtime_id = %s", (item['showtime_id'],))
-                    showtime = cursor.fetchone()
-                    showtime_data = None
-                    movie_data = None
-                    if showtime:
-                        showtime_data = {
-                            'showtime_id': showtime['showtime_id'],
-                            'movie_id': showtime['movie_id'],
-                            'screen_id': showtime['screen_id'],
-                            'start_time': showtime['start_time'].isoformat(),
-                            'end_time': showtime['end_time'].isoformat() if showtime['end_time'] else None
-                        }
-                        movie_data = {'movie_id': showtime['movie_id']}
-
-                    cart_items.append({
-                        'seat_id': item['seat_id'],
-                        'row': item['row'],
-                        'number': item['number'],
-                        'type': item['seat_type_name'],
-                        'original_price': seat_price,
-                        'final_price': round(final_price, 2),
-                        'discount_name': item['discount_name'],
-                        'reserved_until': item['reserved_until'].isoformat(),
-                        'showtime': showtime_data,
-                        'movie': movie_data
-                    })
-
-        return jsonify({'cart_items': cart_items}), 200
-    except Exception as e:
-        print(f"Fehler beim Abrufen des Guest-Warenkorbs: {e}")
-        return jsonify({'error': 'Fehler beim Abrufen des Guest-Warenkorbs'}), 500
-
-
-@app.route('/user/cart/discount', methods=['POST'])
-@token_required
-def apply_discount_to_user_cart_item():
-    data = request.get_json()
-    showtime_id = data.get('showtime_id')
-    seat_id = data.get('seat_id')
-    seat_type_discount_id = data.get('seat_type_discount_id')  # kann None sein zum Entfernen
-    user_id = request.user.get('user_id')
-
-    if not (showtime_id and seat_id is not None):
-        return jsonify({'error': 'showtime_id und seat_id sind erforderlich'}), 400
-
-    try:
-        with psycopg2.connect(DATABASE_URL) as conn:
-            with conn.cursor() as cursor:
-                # Prüfen, ob im User-Warenkorb
-                cursor.execute("""
-                    SELECT cart_item_id FROM user_cart_items
-                    WHERE user_id = %s AND showtime_id = %s AND seat_id = %s
-                """, (user_id, showtime_id, seat_id))
-                row = cursor.fetchone()
-                if not row:
-                    return jsonify({'error': 'Sitz nicht im Warenkorb'}), 404
-
-                cursor.execute("""
-                    UPDATE user_cart_items
-                    SET seat_type_discount_id = %s
-                    WHERE user_id = %s AND showtime_id = %s AND seat_id = %s
-                """, (seat_type_discount_id, user_id, showtime_id, seat_id))
-                conn.commit()
-
-        return jsonify({'message': 'Rabatt angewendet' if seat_type_discount_id else 'Rabatt entfernt'}), 200
-
-    except Exception as e:
-        print(f"Fehler beim Anwenden des Rabatts: {e}")
-        return jsonify({'error': 'Fehler beim Anwenden des Rabatts'}), 500
-
-
-@app.route('/guest/cart/discount', methods=['POST'])
-def apply_discount_to_guest_cart_item():
-    data = request.get_json()
-    guest_id = data.get('guest_id')
-    showtime_id = data.get('showtime_id')
-    seat_id = data.get('seat_id')
-    seat_type_discount_id = data.get('seat_type_discount_id')  # None => Rabatt entfernen
-
-    if not guest_id or not showtime_id or seat_id is None:
-        return jsonify({'error': 'guest_id, showtime_id und seat_id sind erforderlich'}), 400
-
-    try:
-        with psycopg2.connect(DATABASE_URL) as conn:
-            with conn.cursor() as cursor:
-                # Prüfen, ob im Guest-Warenkorb
-                cursor.execute("""
-                    SELECT cart_item_id FROM guest_cart_items
-                    WHERE guest_id = %s AND showtime_id = %s AND seat_id = %s
-                """, (guest_id, showtime_id, seat_id))
-                row = cursor.fetchone()
-                if not row:
-                    return jsonify({'error': 'Sitz nicht im Guest-Warenkorb'}), 404
-
-                cursor.execute("""
-                    UPDATE guest_cart_items
-                    SET seat_type_discount_id = %s
-                    WHERE guest_id = %s AND showtime_id = %s AND seat_id = %s
-                """, (seat_type_discount_id, guest_id, showtime_id, seat_id))
-                conn.commit()
-
-        return jsonify({'message': 'Rabatt angewendet' if seat_type_discount_id else 'Rabatt entfernt'}), 200
-
-    except Exception as e:
-        print(f"Fehler beim Anwenden des Guest-Rabatts: {e}")
-        return jsonify({'error': 'Fehler beim Anwenden des Guest-Rabatts'}), 500
+        logger.error(f"Fehler beim Abrufen des Discounts für Sitztyp: {e}")
+        return jsonify({'error': 'Fehler beim Abrufen des Discounts für Sitztyp'}), 500
 
 
 
 
+@app.route('/movie/<int:movie_id>/trailer_url', methods=['GET'])
+def get_movie_trailer_url(movie_id):
+    # URL für die TMDB-API mit der spezifischen Film-ID
+    url = f"{TMDB_API_URL}/{movie_id}/videos?language=de-DE"
 
+    # Anfrage an die API senden
+    response = requests.get(url, headers=HEADERS)
+    
+    # Erfolgreiche Antwort zurückgeben
+    if response.status_code == 200:
+        # JSON-Antwort parsen
+        data = response.json()
+        
+        # Filtere nur den Eintrag mit 'type' == 'Trailer' und 'site' == 'YouTube'
+        trailer = next((item for item in data.get('results', []) if item.get('type') == 'Trailer' and item.get('site') == 'YouTube'), None)
+        
+        if trailer and 'key' in trailer:
+            embed_url = f"https://www.youtube.com/embed/{trailer['key']}"
+            return jsonify({"trailer_url": embed_url}), 200
+        else:
+            return jsonify({"error": "No Trailer found."}), 404
+    else:
+        # Fehler behandeln und Fehlermeldung zurückgeben
+        return jsonify({"error": f"Unable to fetch Trailer for movie ID {movie_id}"}), response.status_code
 
 if __name__ == '__main__':
     app.run(debug=True)

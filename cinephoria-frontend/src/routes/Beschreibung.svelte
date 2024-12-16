@@ -1,14 +1,14 @@
 <!-- src/routes/Beschreibung.svelte -->
+<!-- src/routes/Beschreibung.svelte -->
 <script>
   import { onMount } from 'svelte';
   import { navigate } from 'svelte-routing';
   import Swal from 'sweetalert2';
-  import { fetchMovieDetails, fetchMovieFSK, fetchShowtimesByMovie, fetchScreens } from '../services/api.js';
+  import { fetchMovieDetails, fetchMovieFSK, fetchShowtimesByMovie, fetchScreens, fetchMovieTrailerUrl } from '../services/api.js';
   import { get } from 'svelte/store';
   import { authStore } from '../stores/authStore'; 
   import "@fortawesome/fontawesome-free/css/all.min.css";
 
-  
   export let id; // ID wird von der Route übergeben
 
   let moviefsk = {};  
@@ -19,10 +19,14 @@
   let isLoading = true;
   let error = null;
 
-  // Variablen für das Popup
+  // Variablen für das Showtime Popup
   let isOpen = false;
   let selectedShowtime = null;
   let movie_certification = "";
+
+  // Neue Variablen für das Trailer Popup
+  let isTrailerOpen = false;
+  let trailerUrl = ''; // Wird dynamisch gesetzt
 
   onMount(async () => {
     if (!id) {
@@ -90,6 +94,31 @@
     isOpen = false;
     selectedShowtime = null;
   }
+
+  // Funktion zum Öffnen des Trailer Popups
+  async function openTrailerModal() {
+    isTrailerOpen = true;
+    try {
+      const token = get(authStore).token; // Falls dein Backend Authentifizierung benötigt
+      const url = await fetchMovieTrailerUrl(token, id);
+      trailerUrl = url;
+    } catch (err) {
+      console.error('Fehler beim Abrufen der Trailer-URL:', err);
+      Swal.fire({
+        title: "Fehler",
+        text: err.message || 'Fehler beim Abrufen der Trailer-URL.',
+        icon: "error",
+        confirmButtonText: "OK",
+      });
+      closeTrailerModal();
+    }
+  }
+
+  // Funktion zum Schließen des Trailer Popups
+  function closeTrailerModal() {
+    isTrailerOpen = false;
+    trailerUrl = '';
+  }
 </script>
 
 <style>
@@ -105,6 +134,7 @@
     max-width: 300px;
     border-radius: 8px;
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    cursor: pointer; /* Cursor als Pointer anzeigen */
   }
 
   .details {
@@ -222,7 +252,8 @@
     background: white;
     padding: 20px;
     border-radius: 8px;
-    max-width: 400px;
+    max-width: 950px;
+    height: 600px;
     width: 90%;
     text-align: center;
     position: relative;
@@ -270,6 +301,20 @@
     color: red;
   }
 
+  /* Zusätzliche Stile für das Trailer Modal */
+  .popup-trailer iframe {
+    width: 100%; 
+    height: 600px;
+    border: none;
+    border-radius: 8px;
+  }
+
+  @media (max-width: 600px) {
+    .popup-trailer iframe {
+      height: 200px;
+    }
+  }
+
   /* Responsive Anpassungen */
   @media (max-width: 1000px) {
     .movie-container {
@@ -303,6 +348,28 @@
   </div>
 {/if}
 
+<!-- Modal für Trailer -->
+{#if isTrailerOpen}
+  <div class="popup-overlay" on:click={closeTrailerModal}>
+    <div class="popup-content" on:click|stopPropagation>
+      <button class="close-button" on:click={closeTrailerModal}>×</button>
+      <div class="popup-trailer">
+        {#if trailerUrl}
+          <iframe
+            src="{trailerUrl}"
+            title="YouTube video player"
+            frameborder="0"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+            allowfullscreen
+          ></iframe>
+        {:else}
+          <p>Trailer wird geladen...</p>
+        {/if}
+      </div>
+    </div>
+  </div>
+{/if}
+
 <main>
   {#if isLoading}
     <p>Lade Filmdetails...</p>
@@ -316,6 +383,7 @@
           src="{IMAGE_BASE_URL}{movieDetails.poster_path}"
           alt="{movieDetails.title}"
           class="poster"
+          on:click={openTrailerModal}
         />
       </div>
 
@@ -330,7 +398,7 @@
         </div>
         
         <div class="description">{movieDetails.overview}</div>
-<!--
+  <!--
          Produktionsfirmen
         <div>
           <h3>Produktionsfirmen:</h3>
