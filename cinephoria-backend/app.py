@@ -1911,6 +1911,7 @@ def get_user_bookings():
                 'screen_id': booking['screen_id'],
                 'start_time': booking['start_time'].isoformat(),
                 'end_time': booking['end_time'].isoformat() if booking['end_time'] else None,
+                'screen_name': booking['screen_name'],
                 'seats': seats_map.get(booking['booking_id'], [])
             }
             bookings_list.append(booking_dict)
