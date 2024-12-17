@@ -1201,7 +1201,6 @@ def delete_seat_type(seat_type_id):
         return jsonify({'error': 'Fehler beim Löschen des Sitzes'}), 500
 
 
-# app.py
 @app.route('/user/cart', methods=['GET'])
 @token_required
 def get_user_cart():
@@ -1210,7 +1209,7 @@ def get_user_cart():
     try:
         with psycopg2.connect(DATABASE_URL) as conn:
             with conn.cursor(cursor_factory=psycopg2.extras.DictCursor) as cursor:
-                # Überprüfen, ob der Benutzer einen Warenkorb hat
+                # Überprüfen, ob der Benutzer einen Warenkorb hat und valid_until abrufen
                 cursor.execute("SELECT user_id, valid_until FROM user_carts WHERE user_id = %s", (user_id,))
                 cart = cursor.fetchone()
                 if cart is None:
@@ -1218,6 +1217,12 @@ def get_user_cart():
                     cursor.execute("INSERT INTO user_carts (user_id, valid_until) VALUES (%s, %s)", (user_id, valid_until,))
                     conn.commit()
                     cart = {'user_id': user_id, 'valid_until': valid_until}
+                else:
+                    if cart['valid_until'] is None:
+                        valid_until = datetime.now(timezone.utc) + timedelta(minutes=15)
+                        cursor.execute("UPDATE user_carts SET valid_until = %s WHERE user_id = %s", (valid_until, user_id))
+                        conn.commit()
+                        cart['valid_until'] = valid_until
 
                 # Abrufen der Warenkorb-Elemente mit showtime_id
                 cursor.execute("""
@@ -1235,12 +1240,13 @@ def get_user_cart():
                         'showtime_id': item['showtime_id']
                     })
         return jsonify({
-            'valid_until': cart['valid_until'].isoformat(),
+            'valid_until': cart['valid_until'].isoformat() if cart['valid_until'] else None,
             'cart_items': cart_items
         }), 200
     except Exception as e:
         print(f"Fehler beim Abrufen des Warenkorbs: {e}")
         return jsonify({'error': 'Fehler beim Abrufen des Warenkorbs'}), 500
+
 
 
 
@@ -1391,8 +1397,6 @@ def add_to_user_cart():
 
 
 
-
-# Neue Endpoints für GUEST CART
 @app.route('/guest/cart', methods=['GET'])
 def get_guest_cart():
     clear_expired_guest_cart_items()  # Erst abgelaufene Einträge bereinigen
@@ -1403,13 +1407,24 @@ def get_guest_cart():
     try:
         with psycopg2.connect(DATABASE_URL) as conn:
             with conn.cursor(cursor_factory=psycopg2.extras.DictCursor) as cursor:
-                # Prüfen ob guest_cart existiert
-                cursor.execute("SELECT guest_id FROM guest_carts WHERE guest_id = %s", (guest_id,))
-                if cursor.fetchone() is None:
-                    # Warenkorb für Gast erstellen
-                    cursor.execute("INSERT INTO guest_carts (guest_id) VALUES (%s)", (guest_id,))
+                # Prüfen ob guest_cart existiert und valid_until abrufen
+                cursor.execute("SELECT guest_id, valid_until FROM guest_carts WHERE guest_id = %s", (guest_id,))
+                cart = cursor.fetchone()
+                if cart is None:
+                    valid_until = datetime.now(timezone.utc) + timedelta(minutes=15)
+                    cursor.execute(
+                        "INSERT INTO guest_carts (guest_id, valid_until) VALUES (%s, %s)",
+                        (guest_id, valid_until,)
+                    )
                     conn.commit()
-    
+                    cart = {'guest_id': guest_id, 'valid_until': valid_until}
+                else:
+                    if cart['valid_until'] is None:
+                        valid_until = datetime.now(timezone.utc) + timedelta(minutes=15)
+                        cursor.execute("UPDATE guest_carts SET valid_until = %s WHERE guest_id = %s", (valid_until, guest_id))
+                        conn.commit()
+                        cart['valid_until'] = valid_until
+
                 # Items abrufen
                 cursor.execute("""
                     SELECT seat_id, price, reserved_until, showtime_id
@@ -1425,10 +1440,14 @@ def get_guest_cart():
                         'reserved_until': item['reserved_until'].isoformat(),
                         'showtime_id': item['showtime_id']
                     })
-        return jsonify({'cart_items': cart_items}), 200
+        return jsonify({
+            'valid_until': cart['valid_until'].isoformat() if cart['valid_until'] else None,
+            'cart_items': cart_items
+        }), 200
     except Exception as e:
         print(f"Fehler beim Abrufen des Guest-Warenkorbs: {e}")
         return jsonify({'error': 'Fehler beim Abrufen des Guest-Warenkorbs'}), 500
+
 
 @app.route('/guest/cart', methods=['POST'])
 def add_to_guest_cart():
