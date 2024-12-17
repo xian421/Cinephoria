@@ -1,10 +1,11 @@
-<!-- src/routes/orders.svelte -->
 <script>
     import { onMount } from 'svelte';
     import { get } from 'svelte/store';
     import { authStore } from '../stores/authStore';
     import Swal from 'sweetalert2';
     import { fetchBookings } from '../services/api';
+    import { navigate } from 'svelte-routing';
+    
 
     let orders = [];
     let totalWatchtime = 0;
@@ -12,13 +13,16 @@
     let isLoading = true;
     let error = null;
 
+    // Hover-Zustand für jedes Order-Item
+    let hoveredOrder = null;
+
     // Funktionen zur Berechnung
     function calculateWatchtime() {
-        return orders.reduce((sum, order) => sum + (order.runtime || 0), 0); // Laufzeiten summieren
+        return orders.reduce((sum, order) => sum + (order.runtime || 0), 0);
     }
 
     function calculatePoints() {
-        return orders.reduce((sum, order) => sum + Math.floor((order.total_amount || 0) / 10), 0); // 1 Punkt pro 10€
+        return orders.reduce((sum, order) => sum + Math.floor((order.total_amount || 0) / 1), 0);
     }
 
     onMount(async () => {
@@ -31,22 +35,22 @@
         }
 
         try {
-            const data22 = await fetchBookings(token);
-            console.log('Fetched bookings:', data22);
+            const data = await fetchBookings(token);
 
-            if (Array.isArray(data22)) {
-                orders = data22.map(order => ({
+            if (Array.isArray(data)) {
+                orders = data.map(order => ({
                     ...order,
-                    runtime: order.start_time && order.end_time 
-                        ? Math.floor((new Date(order.end_time) - new Date(order.start_time)) / (1000 * 60)) 
+                    runtime: order.start_time && order.end_time
+                        ? Math.floor((new Date(order.end_time) - new Date(order.start_time)) / (1000 * 60))
                         : 0,
-                    date: order.created_at // Für die Anzeige des Buchungsdatums
+                    date: order.created_at,
+                    seat: order.seat || 'Keine Angaben',
+                    screen: order.screen || 'Unbekannt'
                 }));
             } else {
                 throw new Error('Unerwartetes Antwortformat');
             }
 
-            console.log('Processed orders:', orders);
             totalWatchtime = calculateWatchtime();
             totalPoints = calculatePoints();
         } catch (err) {
@@ -57,6 +61,17 @@
             isLoading = false;
         }
     });
+
+    function handleMouseEnter(index) {
+        hoveredOrder = index;
+    }
+
+    function handleMouseLeave() {
+        hoveredOrder = null;
+    }
+
+
+   
 </script>
 
 <style>
@@ -117,6 +132,7 @@
         box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
         padding: 1rem;
         display: flex;
+        position: relative;
         justify-content: space-between;
         align-items: center;
         transition: transform 0.3s;
@@ -146,6 +162,52 @@
         color: #2ecc71;
     }
 
+    .tooltip-info {
+    position: absolute;
+    left: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 220px;
+    background: #fdfdfd;
+    color: #333;
+    padding: 0.75rem;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+    font-size: 0.9rem;
+    text-align: left; /* Zentriert horizontal den Text */
+
+    /* Flexbox für vertikale und horizontale Zentrierung */
+    display: flex;
+    justify-content: center; /* Horizontal zentrieren */
+    align-items: center; /* Vertikal zentrieren */
+
+    /* Scrollbar bei Bedarf */
+    max-height: 110px;
+}
+
+
+.tooltip-info p {
+    margin: 0.5rem 0; /* Abstand zwischen Zeilen */
+}
+
+.tooltip-info .info-group {
+    display: flex;
+    justify-content: space-between; /* Trennung von Titel und Inhalt */
+    border-bottom: 1px solid #eaeaea; /* Dezente Trennlinie */
+    padding-bottom: 0.3rem;
+    margin-bottom: 0.3rem;
+}
+
+.tooltip-info .info-group:last-child {
+    border-bottom: none; /* Keine Linie für das letzte Element */
+}
+
+/* Sicherstellen, dass Elterncontainer kein Scroll-Verhalten blockieren */
+.order-item {
+    position: relative; /* Wichtig für absolute Positionierung der Tooltip-Box */
+    overflow: visible;
+}
+
     .error-message, .loading {
         text-align: center;
         font-size: 1.2rem;
@@ -164,11 +226,11 @@
     {:else}
         <!-- Zusammenfassende Karten -->
         <div class="summary-cards">
-            <div class="card">
+            <div class="card" on:click={() => navigate('/leaderboard')}>
                 <h3>{totalWatchtime} Min</h3>
                 <p>Gesamte Watchtime</p>
             </div>
-            <div class="card">
+            <div class="card" on:click={() => navigate('/belohnung')}>
                 <h3>{totalPoints}</h3>
                 <p>Gesammelte Punkte</p>
             </div>
@@ -181,8 +243,32 @@
         <!-- Liste der Bestellungen -->
         <h2>Deine Bestellungen</h2>
         <div class="orders-list">
-            {#each orders as order}
-                <div class="order-item">
+            {#each orders as order, index}
+                <!-- svelte-ignore a11y_no_static_element_interactions -->
+                <div
+                    class="order-item"
+                    on:mouseenter={() => handleMouseEnter(index)}
+                    on:mouseleave={handleMouseLeave}
+                >
+                    <!-- Tooltip-Infos -->
+                    {#if hoveredOrder === index}
+                        <div class="tooltip-info">
+                            
+                            <ul class="seats-list">
+                                <p>
+                                    <strong>Sitz: </strong>
+                                    {order.seats.map(seat => `${seat.row}${seat.number}`).join(', ')}
+                                </p>
+                               
+                                <p><strong>Kinosaal: </strong> {order.screen_name}</p>
+                                <p><strong>Start: </strong> Am {new Date(order.start_time).toLocaleDateString()} um {new Date(order.start_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}Uhr</p>
+
+
+
+                            </ul>
+                        </div>
+                    {/if}
+        
                     <div class="order-details">
                         <h4>{order.movie_title}</h4>
                         <p><strong>Datum:</strong> {new Date(order.date).toLocaleDateString()}</p>
@@ -195,3 +281,4 @@
         </div>
     {/if}
 </main>
+ 

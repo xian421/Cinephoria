@@ -27,6 +27,8 @@
     import Checkout from './routes/checkout.svelte';
     import Admindiscount from './routes/Admindiscount.svelte';
     import Bestellungen from './routes/Bestellungen.svelte';
+    import Belohnung from './routes/Belohnung.svelte';
+    import Leaderboard from './routes/leaderboard.svelte';
   
     // Import von Svelte Stores
     import { authStore, setAuth, updateAuth } from './stores/authStore.js';
@@ -227,6 +229,9 @@
         <Route path="/einstellungen" component={Einstellung} />
         <Route path="/warenkorb" component={Warenkorb} />
         <Route path="/bestellungen" component={Bestellungen} />
+        <Route path="/belohnung" component={Belohnung} />
+        <Route path="/leaderboard" component={Leaderboard} />
+
 
   
         <!-- Geschützte Admin-Routen mit ProtectedRoute -->
