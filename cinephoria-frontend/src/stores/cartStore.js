@@ -14,30 +14,39 @@ import {
     fetchSeatById,
     fetchShowtimeDetails,
     fetchMovieDetails
-} from '../services/api';
+} from '../services/api.js';
 
 const cart = writable([]);
 const cartError = writable(null);
+const validUntil = writable(null); // Neuer Store für valid_until
 
-export { cart, cartError };
+export { cart, cartError, validUntil };
 
 export async function loadCart() {
     const token = get(authStore).token;
     cartError.set(null);
     try {
-        let items = [];
+        let response = {};
         if (token) {
             // Benutzer ist eingeloggt
-            items = await fetchUserCart(token);
+            response = await fetchUserCart(token);
         } else {
             // Gast
-            items = await fetchGuestCart();
+            response = await fetchGuestCart();
+        }
+
+        const { cart_items, valid_until: validUntilStr } = response;
+
+        if (validUntilStr) {
+            validUntil.set(new Date(validUntilStr));
+        } else {
+            validUntil.set(null);
         }
 
         // Konvertiere 'reserved_until' von ISO-Strings zu Date-Objekten
-        items = items.map(item => ({
+        let items = cart_items.map(item => ({
             ...item,
-            reserved_until: new Date(item.reserved_until)
+            reserved_until: item.reserved_until ? new Date(item.reserved_until) : null
         }));
 
         // Nachladen der Sitzdetails und Showtimes für jeden Sitz im Warenkorb
@@ -53,7 +62,7 @@ export async function loadCart() {
                 console.log('movieDetails:', movieDetails);
                 return {
                     ...item,
-                    ...seatDetails, // Fügt 'row', 'number', 'type' und 'price' hinzu und jetzt auch noch discount und so (siehedef get_seat(seat_id) bei app.py)
+                    ...seatDetails, // Fügt 'row', 'number', 'type' und 'price' hinzu
                     showtime: showtimeDetails,
                     movie: movieDetails
                 };
@@ -66,9 +75,6 @@ export async function loadCart() {
                     number: null,
                     type: null,
                     price: item.price || 0.00,
-                    discount_name : null,
-                    discount_amount: null,
-                    discount_percentage: null,
                     showtime: null,
                     movie: null
                 };

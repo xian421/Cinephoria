@@ -12,7 +12,7 @@
     } from '../services/api.js';
     import { get } from 'svelte/store';
     import { authStore } from '../stores/authStore'; 
-    import { cart, cartError, addToCart, removeFromCart, clearCart, loadCart } from '../stores/cartStore.js';
+    import { cart, cartError, addToCart, removeFromCart, clearCart, loadCart, validUntil } from '../stores/cartStore.js';
 
     import "@fortawesome/fontawesome-free/css/all.min.css";
 
@@ -25,7 +25,7 @@
     let seatsByRow = {};
     let payPalInitialized = false;
     let paypalContainer: HTMLElement;
-    
+
 
     let totalPrice = 0.0;
     let timer: ReturnType<typeof setInterval> | null = null;
@@ -37,19 +37,21 @@
     // Reaktive Abhängigkeiten mit direkter Zuweisung
     $: totalPrice = $cart.reduce((sum, seat) => sum + seat.price, 0);
 
+    // Nutzung von validUntil statt reserved_until
     $: {
-        if ($cart.length === 0) {
+        if ($validUntil) {
+            const now = new Date();
+            timeLeft = Math.max(0, Math.floor(($validUntil.getTime() - now.getTime()) / 1000));
+            warning = timeLeft <= 60;
+        } else {
             timeLeft = 0;
             warning = false;
-        } else {
-            const now = new Date();
-            const reservationTimes = $cart.map(seat => new Date(seat.reserved_until));
-            const earliest = new Date(Math.min(...reservationTimes));
-            timeLeft = Math.max(0, Math.floor((earliest.getTime() - now.getTime()) / 1000));
-            warning = timeLeft <= 60;
         }
+        console.log('timeLeft:', timeLeft); // Debugging
+        console.log('validUntil:', $validUntil); // Debugging
     }
 
+    // Timer-Logik
     $: {
         clearInterval(timer);
         if (timeLeft > 0) {
@@ -62,7 +64,7 @@
                 }
                 if (timeLeft <= 0) {
                     clearInterval(timer!);
-                    loadCart();
+                    loadCart(); // Aktualisiere den Warenkorb, wenn der Timer abläuft
                 }
             }, 1000);
         }
@@ -89,7 +91,7 @@
         isLoading = true;
         try {
             await loadSeats();
-            // Warenkorb laden, damit $cart aktuell ist
+            // Warenkorb laden, damit $cart und $validUntil aktuell sind
             await loadCart();
         } catch (err: any) {
             console.error('Fehler beim Laden der Sitze oder Sitztypen:', err);
@@ -374,7 +376,7 @@
 </script>
 
 <style>
-    /* Dein bestehendes CSS bleibt unverändert */
+    /* Ihr bestehendes CSS bleibt unverändert */
     .booking-container {
         padding: 2rem;
         font-family: Arial, sans-serif;
@@ -545,6 +547,24 @@
             gap: 1rem;
         }
     }
+
+    .timer {
+        font-size: 1.2rem;
+        font-weight: bold;
+        color: #e74c3c; /* Rote Farbe für Dringlichkeit */
+        text-align: center;
+        margin-bottom: 1rem;
+    }
+
+    .warning {
+        background-color: #ffcccc;
+        border: 1px solid #e74c3c;
+        padding: 10px;
+        margin-bottom: 1rem;
+        text-align: center;
+        border-radius: 4px;
+        color: #e74c3c;
+    }
 </style>
 
 <main class="booking-container">
@@ -581,7 +601,13 @@
         </div>
 
         {#if timeLeft > 0}
-            <p>Ihre Reservierung läuft in: {formatTime(timeLeft)}</p>
+            <p class="timer">Ihre Reservierung läuft in: {formatTime(timeLeft)}</p>
+        {/if}
+
+        {#if warning}
+            <div class="warning">
+                Achtung: Ihre Reservierung läuft in weniger als einer Minute ab!
+            </div>
         {/if}
 
         <div class="seating-chart">
@@ -615,13 +641,8 @@
         </div>
 
         <p>Gesamtpreis: {totalPrice.toFixed(2)}€</p>
-        <button on:click={() => navigate('/warenkorb')}>Zum Warenkorb
-        
-        </button>
-        sb-ng2ae34511206@personal.example.com
-        gK|i4A?q
+        <button on:click={() => navigate('/warenkorb')}>Zum Warenkorb</button>
         <div id="paypal-button-container" bind:this={paypalContainer}></div>
 
-        
     {/if}
 </main>

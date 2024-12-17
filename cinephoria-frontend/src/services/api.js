@@ -562,7 +562,6 @@ function getGuestId() {
     return guest_id;
 }
 
-// USER CART FUNCTIONS
 export async function fetchUserCart(token) {
     const response = await fetch(`${API_BASE_URL}/user/cart`, {
         headers: {
@@ -574,7 +573,7 @@ export async function fetchUserCart(token) {
     if (!response.ok) {
         throw new Error(data.error || 'Fehler beim Abrufen des User-Warenkorbs');
     }
-    return data.cart_items || [];
+    return data; // Rückgabe von { valid_until, cart_items }
 }
 
 export async function addToUserCart(token, seat_id, price, showtime_id) {
@@ -622,7 +621,6 @@ export async function clearUserCart(token) {
     return data;
 }
 
-// GUEST CART FUNCTIONS
 export async function fetchGuestCart() {
     const guest_id = getGuestId();
     const response = await fetch(`${API_BASE_URL}/guest/cart?guest_id=${guest_id}`);
@@ -630,8 +628,9 @@ export async function fetchGuestCart() {
     if (!response.ok) {
         throw new Error(data.error || 'Fehler beim Abrufen des Guest-Warenkorbs');
     }
-    return data.cart_items || [];
+    return data; // Rückgabe von { valid_until, cart_items }
 }
+
 
 
 export async function addToGuestCart(seat_id, price, showtime_id) {
