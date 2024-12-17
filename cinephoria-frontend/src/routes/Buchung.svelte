@@ -615,7 +615,11 @@
         </div>
 
         <p>Gesamtpreis: {totalPrice.toFixed(2)}€</p>
-        <button on:click={() => navigate('/warenkorb')}>Zum Warenkorb</button>
+        <button on:click={() => navigate('/warenkorb')}>Zum Warenkorb
+        
+        </button>
+        sb-ng2ae34511206@personal.example.com
+        gK|i4A?q
         <div id="paypal-button-container" bind:this={paypalContainer}></div>
 
         
