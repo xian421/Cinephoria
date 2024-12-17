@@ -1812,63 +1812,105 @@ def get_movie_trailer_url(movie_id):
     else:
         return jsonify({"error": f"Unable to fetch Trailer for movie ID {movie_id}"}), response.status_code
 
-
 @app.route('/bookings', methods=['GET'])
 @token_required
 def get_user_bookings():
     user_id = request.user.get('user_id')
-    logger.debug(f"Fetching bookings for user_id: {user_id}")
-
     try:
         with psycopg2.connect(DATABASE_URL) as conn:
             with conn.cursor(cursor_factory=psycopg2.extras.DictCursor) as cursor:
+                # Abrufen der Buchungen ohne den JOIN zur movies-Tabelle
                 cursor.execute("""
                     SELECT 
                         b.booking_id, 
                         b.showtime_id, 
-                        bs.seat_id, 
-                        bs.price, 
+                        b.total_amount,
+                        b.payment_status,
+                        b.paypal_order_id,
                         b.created_at, 
                         s.movie_id, 
                         s.screen_id, 
                         s.start_time, 
                         s.end_time
                     FROM bookings b
-                    JOIN booking_seats bs ON b.booking_id = bs.booking_id
                     JOIN showtimes s ON b.showtime_id = s.showtime_id
                     WHERE b.user_id = %s
                     ORDER BY b.created_at DESC
                 """, (user_id,))
                 bookings = cursor.fetchall()
-                
-                # Aggregieren der Buchungen
-                bookings_dict = {}
-                for booking in bookings:
-                    booking_id = booking['booking_id']
-                    if booking_id not in bookings_dict:
-                        bookings_dict[booking_id] = {
-                            'booking_id': booking_id,
-                            'showtime_id': booking['showtime_id'],
-                            'price': float(booking['price']),
-                            'created_at': booking['created_at'].isoformat(),
-                            'movie_id': booking['movie_id'],
-                            'screen_id': booking['screen_id'],
-                            'start_time': booking['start_time'].isoformat(),
-                            'end_time': booking['end_time'].isoformat() if booking['end_time'] else None,
-                            'movie_title': booking['movie_title'],
-                            'movie_poster_url': booking['movie_poster_url'],
-                            'seats': []
-                        }
-                    bookings_dict[booking_id]['seats'].append({
-                        'seat_id': booking['seat_id'],
-                        'price': float(booking['price'])
-                    })
-                
-                bookings_list = list(bookings_dict.values())
+
+                if not bookings:
+                    return jsonify({'bookings': []}), 200
+
+                # Sammeln aller eindeutigen movie_ids
+                movie_ids = list({booking['movie_id'] for booking in bookings})
+
+                # Abrufen der Buchungs-Sitzplätze
+                booking_ids = [booking['booking_id'] for booking in bookings]
+                cursor.execute("""
+                    SELECT 
+                        bs.booking_id, 
+                        bs.seat_id, 
+                        bs.price
+                    FROM booking_seats bs
+                    WHERE bs.booking_id = ANY(%s)
+                """, (booking_ids,))
+                booking_seats = cursor.fetchall()
+
+                # Mapping von booking_id zu Sitzplätzen
+                seats_map = {}
+                for bs in booking_seats:
+                    booking_id = bs['booking_id']
+                    seat = {
+                        'seat_id': bs['seat_id'],
+                        'price': float(bs['price'])
+                    }
+                    seats_map.setdefault(booking_id, []).append(seat)
+
+        # Abrufen der Filmdetails von TMDB für jede eindeutige movie_id
+        movie_details = {}
+        for movie_id in movie_ids:
+            movie_response = requests.get(f"{TMDB_API_URL}/{movie_id}?language=de-DE", headers=HEADERS)
+            if movie_response.status_code == 200:
+                movie_data = movie_response.json()
+                movie_details[movie_id] = {
+                    'title': movie_data.get('title'),
+                    'poster_url': f"https://image.tmdb.org/t/p/w500{movie_data.get('poster_path')}" if movie_data.get('poster_path') else None
+                }
+            else:
+                movie_details[movie_id] = {
+                    'title': None,
+                    'poster_url': None
+                }
+
+        # Aufbau der finalen Buchungsstruktur
+        bookings_list = []
+        for booking in bookings:
+            movie_id = booking['movie_id']
+            movie_info = movie_details.get(movie_id, {})
+            booking_dict = {
+                'booking_id': booking['booking_id'],
+                'showtime_id': booking['showtime_id'],
+                'total_amount': float(booking['total_amount']),
+                'payment_status': booking['payment_status'],
+                'paypal_order_id': booking['paypal_order_id'],
+                'created_at': booking['created_at'].isoformat(),
+                'movie_id': movie_id,
+                'movie_title': movie_info.get('title'),
+                'movie_poster_url': movie_info.get('poster_url'),
+                'screen_id': booking['screen_id'],
+                'start_time': booking['start_time'].isoformat(),
+                'end_time': booking['end_time'].isoformat() if booking['end_time'] else None,
+                'seats': seats_map.get(booking['booking_id'], [])
+            }
+            bookings_list.append(booking_dict)
+
         return jsonify({'bookings': bookings_list}), 200
+
     except Exception as e:
         logger.error(f"Fehler beim Abrufen der Buchungen: {e}")
         return jsonify({'error': 'Fehler beim Abrufen der Buchungen'}), 500
+
 
 
 if __name__ == '__main__':
