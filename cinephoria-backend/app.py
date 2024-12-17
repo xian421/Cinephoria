@@ -1814,5 +1814,29 @@ def get_movie_trailer_url(movie_id):
 
 
 
+@app.route('/bookings', methods=['GET'])
+@token_required
+def get_user_bookings():
+    user_id = request.user.get('user_id')
+    try:
+        with psycopg2.connect(DATABASE_URL) as conn:
+            with conn.cursor(cursor_factory=psycopg2.extras.DictCursor) as cursor:
+                cursor.execute("""
+                    SELECT b.booking_id, b.showtime_id, b.seat_id, b.price, b.created_at, 
+                           s.movie_id, s.screen_id, s.start_time, s.end_time, 
+                           m.title AS movie_title, m.poster_url AS movie_poster_url
+                    FROM bookings b
+                    JOIN showtimes s ON b.showtime_id = s.showtime_id
+                    JOIN movies m ON s.movie_id = m.movie_id
+                    WHERE b.user_id = %s
+                    ORDER BY b.created_at DESC
+                """, (user_id,))
+                bookings = cursor.fetchall()
+                bookings_list = [dict(b) for b in bookings]
+        return jsonify({'bookings': bookings_list}), 200
+    except Exception as e:
+        logger.error(f"Fehler beim Abrufen der Buchungen: {e}")
+        return jsonify({'error': 'Fehler beim Abrufen der Buchungen'}), 500
+
 if __name__ == '__main__':
     app.run(debug=True)
