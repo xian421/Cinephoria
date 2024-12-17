@@ -1831,9 +1831,11 @@ def get_user_bookings():
                         s.movie_id, 
                         s.screen_id, 
                         s.start_time, 
-                        s.end_time
+                        s.end_time,
+                        sc.name AS screen_name
                     FROM bookings b
                     JOIN showtimes s ON b.showtime_id = s.showtime_id
+                    JOIN screens sc ON s.screen_id = sc.screen_id
                     WHERE b.user_id = %s
                     ORDER BY b.created_at DESC
                 """, (user_id,))
@@ -1851,8 +1853,13 @@ def get_user_bookings():
                     SELECT 
                         bs.booking_id, 
                         bs.seat_id, 
-                        bs.price
+                        bs.price,
+                        s.row,
+                        s.number,
+                        st.name AS seat_type      
                     FROM booking_seats bs
+                    JOIN seats s ON bs.seat_id = s.seat_id
+                    JOIN seat_types st ON s.seat_type_id = st.seat_type_id
                     WHERE bs.booking_id = ANY(%s)
                 """, (booking_ids,))
                 booking_seats = cursor.fetchall()
@@ -1863,7 +1870,10 @@ def get_user_bookings():
                     booking_id = bs['booking_id']
                     seat = {
                         'seat_id': bs['seat_id'],
-                        'price': float(bs['price'])
+                        'price': float(bs['price']),
+                        'row': bs['row'],
+                        'number': bs['number'],
+                        'seat_type': bs['seat_type']
                     }
                     seats_map.setdefault(booking_id, []).append(seat)
 
