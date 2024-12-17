@@ -1240,7 +1240,7 @@ def get_user_cart():
                         'showtime_id': item['showtime_id']
                     })
         return jsonify({
-            'valid_until': cart['valid_until'].isoformat() if cart['valid_until'] else None,
+            'valid_until': cart['valid_until'].astimezone(timezone.utc).isoformat() if cart['valid_until'] else None,
             'cart_items': cart_items
         }), 200
     except Exception as e:
@@ -1441,7 +1441,7 @@ def get_guest_cart():
                         'showtime_id': item['showtime_id']
                     })
         return jsonify({
-            'valid_until': cart['valid_until'].isoformat() if cart['valid_until'] else None,
+            'valid_until': cart['valid_until'].astimezone(timezone.utc).isoformat() if cart['valid_until'] else None,
             'cart_items': cart_items
         }), 200
     except Exception as e:
