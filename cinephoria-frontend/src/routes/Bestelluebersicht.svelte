@@ -4,7 +4,7 @@
     import { authStore } from '../stores/authStore';
     import Swal from 'sweetalert2';
     import { fetchBookings } from '../services/api';
-    import { navigate } from 'svelte-routing';
+  
     
 
     let orders = [];
@@ -83,10 +83,9 @@
         border-radius: 20px;
         box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
         font-family: 'Roboto', sans-serif;
+        text-align: left;
         max-width: 1200px;
     }
-
-
 
     .summary-cards {
         display: flex;
@@ -94,11 +93,12 @@
         justify-content: space-between;
         margin-bottom: 2rem;
         flex-wrap: wrap;
+        max-width: 800px;
     }
 
     .card {
         flex: 1;
-        min-width: 350px;
+        min-width: 250px;
         background: #ffffff;
         border-radius: 12px;
         box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
@@ -167,15 +167,15 @@
 
     .tooltip-info {
     position: absolute;
-    left: 10px;
+    left: 700px;
     top: 50%;
     transform: translateY(-50%);
-    width: 220px;
-    background: #fdfdfd;
+    width: 300px;
+    background: #f9f9f9;
     color: #333;
     padding: 0.75rem;
     border-radius: 8px;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+  
     font-size: 0.9rem;
     text-align: left; /* Zentriert horizontal den Text */
 
@@ -220,33 +220,46 @@
 </style>
 
 <main class="orders-container">
-    {#if isLoading}
-        <p class="loading">Bestellungen werden geladen...</p>
-    {:else if error}
-        <p class="error-message">{error}</p>
-    {:else if orders.length === 0}
-        <p class="error-message">Keine Bestellungen gefunden.</p>
-    {:else}
-        <!-- Zusammenfassende Karten -->
-        <h1>Deine Statistiken</h1>
-        <div class="summary-cards">
-           
-            <div class="card" on:click={() => navigate('/leaderboard')}>
-                <h3>{totalWatchtime} Min</h3>
-                <p>Gesamte Watchtime</p>
-            </div>
-            <div class="card" on:click={() => navigate('/belohnung')}>
-                <h3>{totalPoints}</h3>
-                <p>Gesammelte Punkte</p>
-            </div>
-            <div class="card" on:click={() => navigate('/bestelluebersicht')}>
-                <h3>{orders.length}</h3>
-                <p>Gesamte Bestellungen</p>
-            </div>
+
+        <!-- Liste der Bestellungen -->
+        <h2>Deine Bestellungen</h2>
+        <div class="orders-list">
+            {#each orders as order, index}
+                <!-- svelte-ignore a11y_no_static_element_interactions -->
+                <div
+                    class="order-item"
+                    on:mouseenter={() => handleMouseEnter(index)}
+                    on:mouseleave={handleMouseLeave}
+                >
+                    <!-- Tooltip-Infos -->
+                    {#if hoveredOrder === index}
+                        <div class="tooltip-info">
+                            
+                            <ul class="seats-list">
+                                <p>
+                                    <strong>Sitz: </strong>
+                                    {order.seats.map(seat => `${seat.row}${seat.number}`).join(', ')}
+                                </p>
+                               
+                                <p><strong>Kinosaal: </strong> {order.screen_name}</p>
+                                <p><strong>Start: </strong> Am {new Date(order.start_time).toLocaleDateString()} um {new Date(order.start_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}Uhr</p>
+
+
+
+                            </ul>
+                        </div>
+                    {/if}
+        
+                    <div class="order-details">
+                        <h4>{order.movie_title}</h4>
+                        <p><strong>Datum:</strong> {new Date(order.date).toLocaleDateString()}</p>
+                        <p><strong>Uhrzeit:</strong> {new Date(order.date).toLocaleTimeString()}</p>
+                        <p><strong>Watchtime:</strong> {order.runtime} Min</p>
+                    </div>
+                    <p class="price">{order.total_amount.toFixed(2)} €</p>
+                </div>
+            {/each}
         </div>
 
-        
-        
-    {/if}
 </main>
  

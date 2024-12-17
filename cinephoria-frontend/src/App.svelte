@@ -29,6 +29,7 @@
     import Bestellungen from './routes/Bestellungen.svelte';
     import Belohnung from './routes/Belohnung.svelte';
     import Leaderboard from './routes/leaderboard.svelte';
+    import Bestelluebersicht from './routes/Bestelluebersicht.svelte';
   
     // Import von Svelte Stores
     import { authStore, setAuth, updateAuth } from './stores/authStore.js';
@@ -231,6 +232,8 @@
         <Route path="/bestellungen" component={Bestellungen} />
         <Route path="/belohnung" component={Belohnung} />
         <Route path="/leaderboard" component={Leaderboard} />
+        <Route path="/bestelluebersicht" component={Bestelluebersicht} />
+
 
 
   

@@ -61,6 +61,7 @@
       border-radius: 12px;
       box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
       background: linear-gradient(145deg, #f8f9fa, #e9ecef);
+      max-width: 1200px;
     }
   
     .forgot-password-container h1 {

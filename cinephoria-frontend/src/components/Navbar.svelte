@@ -34,8 +34,8 @@
 
 
 <style>
-  /* Navbar-Stile */
-  nav {
+ /* Navbar-Stile */
+ nav {
     display: flex;
     align-items: center;
     justify-content: space-around;
@@ -46,87 +46,84 @@
     position: sticky;
     top: 0;
     z-index: 1000;
+
+    width: 1200px;
+    margin: 0 auto;
   }
 
-  /* Logo-Stile */
+  /* Logo */
   .logo {
     display: flex;
     align-items: center;
-    gap: 0.5rem;
     text-decoration: none;
-    color: white;
     font-size: 1.2rem;
     font-weight: bold;
-    transition: transform 0.4s ease;
-  }
-
-  .logo:hover {
-    transform: scale(1.25);
+    transition: transform 0.3s ease;
   }
 
   .logo img {
     height: 60px;
-    width: auto;
     object-fit: contain;
   }
 
-  /* Button-Stile */
+  .logo:hover {
+    transform: scale(1.1);
+  }
+
+  /* Buttons */
   button {
-    font-size: 1.2rem;
+    font-size: 1.1rem;
     font-weight: bold;
-    color: rgb(0, 0, 0);
     background: #ffffff;
     border: 2px solid transparent;
     border-radius: 12px;
-    padding: 1rem 2rem;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    padding: 0.8rem 1.5rem;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
     cursor: pointer;
     transition: all 0.3s ease;
     min-width: 160px;
-    text-align: center;
   }
 
   button:hover {
     border-color: #1abc9c;
-    transform: scale(1.1);
-  }
-
-  button.active {
-    color: rgb(0, 0, 0);
-    border-color: rgb(21, 151, 112);
     transform: scale(1.05);
   }
 
-  /* Login-Dropdown-Stile */
-  .dropdown-container {
-    position: relative;
+  button.active {
+    color: #1abc9c;
+    border-color: #1abc9c;
+    transform: scale(1.05);
   }
 
-  .dropdown-menu {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
+  /* Dropdown Container */
+  
+
+  /* Dropdown Menü */
+  .dropdown-menu, .profile-dropdown-menu {
     position: absolute;
     top: calc(100% + 10px);
     right: 0;
     background: #ffffff;
-    padding: 1rem 20px;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
     border-radius: 12px;
-    z-index: 1000;
     width: 300px;
+    padding: 1rem;
+    opacity: 0;
     transform: scaleY(0);
     transform-origin: top;
-    transition: transform 0.3s ease-in-out;
+    transition: transform 0.3s ease, opacity 0.3s ease;
+    z-index: 1000;
+    text-align: center;
   }
 
-  .dropdown-container.open .dropdown-menu {
+  .dropdown-container.open .dropdown-menu,
+  .profile-dropdown-container.open .profile-dropdown-menu {
     transform: scaleY(1);
+    opacity: 1;
   }
 
   .dropdown-menu input {
-    width: calc(100% - 16px);
+    width: 100%;
     padding: 0.8rem;
     margin: 0.5rem 0;
     border: 1px solid #ccc;
@@ -136,95 +133,57 @@
   }
 
   .dropdown-menu input:focus {
-    outline: none;
     border-color: #1abc9c;
     box-shadow: 0 0 4px rgba(26, 188, 156, 0.5);
+    outline: none;
   }
 
   .dropdown-menu button {
-    width: 100%;
     background: #3498db;
     color: #ffffff;
-    font-size: 1rem;
-    font-weight: bold;
     padding: 0.8rem;
-    border: none;
     border-radius: 12px;
+    border: none;
     cursor: pointer;
-    transition: all 0.3s ease;
+    width: 100%;
+    transition: background-color 0.3s;
   }
 
   .dropdown-menu button:hover {
-    background: #24b497;
-  }
-
-  /* Profil-Dropdown-Stile */
-  .profile-dropdown-container {
-    position: relative;
-  }
-
-  .profile-dropdown-menu {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    justify-content: flex-start;
-    position: absolute;
-    top: calc(100% + 10px);
-    right: 0;
-    background: #ffffff;
-    padding: 1rem;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
-    border-radius: 12px;
-    z-index: 1000;
-    width: 200px;
-    transform: scaleY(0);
-    transform-origin: top;
-    transition: transform 0.3s ease-in-out;
-  }
-
-  .profile-dropdown-container.open .profile-dropdown-menu {
-    transform: scaleY(1);
+    background: #1abc9c;
   }
 
   .profile-dropdown-menu ul {
     list-style: none;
-    padding: 0;
     margin: 0;
-    width: 100%;
+    padding: 0;
   }
 
   .profile-dropdown-menu li {
     padding: 0.8rem;
-    font-size: 1rem;
-    color: #333;
     cursor: pointer;
-    transition: background-color 0.3s ease;
-    width: 100%;
-    text-align: left;
+    border-radius: 8px;
+    transition: background 0.3s, transform 0.2s;
   }
 
   .profile-dropdown-menu li:hover {
-    background-color: #f0f0f0;
-    border-radius: 8px;
-
+    background: #f1f1f1;
+    transform: translateX(5px);
   }
 
+  /* Profil Container */
   .profile-container {
     display: flex;
     align-items: center;
     gap: 8px;
     cursor: pointer;
-    font-size: 1rem;
-    font-weight: bold;
-    color: black;
-    transition: all 0.3s ease;
-
   }
 
-  .profile-container:hover {
-    transform: scale(1.1);
-
-
+  .profile-image {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    object-fit: cover;
   }
 
   .profile-initials {
@@ -234,18 +193,42 @@
     align-items: center;
     justify-content: center;
     border-radius: 50%;
-    background-color: #3498db;
+    background: #3498db;
     color: white;
-    font-size: 20px;
     font-weight: bold;
+    font-size: 1.2rem;
   }
 
-  .profile-image {
-      width: 50px;
-      height: 50px;
-      border-radius: 50%;
-      object-fit: cover;
-  }
+  .button-container {
+  display: flex !important; 
+  justify-content: center !important; /* Zentriert die Buttons */
+  gap: 1rem !important; /* Abstand zwischen den Buttons */
+  margin-top: 1rem !important; /* Abstand nach oben */
+}
+
+.secondary-button {
+  background-color: #ffffff !important; 
+  color: #3498db !important; 
+  font-size: 0.9rem !important;
+  font-weight: 600 !important;
+  box-shadow: black;
+  border-radius: 8px!important; 
+  padding: 0.5rem 1rem!important; 
+  cursor: pointer!important;
+  transition: all 0.3s ease!important;
+  text-align: center!important;
+  min-width: 120px!important; 
+  border: 2px solid #ffffff !important;
+}
+
+.secondary-button:hover {
+  border-color: #1abc9c !important;
+  
+
+  transform: scale(1.05)!important; /* Leichte Vergrößerung */
+}
+
+
 
   </style>
 
@@ -314,16 +297,23 @@
                   <input type="email" placeholder="E-Mail" bind:value={email} required />
                   <input type="password" placeholder="Passwort" bind:value={password} required />
                   <button type="submit">Einloggen</button>
-                  <div class="button-container" style="display: flex; justify-content: space-between; gap: 10px; margin-top: 10px;">
-                      <button type="button" on:click={() => { navigate('/register'); toggleLoginDropdown(false); }}
-                         style="background: none; border: none; color: #007bff; cursor: pointer;">
-                          Stattdessen Registrieren
-                      </button>
-                      <button type="button" on:click={() => { navigate('/forgot-password'); toggleLoginDropdown(false); }}
-                         style="background: none; border: none; color: #007bff; cursor: pointer;">
-                          Passwort vergessen?
-                      </button>
+                  <div class="button-container">
+                    <button 
+                      type="button"
+                      class="secondary-button" 
+                      on:click={() => { navigate('/register'); toggleLoginDropdown(false); }}
+                    >
+                      Registrieren
+                    </button>
+                    <button 
+                      type="button" 
+                      class="secondary-button" 
+                      on:click={() => { navigate('/forgot-password'); toggleLoginDropdown(false); }}
+                    >
+                      Passwort vergessen?
+                    </button>
                   </div>
+                  
               </form>
           </div>
       </div>

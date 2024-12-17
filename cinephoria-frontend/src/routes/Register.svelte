@@ -70,6 +70,7 @@
     text-align: center;
     font-family: Arial, sans-serif;
     text-align: center;
+    max-width: 1200px;
   }
 
   .register-container h1 {

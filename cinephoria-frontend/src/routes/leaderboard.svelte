@@ -20,6 +20,7 @@
         border-radius: 20px;
         box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
         font-family: 'Roboto', sans-serif;
+        max-width: 1200px;
     }
 
     .leaderboard-header {
@@ -118,7 +119,7 @@
 <main class="leaderboard-container">
     <div class="leaderboard-header">
         <h1>🏆 Leaderboard 🏆</h1>
-        <p>Die besten Spieler und Punktesammler auf einen Blick!</p>
+        <p>Die User mit der meisten Watchtime!</p>
     </div>
 
     <!-- Rangliste anzeigen -->
