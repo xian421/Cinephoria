@@ -226,7 +226,7 @@
     {:else}
         <!-- Zusammenfassende Karten -->
         <div class="summary-cards">
-            <div class="card">
+            <div class="card" on:click={() => navigate('/leaderboard')}>
                 <h3>{totalWatchtime} Min</h3>
                 <p>Gesamte Watchtime</p>
             </div>

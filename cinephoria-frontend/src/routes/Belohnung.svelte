@@ -3,12 +3,12 @@
 
     // Beispielhafte Belohnungen, jedes Objekt hat ein `image`-Attribut
     const rewards = [
-        { id: 1, title: 'Popcorn-Gutschein', points: 50, description: 'Ein mittelgroßer Popcorn-Gutschein.', image: '/images/popcorn.jpg' },
-        { id: 2, title: 'Freikarte', points: 100, description: 'Eine kostenlose Kinokarte für einen Film deiner Wahl.', image: '/images/ticket.jpg' },
-        { id: 3, title: 'VIP-Lounge Zugang', points: 200, description: 'Ein exklusiver Zugang zur VIP-Lounge.', image: '/images/vip-lounge.jpg' },
-        { id: 4, title: 'Softdrink-Gutschein', points: 30, description: 'Ein Softdrink deiner Wahl.', image: '/images/softdrink.jpg' },
-        { id: 5, title: 'Nacho-Gutschein', points: 70, description: 'Eine Portion leckere Nachos.', image: '/images/nachos.jpg' },
-        { id: 6, title: 'Premium-Upgrade', points: 150, description: 'Upgraden zu Premium-Sitzen.', image: '/images/premium.jpg' }
+        { id: 1, title: 'Popcorn-Gutschein', points: 50, description: 'Ein mittelgroßer Popcorn-Gutschein.', image: '/public/popcorn.webp' },
+        { id: 2, title: 'Freikarte', points: 100, description: 'Eine kostenlose Kinokarte für einen Film deiner Wahl.', image: '/public/freikarte.webp' },
+        { id: 3, title: 'VIP-Lounge Zugang', points: 200, description: 'Ein exklusiver Zugang zur VIP-Lounge.', image: '/public/vip.webp' },
+        { id: 4, title: 'Softdrink-Gutschein', points: 30, description: 'Ein Softdrink deiner Wahl.', image: '/public/trinken.webp' },
+        { id: 5, title: 'Nacho-Gutschein', points: 70, description: 'Eine Portion leckere Nachos.', image: '/public/nachos.webp' },
+        { id: 6, title: 'Premium-Upgrade', points: 150, description: 'Upgraden zu Premium-Sitzen.', image: '/public/premium.webp' }
     ];
 
     let userPoints = 150; // Beispielhafte Punkte des Benutzers
@@ -77,6 +77,7 @@
         text-align: center;
         transition: transform 0.3s ease, box-shadow 0.3s ease;
         cursor: pointer;
+        max-width: 300px;
     }
 
     .reward-card:hover {
@@ -85,10 +86,10 @@
     }
 
     .reward-card img {
-        width: 100px;
-        height: 100px;
+        width: 150px;
+        height: 150px;
         object-fit: cover;
-        border-radius: 50%;
+        border-radius: 5%;
         margin-bottom: 1rem;
         box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
     }
