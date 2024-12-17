@@ -1,12 +1,12 @@
 <script>
     // Beispielhafte Benutzerdaten für das Leaderboard
     const leaderboard = [
-        { id: 1, name: 'Max Mustermann', points: 350, image: '/public/user1.webp' },
-        { id: 2, name: 'Anna Müller', points: 300, image: '/public/user2.webp' },
-        { id: 3, name: 'Lisa Schmidt', points: 250, image: '/public/user3.webp' },
-        { id: 4, name: 'Tom Becker', points: 200, image: '/public/user4.webp' },
-        { id: 5, name: 'Felix Weber', points: 150, image: '/public/user5.webp' },
-        { id: 6, name: 'Julia Klein', points: 100, image: '/public/user6.webp' }
+        { id: 1, name: 'Max Mustermann', points: 350, image: '/user1.webp' },
+        { id: 2, name: 'Anna Müller', points: 300, image: '/user2.webp' },
+        { id: 3, name: 'Lisa Schmidt', points: 250, image: '/user3.webp' },
+        { id: 4, name: 'Tom Becker', points: 200, image: '/user4.webp' },
+        { id: 5, name: 'Felix Weber', points: 150, image: '/user5.webp' },
+        { id: 6, name: 'Julia Klein', points: 100, image: '/user6.webp' }
     ];
 </script>
 
@@ -127,11 +127,11 @@
             <div class="leaderboard-card {index === 0 ? 'top-1' : index === 1 ? 'top-2' : index === 2 ? 'top-3' : ''}">
                 <!-- Highlight-Icon für Top 3 -->
                 {#if index === 0}
-                    <img src="/public/rank1.png" alt="Gold Crown" class="rank-icon" />
+                    <img src="/rank1.png" alt="Gold Crown" class="rank-icon" />
                 {:else if index === 1}
-                    <img src="/public/rank2.png" alt="Silver Crown" class="rank-icon" />
+                    <img src="/rank2.png" alt="Silver Crown" class="rank-icon" />
                 {:else if index === 2}
-                    <img src="/public/rank3.png" alt="Bronze Crown" class="rank-icon" />
+                    <img src="/rank3.png" alt="Bronze Crown" class="rank-icon" />
                 {/if}
 
                 <!-- Rangnummer -->
