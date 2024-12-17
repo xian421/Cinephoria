@@ -26,6 +26,7 @@
     import Admin from './routes/Admin.svelte';
     import Checkout from './routes/checkout.svelte';
     import Admindiscount from './routes/Admindiscount.svelte';
+    import Bestellungen from './routes/Bestellungen.svelte';
   
     // Import von Svelte Stores
     import { authStore, setAuth, updateAuth } from './stores/authStore.js';
@@ -225,6 +226,8 @@
         <Route path="/profile" component={Profile} />
         <Route path="/einstellungen" component={Einstellung} />
         <Route path="/warenkorb" component={Warenkorb} />
+        <Route path="/bestellungen" component={Bestellungen} />
+
   
         <!-- Geschützte Admin-Routen mit ProtectedRoute -->
         <Route path="/adminkinosaal" let:params>

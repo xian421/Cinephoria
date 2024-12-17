@@ -20,8 +20,7 @@
   let error = null;
 
   // Variablen für das Showtime Popup
-  let isOpen = false;
-  let selectedShowtime = null;
+  
   let movie_certification = "";
 
   // Neue Variablen für das Trailer Popup
@@ -83,17 +82,9 @@
     navigate(`/buchung/${showtime.showtime_id}`);
   }
 
-  // Funktion zum Öffnen des Showtimes Popups
-  function openShowtimePopup(showtime) {
-    selectedShowtime = showtime;
-    isOpen = true;
-  }
+ 
 
-  // Funktion zum Schließen des Showtimes Popups
-  function closeShowtimePopup() {
-    isOpen = false;
-    selectedShowtime = null;
-  }
+ 
 
   // Funktion zum Öffnen des Trailer Popups
   async function openTrailerModal() {
@@ -329,24 +320,7 @@
   }
 </style>
 
-<!-- Popup für Showtimes -->
-{#if isOpen && selectedShowtime}
-  <div class="popup-overlay" on:click={closeShowtimePopup}>
-    <div class="popup-content" on:click|stopPropagation>
-      <button class="close-button" on:click={closeShowtimePopup}>×</button>
-      <div class="popup-showtime-details">
-        <h2>Showtime Details</h2>
-        <p><strong>Datum:</strong> {new Date(selectedShowtime.start_time).toLocaleDateString()}</p>
-        <p><strong>Startzeit:</strong> {new Date(selectedShowtime.start_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
-        {#if selectedShowtime.end_time}
-          <p><strong>Endzeit:</strong> {new Date(selectedShowtime.end_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
-        {/if}
-        <p><strong>Kinosaal:</strong> {screens[selectedShowtime.screen_id]?.name || 'Unbekannt'}</p>
-        <button on:click={() => navigateToBooking(selectedShowtime)} class="book-button">Tickets buchen</button>
-      </div>
-    </div>
-  </div>
-{/if}
+
 
 <!-- Modal für Trailer -->
 {#if isTrailerOpen}
@@ -410,9 +384,9 @@
         </div>
 
         <div>
-          <h3>Veröffentlichung:</h3>
+                 <h3>Veröffentlichung:</h3>
           <p>{movieDetails.release_date}</p>
-        </div>
+              </div>
 
         <div>
           <h3>Bewertung:</h3>
@@ -428,7 +402,8 @@
         {#if showtimes.length > 0}
           <div class="showtimes-container">
             {#each showtimes as showtime}
-              <div class="showtime-box" on:click={() => openShowtimePopup(showtime)}>
+            <div class="showtime-box" on:click={() => navigateToBooking(showtime)}>
+
                 <div class="showtime-date">
                   {new Date(showtime.start_time).toLocaleDateString()}
                 </div>
