@@ -735,12 +735,12 @@ export const fetchShowtimeDetails = async (showtime_id) => {
 
 export const fetchDiscounts = async () => {
     try {
-        const token = get(authStore).token; // Falls Authentifizierung erforderlich ist
+        const token = get(authStore).token;
         const response = await fetch(`${API_BASE_URL}/discounts`, {
             method: 'GET',
             headers: {
                 'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}` // Entfernen, wenn nicht benötigt
+                'Authorization': `Bearer ${token}`
             }
         });
 
@@ -941,7 +941,6 @@ export async function deleteSeatType(token, seat_type_id) {
     return response.json();
 }
 
-// src/services/api.js
 
 export async function fetchMovieTrailerUrl(token, movie_id) {
     const response = await fetch(`${API_BASE_URL}/movie/${movie_id}/trailer_url`, {
@@ -959,4 +958,18 @@ export async function fetchMovieTrailerUrl(token, movie_id) {
 
     const data = await response.json();
     return data.trailer_url;
+}
+
+export async function  fetchBookings(token) {
+    const response = await fetch(`${API_BASE_URL}/bookings`, {
+        headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${token}`,
+        },
+    });
+    const data = await response.json();
+    if (!response.ok) {
+        throw new Error(data.error || 'Fehler beim Laden der Buchungen.');
+    }
+    return data.bookings;
 }

@@ -542,7 +542,6 @@ def get_seats():
                     SELECT s.seat_id, s.screen_id, s.row, s.number, st.name AS seat_type_name, st.price
                     FROM seats s
                     JOIN seat_types st ON s.seat_type_id = st.seat_type_id
-                    JOIN
                     WHERE s.screen_id = %s
                 """, (screen_id,))
                 seats = cursor.fetchall()
@@ -1324,7 +1323,6 @@ def clear_expired_user_cart_items():
             cursor.execute(delete_sql)
             conn.commit()
 
-
 @app.route('/user/cart', methods=['POST'])
 @token_required
 def add_to_user_cart():
@@ -1336,7 +1334,6 @@ def add_to_user_cart():
     showtime_id = data.get('showtime_id')
 
     if not user_id or not seat_id or price is None or not showtime_id:
-        # Entfernen des doppelten return
         return jsonify({'error': 'seat_id, price und showtime_id sind erforderlich'}), 400
 
     try:
@@ -1348,6 +1345,14 @@ def add_to_user_cart():
                 if cursor.fetchone() is None:
                     cursor.execute("INSERT INTO user_carts (user_id, valid_until) VALUES (%s, %s)", (user_id, valid_until,))
                     conn.commit()
+
+                # Überprüfen, ob der Sitz bereits in guest_cart_items reserviert ist
+                cursor.execute("""
+                    SELECT seat_id FROM guest_cart_items 
+                    WHERE seat_id = %s AND showtime_id = %s
+                """, (seat_id, showtime_id))
+                if cursor.fetchone():
+                    return jsonify({'error': 'Der Sitzplatz ist bereits reserviert'}), 409
 
                 # Reserviere den Sitzplatz
                 reserved_until = datetime.now(timezone.utc) + timedelta(minutes=15)
@@ -1377,6 +1382,7 @@ def add_to_user_cart():
     except Exception as e:
         print(f"Fehler beim Hinzufügen zum Warenkorb: {e}")
         return jsonify({'error': 'Fehler beim Hinzufügen zum Warenkorb'}), 500
+
 
 
 
@@ -1418,7 +1424,6 @@ def get_guest_cart():
         print(f"Fehler beim Abrufen des Guest-Warenkorbs: {e}")
         return jsonify({'error': 'Fehler beim Abrufen des Guest-Warenkorbs'}), 500
 
-
 @app.route('/guest/cart', methods=['POST'])
 def add_to_guest_cart():
     clear_expired_guest_cart_items()  
@@ -1443,35 +1448,40 @@ def add_to_guest_cart():
                         "INSERT INTO guest_carts (guest_id, valid_until) VALUES (%s, %s)",
                         (guest_id, valid_until,)
                     )
-    
+
+                # Überprüfen, ob der Sitz bereits in user_cart_items reserviert ist
+                cursor.execute("""
+                    SELECT seat_id FROM user_cart_items 
+                    WHERE seat_id = %s AND showtime_id = %s
+                """, (seat_id, showtime_id))
+                if cursor.fetchone():
+                    return jsonify({'error': 'Der Sitzplatz ist bereits reserviert'}), 409
+
                 # Reserviere den Sitzplatz
                 reserved_until = datetime.now(timezone.utc) + timedelta(minutes=15)
-    
+
                 # Versuch, den Sitzplatz hinzuzufügen
-                try:
-                    cursor.execute("""
-                        INSERT INTO guest_cart_items (guest_id, seat_id, price, reserved_until, showtime_id)
-                        VALUES (%s, %s, %s, %s, %s)
-                        RETURNING seat_id
-                    """, (guest_id, seat_id, price, reserved_until, showtime_id))
-                except IntegrityError:
-                    conn.rollback()
-                    logger.warning(f"Sitzplatz {seat_id} für Showtime {showtime_id} ist bereits reserviert.")
-                    return jsonify({'error': 'Der Sitzplatz ist bereits reserviert'}), 409
-    
+                cursor.execute("""
+                    INSERT INTO guest_cart_items (guest_id, seat_id, price, reserved_until, showtime_id)
+                    VALUES (%s, %s, %s, %s, %s)
+                    ON CONFLICT (seat_id, showtime_id) DO NOTHING
+                    RETURNING seat_id
+                """, (guest_id, seat_id, price, reserved_until, showtime_id))
+
                 result = cursor.fetchone()
-    
+
                 if result is None:
                     # Der Sitzplatz ist bereits reserviert (falls using DO NOTHING RETURNING)
                     return jsonify({'error': 'Der Sitzplatz ist bereits reserviert'}), 409
-    
+
                 # Aktualisieren Sie das gültige Ablaufdatum des Warenkorbs
                 cursor.execute("""
                     UPDATE guest_carts SET valid_until = %s WHERE guest_id = %s
                 """, (valid_until, guest_id))
-    
+                conn.commit()
+
         return jsonify({'message': 'Sitzplatz zum Guest-Warenkorb hinzugefügt', 'reserved_until': reserved_until.isoformat()}), 201
-    
+
     except IntegrityError as ie:
         # Spezifisches Abfangen von IntegrityError, falls nicht bereits behandelt
         logger.error(f"IntegrityError beim Hinzufügen zum Guest-Warenkorb: {ie}")
@@ -1479,6 +1489,7 @@ def add_to_guest_cart():
     except Exception as e:
         logger.error(f"Fehler beim Hinzufügen zum Guest-Warenkorb: {e}")
         return jsonify({'error': 'Fehler beim Hinzufügen zum Guest-Warenkorb'}), 500
+
     
 
 @app.route('/guest/cart/<int:showtime_id>/<int:seat_id>', methods=['DELETE'])
@@ -1788,10 +1799,9 @@ def get_movie_trailer_url(movie_id):
     
     # Erfolgreiche Antwort zurückgeben
     if response.status_code == 200:
-        # JSON-Antwort parsen
         data = response.json()
         
-        # Filtere nur den Eintrag mit 'type' == 'Trailer' und 'site' == 'YouTube'
+        # Filtert den Eintrag mit 'type' == 'Trailer' und 'site' == 'YouTube'
         trailer = next((item for item in data.get('results', []) if item.get('type') == 'Trailer' and item.get('site') == 'YouTube'), None)
         
         if trailer and 'key' in trailer:
@@ -1800,8 +1810,108 @@ def get_movie_trailer_url(movie_id):
         else:
             return jsonify({"error": "No Trailer found."}), 404
     else:
-        # Fehler behandeln und Fehlermeldung zurückgeben
         return jsonify({"error": f"Unable to fetch Trailer for movie ID {movie_id}"}), response.status_code
+
+@app.route('/bookings', methods=['GET'])
+@token_required
+def get_user_bookings():
+    user_id = request.user.get('user_id')
+    try:
+        with psycopg2.connect(DATABASE_URL) as conn:
+            with conn.cursor(cursor_factory=psycopg2.extras.DictCursor) as cursor:
+                # Abrufen der Buchungen ohne den JOIN zur movies-Tabelle
+                cursor.execute("""
+                    SELECT 
+                        b.booking_id, 
+                        b.showtime_id, 
+                        b.total_amount,
+                        b.payment_status,
+                        b.paypal_order_id,
+                        b.created_at, 
+                        s.movie_id, 
+                        s.screen_id, 
+                        s.start_time, 
+                        s.end_time
+                    FROM bookings b
+                    JOIN showtimes s ON b.showtime_id = s.showtime_id
+                    WHERE b.user_id = %s
+                    ORDER BY b.created_at DESC
+                """, (user_id,))
+                bookings = cursor.fetchall()
+
+                if not bookings:
+                    return jsonify({'bookings': []}), 200
+
+                # Sammeln aller eindeutigen movie_ids
+                movie_ids = list({booking['movie_id'] for booking in bookings})
+
+                # Abrufen der Buchungs-Sitzplätze
+                booking_ids = [booking['booking_id'] for booking in bookings]
+                cursor.execute("""
+                    SELECT 
+                        bs.booking_id, 
+                        bs.seat_id, 
+                        bs.price
+                    FROM booking_seats bs
+                    WHERE bs.booking_id = ANY(%s)
+                """, (booking_ids,))
+                booking_seats = cursor.fetchall()
+
+                # Mapping von booking_id zu Sitzplätzen
+                seats_map = {}
+                for bs in booking_seats:
+                    booking_id = bs['booking_id']
+                    seat = {
+                        'seat_id': bs['seat_id'],
+                        'price': float(bs['price'])
+                    }
+                    seats_map.setdefault(booking_id, []).append(seat)
+
+        # Abrufen der Filmdetails von TMDB für jede eindeutige movie_id
+        movie_details = {}
+        for movie_id in movie_ids:
+            movie_response = requests.get(f"{TMDB_API_URL}/{movie_id}?language=de-DE", headers=HEADERS)
+            if movie_response.status_code == 200:
+                movie_data = movie_response.json()
+                movie_details[movie_id] = {
+                    'title': movie_data.get('title'),
+                    'poster_url': f"https://image.tmdb.org/t/p/w500{movie_data.get('poster_path')}" if movie_data.get('poster_path') else None
+                }
+            else:
+                movie_details[movie_id] = {
+                    'title': None,
+                    'poster_url': None
+                }
+
+        # Aufbau der finalen Buchungsstruktur
+        bookings_list = []
+        for booking in bookings:
+            movie_id = booking['movie_id']
+            movie_info = movie_details.get(movie_id, {})
+            booking_dict = {
+                'booking_id': booking['booking_id'],
+                'showtime_id': booking['showtime_id'],
+                'total_amount': float(booking['total_amount']),
+                'payment_status': booking['payment_status'],
+                'paypal_order_id': booking['paypal_order_id'],
+                'created_at': booking['created_at'].isoformat(),
+                'movie_id': movie_id,
+                'movie_title': movie_info.get('title'),
+                'movie_poster_url': movie_info.get('poster_url'),
+                'screen_id': booking['screen_id'],
+                'start_time': booking['start_time'].isoformat(),
+                'end_time': booking['end_time'].isoformat() if booking['end_time'] else None,
+                'seats': seats_map.get(booking['booking_id'], [])
+            }
+            bookings_list.append(booking_dict)
+
+        return jsonify({'bookings': bookings_list}), 200
+
+    except Exception as e:
+        logger.error(f"Fehler beim Abrufen der Buchungen: {e}")
+        return jsonify({'error': 'Fehler beim Abrufen der Buchungen'}), 500
+
+
 
 if __name__ == '__main__':
     app.run(debug=True)

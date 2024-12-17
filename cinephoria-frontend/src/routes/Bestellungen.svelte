@@ -4,6 +4,7 @@
     import { get } from 'svelte/store';
     import { authStore } from '../stores/authStore';
     import Swal from 'sweetalert2';
+    import { fetchBookings } from '../services/api';
 
     let orders = [];
     let totalWatchtime = 0;
@@ -17,7 +18,7 @@
     }
 
     function calculatePoints() {
-        return orders.reduce((sum, order) => sum + Math.floor((order.total_price || 0) / 10), 0); // 1 Punkt pro 10€
+        return orders.reduce((sum, order) => sum + Math.floor((order.total_amount || 0) / 10), 0); // 1 Punkt pro 10€
     }
 
     onMount(async () => {
@@ -25,17 +26,33 @@
         if (!token) {
             error = 'Nicht authentifiziert';
             isLoading = false;
-            return Swal.fire({ title: "Fehler", text: error, icon: "error" });
+            await Swal.fire({ title: "Fehler", text: error, icon: "error" });
+            return;
         }
 
         try {
-        
-            
+            const data22 = await fetchBookings(token);
+            console.log('Fetched bookings:', data22);
+
+            if (Array.isArray(data22)) {
+                orders = data22.map(order => ({
+                    ...order,
+                    runtime: order.start_time && order.end_time 
+                        ? Math.floor((new Date(order.end_time) - new Date(order.start_time)) / (1000 * 60)) 
+                        : 0,
+                    date: order.created_at // Für die Anzeige des Buchungsdatums
+                }));
+            } else {
+                throw new Error('Unerwartetes Antwortformat');
+            }
+
+            console.log('Processed orders:', orders);
             totalWatchtime = calculateWatchtime();
             totalPoints = calculatePoints();
         } catch (err) {
             console.error('Fehler beim Laden der Bestellungen:', err);
             error = err.message || 'Fehler beim Laden der Bestellungen';
+            await Swal.fire({ title: "Fehler", text: error, icon: "error" });
         } finally {
             isLoading = false;
         }
@@ -142,6 +159,8 @@
         <p class="loading">Bestellungen werden geladen...</p>
     {:else if error}
         <p class="error-message">{error}</p>
+    {:else if orders.length === 0}
+        <p class="error-message">Keine Bestellungen gefunden.</p>
     {:else}
         <!-- Zusammenfassende Karten -->
         <div class="summary-cards">
@@ -170,7 +189,7 @@
                         <p><strong>Uhrzeit:</strong> {new Date(order.date).toLocaleTimeString()}</p>
                         <p><strong>Watchtime:</strong> {order.runtime} Min</p>
                     </div>
-                    <p class="price">{order.total_price.toFixed(2)} €</p>
+                    <p class="price">{order.total_amount.toFixed(2)} €</p>
                 </div>
             {/each}
         </div>
