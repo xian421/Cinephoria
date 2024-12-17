@@ -1,9 +1,15 @@
 <script>
     import { navigate } from 'svelte-routing';
-    import { cart, cartError, removeFromCart, clearCart } from '../stores/cartStore.js';
     import Swal from 'sweetalert2';
     import "@fortawesome/fontawesome-free/css/all.min.css";
     import { derived } from 'svelte/store';
+
+    import { onMount } from 'svelte';
+import { cart, cartError, removeFromCart, clearCart, loadCart } from '../stores/cartStore.js';
+
+onMount(() => {
+    loadCart(); // Lade den Warenkorb beim Neuladen der Seite
+});
     
     // Rabattoptionen
     const discountOptions = [
@@ -159,119 +165,115 @@
 
 <style>
     .cart-container {
-        padding: 2rem;
-        font-family: Arial, sans-serif;
-        max-width: 800px;
-        margin: 0 auto;
-    }
+    max-width: 900px;
+    margin: 2rem auto;
+    padding: 2rem;
+    background: #fdfdfd;
+    border-radius: 20px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+    font-family: 'Roboto', sans-serif;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
 
-    h1 {
-        text-align: center;
-        margin-bottom: 2rem;
-    }
+.cart-container:hover {
+    transform: translateY(-10px);
+    box-shadow: 0 15px 40px rgba(0, 0, 0, 0.15);
+}
 
-    .cart-table {
-        width: 100%;
-        border-collapse: collapse;
-        margin-bottom: 2rem;
-    }
+h1, h2 {
+    text-align: center;
+    color: #2c3e50;
+}
 
+.cart-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    margin-bottom: 2rem;
+}
+
+.cart-table th, .cart-table td {
+    padding: 1rem;
+    text-align: center;
+    border-bottom: 1px solid #ddd;
+}
+
+.cart-table th {
+    background-color: #ecf0f1;
+    color: #34495e;
+    font-weight: bold;
+}
+
+.cart-table tr:hover {
+    background-color: #f9f9f9;
+    transform: scale(1.01);
+    transition: transform 0.3s ease;
+}
+
+.remove-btn, .clear-btn, .proceed-btn {
+    font-size: 1rem;
+    font-weight: bold;
+    border: none;
+    border-radius: 10px;
+    padding: 0.7rem 1.2rem;
+    cursor: pointer;
+    transition: background-color 0.3s ease, transform 0.2s;
+}
+
+.remove-btn {
+    background-color: #e74c3c;
+    color: #fff;
+}
+
+.clear-btn {
+    background-color: #95a5a6;
+    color: white;
+}
+
+.proceed-btn {
+    background-color: #3498db;
+    color: #fff;
+}
+
+.remove-btn:hover, .clear-btn:hover, .proceed-btn:hover {
+    transform: translateY(-3px);
+    opacity: 0.9;
+}
+
+.showtime-details {
+    background: #f9f9f9;
+    border: 1px solid #ddd;
+    border-radius: 16px;
+    padding: 1.5rem;
+    margin-bottom: 1rem;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+}
+
+.discount-select {
+    padding: 0.5rem;
+    border-radius: 8px;
+    border: 1px solid #ccc;
+    transition: border-color 0.3s ease;
+}
+
+.discount-select:focus {
+    border-color: #3498db;
+    outline: none;
+}
+
+
+/* Responsive Design */
+@media (max-width: 768px) {
     .cart-table th, .cart-table td {
-        border: 1px solid #ddd;
-        padding: 1rem;
-        text-align: center;
-    }
-
-    .cart-table th {
-        background-color: #f2f2f2;
-    }
-
-    .cart-item {
-        display: flex;
-        align-items: center;
-        gap: 1rem;
-    }
-
-    .cart-item i {
-        color: white;
-    }
-
-    .button-group {
-        display: flex;
-        justify-content: space-between;
-        margin-bottom: 2rem;
-    }
-
-    button {
-        padding: 0.5rem 1rem;
-        font-size: 1rem;
-        cursor: pointer;
-        border: none;
-        border-radius: 5px;
-        transition: background-color 0.3s;
-    }
-
-    .remove-btn {
-        background-color: #e74c3c;
-        color: white;
-    }
-
-    .remove-btn:hover {
-        background-color: #c0392b;
-    }
-
-    .proceed-btn {
-        background-color: #2ecc71;
-        color: white;
-    }
-
-    .proceed-btn:hover {
-        background-color: #27ae60;
-    }
-
-    .clear-btn {
-        background-color: #95a5a6;
-        color: white;
-    }
-
-    .clear-btn:hover {
-        background-color: #7f8c8d;
-    }
-
-    @media (max-width: 600px) {
-        .cart-table th, .cart-table td {
-            padding: 0.5rem;
-        }
-
-        button {
-            font-size: 0.9rem;
-            padding: 0.5rem;
-        }
-    }
-
-    .showtime-details {
-        margin-bottom: 1rem;
-        padding: 1rem;
-        background-color: #f9f9f9;
-        border: 1px solid #ddd;
-        border-radius: 5px;
-    }
-
-    .showtime-details h2 {
-        margin: 0 0 0.5rem 0;
-    }
-
-    .showtime-details p {
-        margin: 0.25rem 0;
-    }
-
-    /* Stil für den Rabatt-Select */
-    .discount-select {
         padding: 0.5rem;
-        border-radius: 5px;
-        border: 1px solid #ccc;
-        font-size: 1rem;
+        font-size: 0.9rem;
     }
+    button {
+        font-size: 0.9rem;
+        background: #3498db;
+    }
+}
+
 </style>
 
 <main class="cart-container">
@@ -283,9 +285,9 @@
         {#each $groupedCart as group}
             <!-- Anzeige der Film- und Vorstellungsdetails -->
             <div class="showtime-details">
-                <h2>{group.movie.title}</h2>
-                <p>Startzeit: {new Date(group.showtime.start_time).toLocaleString('de-DE', { hour: '2-digit', minute: '2-digit' })}</p>
-                <p>Kinosaal: {group.showtime.screen_id}</p> <!-- Optional: Kinosaal-Name hinzufügen -->
+                <h2>Film: {group.movie.title}</h2>
+                <p>Startzeit: {new Date(group.showtime.start_time).toLocaleString('de-DE', { hour: '2-digit', minute: '2-digit' })}, Kinosaal: {group.showtime.screen_id}</p>
+                
             </div>
 
             <!-- Anzeige der Sitzplätze für diese Gruppe -->
