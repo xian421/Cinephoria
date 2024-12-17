@@ -1949,5 +1949,23 @@ def get_user_bookings():
 
 
 
+@app.route('/user/points', methods=['GET'])
+@token_required
+def get_user_points():
+    user_id = request.user.get('user_id')
+    try:
+        with psycopg2.connect(DATABASE_URL) as conn:
+            with conn.cursor() as cursor:
+                cursor.execute("SELECT points FROM user_points WHERE user_id = %s", (user_id,))
+                result = cursor.fetchone()
+                if result:
+                    return jsonify({'points': result[0]}), 200
+                else:
+                    return jsonify({'points': 0}), 200
+    except Exception as e:
+        logger.error(f"Fehler beim Abrufen der Punkte: {e}")
+        return jsonify({'error': 'Fehler beim Abrufen der Punkte'}), 500
+
+
 if __name__ == '__main__':
     app.run(debug=True)
