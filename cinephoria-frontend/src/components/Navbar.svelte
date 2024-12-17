@@ -1,34 +1,99 @@
-
-<!-- src/components/Navbar.svelte -->
 <script>
   import { navigate, useLocation } from "svelte-routing";
   import { authStore } from '../stores/authStore';
-  
+  import Swal from "sweetalert2";
+
   export let toggleLoginDropdown;
   export let toggleProfileMenu;
   export let logout;
-  export let isLoginOpen = false;
-  export let isProfileDropdownOpen;
   export let handleLogin;
   
-  // Reaktive Variable für authStore mit der $-Syntax
-  // Svelte übernimmt automatisch das Abonnieren und Aktualisieren
-  // Kein Bedarf für manuelle Subscription oder `get`-Funktion
-  // Verwenden Sie $authStore direkt im Template
-
-  // Lokale Zustände für Login
+  export let isLoginOpen = false;
+  export let isProfileDropdownOpen;
+  
   let email = "";
   let password = "";
+  let firstName = "";
+  let lastName = "";
   
-  const onLoginSubmit = () => {
-      handleLogin(email, password);
-      // Reset der Eingabefelder und Schließen des Dropdowns
-      email = "";
-      password = "";
-      toggleLoginDropdown(false);
+  // Zustandsvariable für die aktuelle Ansicht im Dropdown
+  let currentView = 'login'; // 'login', 'register', 'forgotPassword'
+
+  const onLoginSubmit = async () => {
+    if (!email || !password) {
+      Swal.fire("Fehler", "Bitte gib E-Mail und Passwort ein.", "error");
+      return;
+    }
+    await handleLogin(email, password);
+    // Felder zurücksetzen und Dropdown schließen
+    email = "";
+    password = "";
+    toggleLoginDropdown(false);
   };
-  
-  // Nutzung des useLocation-Hooks
+
+  const handleRegisterFn = async () => {
+    if (!firstName || !lastName || !email || !password) {
+      Swal.fire("Fehler", "Bitte fülle alle Felder aus.", "error");
+      return;
+    }
+
+    try {
+      const response = await fetch("https://cinephoria-backend-c53f94f0a255.herokuapp.com/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ first_name: firstName, last_name: lastName, email, password }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        Swal.fire("Erfolgreich registriert!", "Du kannst dich jetzt einloggen.", "success");
+        // Zurück auf Login-Ansicht
+        currentView = 'login';
+        // Felder leeren
+        firstName = "";
+        lastName = "";
+        email = "";
+        password = "";
+      } else {
+        Swal.fire("Fehler", data.error || "Ein Fehler ist aufgetreten.", "error");
+      }
+    } catch (error) {
+      Swal.fire("Fehler", "Es konnte keine Verbindung zum Server hergestellt werden.", "error");
+    }
+  };
+
+  const handleForgotPasswordFn = async () => {
+    if (!email) {
+      Swal.fire("Fehler", "Bitte gib deine E-Mail-Adresse ein.", "error");
+      return;
+    }
+
+    try {
+      const response = await fetch("https://cinephoria-backend-c53f94f0a255.herokuapp.com/forgot-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        Swal.fire(
+          "E-Mail gesendet!",
+          "Falls die E-Mail existiert, erhältst du in Kürze Anweisungen zum Zurücksetzen des Passworts.",
+          "success"
+        );
+        email = ""; // Eingabefeld leeren
+        currentView = 'login';
+      } else {
+        Swal.fire("Fehler", data.error || "Ein Fehler ist aufgetreten.", "error");
+      }
+    } catch (error) {
+      Swal.fire("Fehler", "Es konnte keine Verbindung zum Server hergestellt werden.", "error");
+    }
+  };
+
   const location = useLocation();
 </script>
 
@@ -239,30 +304,10 @@
   </a>
 
   <!-- Navigationsbuttons -->
-  <button
-      class="{location.pathname === '/' ? 'active' : ''}"
-      on:click={() => navigate('/')}
-  >
-      Alle Filme
-  </button>
-  <button
-      class="{location.pathname === '/nowplaying' ? 'active' : ''}"
-      on:click={() => navigate('/nowplaying')}
-  >
-      Programm
-  </button>
-  <button
-      class="{location.pathname === '/upcoming' ? 'active' : ''}"
-      on:click={() => navigate('/upcoming')}
-  >
-      Upcoming
-  </button>
-  <button
-      class="{location.pathname === '/warenkorb' ? 'active' : ''}"
-      on:click={() => navigate('/warenkorb')}
-  >
-      Warenkorb
-  </button>
+  <button class="{location.pathname === '/' ? 'active' : ''}" on:click={() => navigate('/')}>Alle Filme</button>
+  <button class="{location.pathname === '/nowplaying' ? 'active' : ''}" on:click={() => navigate('/nowplaying')}>Programm</button>
+  <button class="{location.pathname === '/upcoming' ? 'active' : ''}" on:click={() => navigate('/upcoming')}>Upcoming</button>
+  <button class="{location.pathname === '/warenkorb' ? 'active' : ''}" on:click={() => navigate('/warenkorb')}>Warenkorb</button>
 
   <!-- Benutzerbereich -->
   {#if $authStore.isLoggedIn}
@@ -279,7 +324,6 @@
               <ul>
                   <li on:click={() => { navigate('/profile'); toggleProfileMenu(false); }}>Profil anzeigen</li>
                   <li on:click={() => { navigate('/einstellungen'); toggleProfileMenu(false); }}>Einstellungen</li>
-                  <!-- Admin-Menüpunkt hinzufügen -->
                   {#if $authStore.isAdmin}
                       <li on:click={() => { navigate('/admin'); toggleProfileMenu(false); }}>Admin</li>
                   {/if}
@@ -288,34 +332,45 @@
               </ul>
           </div>
       </div>
-{:else}
-      <!-- Login-Dropdown -->
+  {:else}
+      <!-- Login-Dropdown mit Toggle zwischen Ansichten -->
       <div class="dropdown-container {isLoginOpen ? 'open' : ''}">
           <button on:click={() => toggleLoginDropdown(!isLoginOpen)}>Login</button>
           <div class="dropdown-menu">
-            <form on:submit|preventDefault={onLoginSubmit}>
-                  <input type="email" placeholder="E-Mail" bind:value={email} required />
-                  <input type="password" placeholder="Passwort" bind:value={password} required />
-                  <button type="submit">Einloggen</button>
-                  <div class="button-container">
-                    <button 
-                      type="button"
-                      class="secondary-button" 
-                      on:click={() => { navigate('/register'); toggleLoginDropdown(false); }}
-                    >
-                      Registrieren
-                    </button>
-                    <button 
-                      type="button" 
-                      class="secondary-button" 
-                      on:click={() => { navigate('/forgot-password'); toggleLoginDropdown(false); }}
-                    >
-                      Passwort vergessen?
-                    </button>
-                  </div>
-                  
+            {#if currentView === 'login'}
+              <!-- Login-Formular -->
+              <form on:submit|preventDefault={onLoginSubmit}>
+                <input type="email" placeholder="E-Mail" bind:value={email} required />
+                <input type="password" placeholder="Passwort" bind:value={password} required />
+                <button type="submit">Einloggen</button>
+                <div class="button-container">
+                  <button type="button" class="secondary-button" on:click={() => currentView = 'register'}>Registrieren</button>
+                  <button type="button" class="secondary-button" on:click={() => currentView = 'forgotPassword'}>Passwort vergessen?</button>
+                </div>
               </form>
+            {:else if currentView === 'register'}
+              <!-- Registrieren-Formular -->
+              <div>
+                <input type="text" placeholder="Vorname" bind:value={firstName} />
+                <input type="text" placeholder="Nachname" bind:value={lastName} />
+                <input type="email" placeholder="E-Mail" bind:value={email} />
+                <input type="password" placeholder="Passwort" bind:value={password} />
+                <button on:click={handleRegisterFn}>Registrieren</button>
+                <div class="button-container">
+                  <button type="button" class="secondary-button" on:click={() => currentView = 'login'}>Zurück</button>
+                </div>
+              </div>
+            {:else if currentView === 'forgotPassword'}
+              <!-- Passwort vergessen-Formular -->
+              <div>
+                <input type="email" placeholder="E-Mail-Adresse" bind:value={email} />
+                <button on:click={handleForgotPasswordFn}>Link zum Zurücksetzen senden</button>
+                <div class="button-container">
+                  <button type="button" class="secondary-button" on:click={() => currentView = 'login'}>Zurück</button>
+                </div>
+              </div>
+            {/if}
           </div>
       </div>
-{/if}
+  {/if}
 </nav>
