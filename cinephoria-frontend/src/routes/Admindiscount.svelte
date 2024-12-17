@@ -383,11 +383,12 @@ table {
     border-radius: 8px;
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
     overflow: hidden;
+    text-align: center;
 }
 
 th, td {
     padding: 20px;
-    text-align: left;
+    text-align: center;
     border-bottom: 1px solid #ddd;
     font-size: 1rem;
     vertical-align: middle;
@@ -588,113 +589,124 @@ button:hover {
         <p class="error">{error}</p>
     {:else}
         <!-- Liste der bestehenden Discounts -->
-        <div class="discount-list">
-            <h2>Bestehende Discounts</h2>
-            <table>
-                <thead>
-                    <tr>
-                        <th>Name</th>
-                        <th>Beschreibung</th>
-                        <th>Aktionen</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {#each discounts as discount}
-                        <tr>
-                            <td>
-                                <input
-                                    type="text"
-                                    bind:value={discount.name}
-                                />
-                            </td>
-                            <td>
-                                <textarea
-                                    bind:value={discount.description}
-                                ></textarea>
-                            </td>
-                            <td>
-                                <button on:click={() => handleUpdateDiscount(discount)}>
-                                    <i class="fas fa-save"></i> Speichern
-                                </button>
-                                <button class="delete-button" on:click={() => handleDeleteDiscount(discount.discount_id)}>
-                                    <i class="fas fa-trash-alt"></i> Löschen
-                                </button>
-                                
+        <!-- Liste der bestehenden Discounts -->
+<div class="discount-list">
+    <h2>Bestehende Discounts</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Beschreibung</th>
+                <th>Aktionen</th>
+            </tr>
+        </thead>
+        <tbody>
+            {#each discounts as discount}
+                <tr>
+                    <td>
+                        <input
+                            type="text"
+                            bind:value={discount.name}
+                        />
+                    </td>
+                    <td>
+                        <textarea
+                            bind:value={discount.description}
+                        ></textarea>
+                    </td>
+                    <td>
+                        <button on:click={() => handleUpdateDiscount(discount)}>
+                            <i class="fas fa-save"></i> Speichern
+                        </button>
+                        <button class="delete-button" on:click={() => handleDeleteDiscount(discount.discount_id)}>
+                            <i class="fas fa-trash-alt"></i> Löschen
+                        </button>
+                    </td>
+                </tr>
+            {/each}
+            <!-- Extra Zeile zum Hinzufügen eines neuen Discounts -->
+            <tr>
+                <td>
+                    <input
+                        type="text"
+                        placeholder="Neuer Discount-Name"
+                        bind:value={newDiscountName}
+                    />
+                </td>
+                <td>
+                    <textarea
+                        placeholder="Neue Beschreibung"
+                        bind:value={newDiscountDescription}
+                    ></textarea>
+                </td>
+                <td>
+                    <button on:click={handleAddDiscount}>
+                        <i class="fas fa-plus-circle"></i> Hinzufügen
+                    </button>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+</div>
 
-                            </td>
-                        </tr>
-                    {/each}
-                </tbody>
-            </table>
-        </div>
 
-        <!-- Formular zum Hinzufügen eines neuen Discounts -->
-        <div class="form-section">
-            <h2>Neuen Discount erstellen</h2>
-            <form on:submit|preventDefault={handleAddDiscount}>
-                <div>
-                    <label for="discount-name">Name:</label>
-                    <input id="discount-name" type="text" bind:value={newDiscountName} required />
-                </div>
-                <div>
-                    <label for="discount-description">Beschreibung:</label>
-                    <textarea id="discount-description" bind:value={newDiscountDescription}></textarea>
-                </div>
-                <button type="submit">Discount hinzufügen</button>
-            </form>
-        </div>
+        
 
         <!-- Zuweisung von Discounts zu Sitztypen -->
-        <div class="assign-section">
-            <h2>Discounts zu Sitztypen zuweisen</h2>
+       <!-- Zuweisung von Discounts zu Sitztypen -->
+<div class="assign-section">
+    <h2>Discounts zu Sitztypen zuweisen</h2>
+
+    {#each seatTypes as seatType}
+        <div class="seat-type-table">
+            <h3>Sitztyp: {seatType.name}</h3>
             <table>
                 <thead>
                     <tr>
-                        <th>Sitztyp</th>
                         <th>Discount</th>
-                        <th>Rabattbetrag (€)</th>
-                        <th>Rabattprozentsatz (%)</th>
+                        <th>Wert</th>
                         <th>Aktionen</th>
                     </tr>
                 </thead>
                 <tbody>
-                    {#each seatTypes as seatType}
-                        {#if seatType.discounts.length > 0}
-                            {#each seatType.discounts as seatDiscount}
-                                <tr>
-                                    <td>{seatType.name}</td>
-                                    <td>{seatDiscount.name}</td>
-                                    <td>{seatDiscount.discount_amount !== null ? seatDiscount.discount_amount.toFixed(2) : '-'}</td>
-                                    <td>{seatDiscount.discount_percentage !== null ? seatDiscount.discount_percentage.toFixed(2) : '-'}</td>
-                                    <td>
-                                        <button on:click={() => handleRemoveDiscount(seatType, seatDiscount)}>
-                                            <i class="fas fa-minus-circle"></i> Entfernen
-                                        </button>
-                                    </td>
-                                </tr>
-                            {/each}
-                        {/if}
-                        {#if seatType.discounts.length === 0}
+                    {#if seatType.discounts.length > 0}
+                        {#each seatType.discounts as seatDiscount}
                             <tr>
-                                <td>{seatType.name}</td>
-                                <td colspan="3">Keine Discounts zugewiesen</td>
+                                <td>{seatDiscount.name}</td>
                                 <td>
-                                    <button class="delete-button" on:click={() => handleAssignDiscount(seatType, null)}>
-                                        <i class="fas fa-plus-circle"></i> Zuweisen
+                                    {#if seatDiscount.discount_amount}
+                                        <strong>{seatDiscount.discount_amount.toFixed(2)} €</strong>
+                                    {:else if seatDiscount.discount_percentage}
+                                        <strong>{seatDiscount.discount_percentage.toFixed(2)} %</strong>
+                                    {:else}
+                                        -
+                                    {/if}
+                                </td>
+                                <td>
+                                    <button class="delete-button" on:click={() => handleRemoveDiscount(seatType, seatDiscount)}>
+                                        <i class="fas fa-minus-circle"></i> Entfernen
                                     </button>
                                 </td>
                             </tr>
-                        {/if}
+                        {/each}
+                    {:else}
                         <tr>
-                            <td colspan="5">
-                                <button on:click={() => handleAssignDiscount(seatType, null)}>
-                                    <i class="fas fa-plus-circle"></i> Discount zuweisen
-                                </button>
-                            </td>
+                            <td colspan="3" class="no-discounts">Keine Discounts zugewiesen</td>
                         </tr>
-                    {/each}
+                    {/if}
+                    <!-- Zuweisungsbutton -->
+                    <tr>
+                        <td colspan="3">
+                            <button class="assign-button" on:click={() => handleAssignDiscount(seatType, null)}>
+                                <i class="fas fa-plus"></i> Discount zuweisen
+                            </button>
+                        </td>
+                    </tr>
                 </tbody>
             </table>
         </div>
+    {/each}
+</div>
+
     {/if}
 </main>

@@ -25,6 +25,7 @@
     let seatsByRow = {};
     let payPalInitialized = false;
     let paypalContainer: HTMLElement;
+    
 
     let totalPrice = 0.0;
     let timer: ReturnType<typeof setInterval> | null = null;

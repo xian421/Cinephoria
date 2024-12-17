@@ -300,6 +300,7 @@
                   {#if $authStore.isAdmin}
                       <li on:click={() => { navigate('/admin'); toggleProfileMenu(false); }}>Admin</li>
                   {/if}
+                  <li on:click={() => { navigate('/bestellungen'); toggleProfileMenu(false); }}>Meine Bestellungen</li>
                   <li on:click={logout}>Abmelden</li>
               </ul>
           </div>
