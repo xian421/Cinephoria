@@ -1832,13 +1832,10 @@ def get_user_bookings():
                         s.movie_id, 
                         s.screen_id, 
                         s.start_time, 
-                        s.end_time, 
-                        m.title AS movie_title, 
-                        m.poster_url AS movie_poster_url
+                        s.end_time
                     FROM bookings b
                     JOIN booking_seats bs ON b.booking_id = bs.booking_id
                     JOIN showtimes s ON b.showtime_id = s.showtime_id
-                    JOIN movies m ON s.movie_id = m.movie_id
                     WHERE b.user_id = %s
                     ORDER BY b.created_at DESC
                 """, (user_id,))
