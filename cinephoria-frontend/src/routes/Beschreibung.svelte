@@ -403,7 +403,6 @@
           <div class="showtimes-container">
             {#each showtimes as showtime}
             <div class="showtime-box" on:click={() => navigateToBooking(showtime)}>
-
                 <div class="showtime-date">
                   {new Date(showtime.start_time).toLocaleDateString()}
                 </div>
@@ -419,7 +418,6 @@
               <div style="font-size: 24px; font-weight: bold;">+13(stimmt net)</div>
               <div style="font-size: 14px;">weitere<br>Vorstellungen</div>
             </div>
-            
           </div>
         {:else}
           <p>Keine Vorstellungen verfügbar.</p>
