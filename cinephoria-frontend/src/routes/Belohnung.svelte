@@ -3,12 +3,12 @@
 
     // Beispielhafte Belohnungen, jedes Objekt hat ein `image`-Attribut
     const rewards = [
-        { id: 1, title: 'Popcorn-Gutschein', points: 50, description: 'Ein mittelgroßer Popcorn-Gutschein.', image: '/public/popcorn.webp' },
-        { id: 2, title: 'Freikarte', points: 100, description: 'Eine kostenlose Kinokarte für einen Film deiner Wahl.', image: '/public/freikarte.webp' },
-        { id: 3, title: 'VIP-Lounge Zugang', points: 200, description: 'Ein exklusiver Zugang zur VIP-Lounge.', image: '/public/vip.webp' },
-        { id: 4, title: 'Softdrink-Gutschein', points: 30, description: 'Ein Softdrink deiner Wahl.', image: '/public/trinken.webp' },
-        { id: 5, title: 'Nacho-Gutschein', points: 70, description: 'Eine Portion leckere Nachos.', image: '/public/nachos.webp' },
-        { id: 6, title: 'Premium-Upgrade', points: 150, description: 'Upgraden zu Premium-Sitzen.', image: '/public/premium.webp' }
+        { id: 1, title: 'Popcorn-Gutschein', points: 50, description: 'Ein mittelgroßer Popcorn-Gutschein.', image: '/popcorn.webp' },
+        { id: 2, title: 'Freikarte', points: 100, description: 'Eine kostenlose Kinokarte für einen Film deiner Wahl.', image: '/freikarte.webp' },
+        { id: 3, title: 'VIP-Lounge Zugang', points: 200, description: 'Ein exklusiver Zugang zur VIP-Lounge.', image: '/vip.webp' },
+        { id: 4, title: 'Softdrink-Gutschein', points: 30, description: 'Ein Softdrink deiner Wahl.', image: '/trinken.webp' },
+        { id: 5, title: 'Nacho-Gutschein', points: 70, description: 'Eine Portion leckere Nachos.', image: '/nachos.webp' },
+        { id: 6, title: 'Premium-Upgrade', points: 150, description: 'Upgraden zu Premium-Sitzen.', image: '/premium.webp' }
     ];
 
     let userPoints = 150; // Beispielhafte Punkte des Benutzers
