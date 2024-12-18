@@ -8,7 +8,8 @@
     import { navigate } from 'svelte-routing';
     import ProfileImage from './ProfileImage.svelte';
     import ProfileModal from './ProfileModal.svelte';
-
+    import EditProfileModal from './EditProfileModal.svelte';
+    
     let profile = {
         vorname: '',
         nachname: '',
@@ -19,9 +20,16 @@
     let isLoading = true;
     let error = null;
     let isModalOpen = false;
+    let isEditModalOpen = false; // Zustand für das Edit-Modal
     let availableImages = [];
-
+    
     onMount(async () => {
+        await loadProfile();
+    });
+    
+    async function loadProfile() {
+        isLoading = true;
+        error = null;
         const token = get(authStore).token;
         if (!token) {
             error = 'Nicht authentifiziert';
@@ -65,22 +73,30 @@
         } finally {
             isLoading = false;
         }
-    });
-
+    }
+    
     function getInitials(vorname, nachname) {
         const vorInitial = vorname ? vorname.charAt(0).toUpperCase() : '';
         const nachInitial = nachname ? nachname.charAt(0).toUpperCase() : '';
         return `${vorInitial}${nachInitial}`;
     }
-
+    
     function openModal() {
         isModalOpen = true;
     }
-
+    
     function closeModal() {
         isModalOpen = false;
     }
-
+    
+    function openEditModal() { // Funktion zum Öffnen des Edit-Modals
+        isEditModalOpen = true;
+    }
+    
+    function closeEditModal() { // Funktion zum Schließen des Edit-Modals
+        isEditModalOpen = false;
+    }
+    
     async function selectProfileImage(imageName) {
         const token = get(authStore).token;
         try {
@@ -107,6 +123,12 @@
                 confirmButtonText: "OK",
             });
         }
+    }
+
+    // Funktion zum Aktualisieren des lokalen Profils nach einer erfolgreichen Bearbeitung
+    function handleProfileUpdate(event) {
+        const { vorname, nachname, email } = event.detail;
+        profile = { ...profile, vorname, nachname, email };
     }
 </script>
 
@@ -173,7 +195,7 @@
                 </div>
 
                 <div class="profile-actions">
-                    <button on:click={() => navigate('/edit-profile')}>
+                    <button on:click={openEditModal}>
                         <i class="fas fa-user-edit"></i> Profil bearbeiten
                     </button>
                 </div>
@@ -190,10 +212,21 @@
                         onClose={closeModal} 
                     />
                 {/if}
+
+                {#if isEditModalOpen}
+                    <EditProfileModal 
+                        initialProfile={{ vorname: profile.vorname, nachname: profile.nachname, email: profile.email }} 
+                        on:close={closeEditModal} 
+                        on:update={handleProfileUpdate} 
+                    />
+                {/if}
             </div>
         {/if}
     </main>
 </div>
+
+
+
 
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap');
