@@ -75,148 +75,90 @@
 </script>
 
 <style>
-    .orders-container {
-        max-width: 900px;
-        margin: 2rem auto;
-        padding: 2rem;
-        background: #fdfdfd;
-        border-radius: 20px;
-        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
-        font-family: 'Roboto', sans-serif;
-        max-width: 1200px;
-    }
+    body {
+    margin: 0;
+    font-family: 'Roboto', sans-serif;
+    background: linear-gradient(135deg, #000428, #004e92);
+    color: #fff;
+    overflow-x: hidden;
+    max-width: 100%;
+}
 
-
-
-    .summary-cards {
-        display: flex;
-        gap: 1rem;
-        justify-content: space-between;
-        margin-bottom: 2rem;
-        flex-wrap: wrap;
-    }
-
-    .card {
-        flex: 1;
-        min-width: 350px;
-        background: #ffffff;
-        border-radius: 12px;
-        box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
-        padding: 1.5rem;
-        text-align: center;
-        transition: transform 0.3s ease, box-shadow 0.3s ease;
-    }
-
-    .card:hover {
-        transform: translateY(-10px);
-        box-shadow: 0 15px 40px rgba(0, 0, 0, 0.15);
-    }
-
-    .card h3 {
-        font-size: 1.5rem;
-        margin: 0;
-        color: #3498db;
-    }
-
-    .card p {
-        font-size: 1rem;
-        color: #555;
-    }
-
-    .orders-list {
-        display: flex;
-        flex-direction: column;
-        gap: 1rem;
-    }
-
-    .order-item {
-        background: #f9f9f9;
-        border-radius: 12px;
-        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-        padding: 1rem;
-        display: flex;
-        position: relative;
-        justify-content: space-between;
-        align-items: center;
-        transition: transform 0.3s;
-    }
-
-    .order-item:hover {
-        transform: translateY(-5px);
-    }
-
-    .order-details {
-        flex-grow: 1;
-    }
-
-    .order-details h4 {
-        margin: 0;
-        font-size: 1.2rem;
-        color: #34495e;
-    }
-
-    .order-details p {
-        margin: 0.3rem 0;
-        color: #777;
-    }
-
-    .price {
-        font-weight: bold;
-        color: #2ecc71;
-    }
-
-    .tooltip-info {
-    position: absolute;
-    left: 10px;
-    top: 50%;
-    transform: translateY(-50%);
-    width: 220px;
-    background: #fdfdfd;
-    color: #333;
-    padding: 0.75rem;
-    border-radius: 8px;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
-    font-size: 0.9rem;
-    text-align: left; /* Zentriert horizontal den Text */
-
-    /* Flexbox für vertikale und horizontale Zentrierung */
+main.orders-container {
+    max-width: 1200px;
+    margin: 2rem auto;
+    padding: 2rem;
+    position: relative;
     display: flex;
-    justify-content: center; /* Horizontal zentrieren */
-    align-items: center; /* Vertikal zentrieren */
-
-    /* Scrollbar bei Bedarf */
-    max-height: 110px;
+    flex-direction: column;
+    gap: 3rem;
+    margin-top: 4rem;
 }
 
-
-.tooltip-info p {
-    margin: 0.5rem 0; /* Abstand zwischen Zeilen */
+h1 {
+    font-size: 3rem;
+    color: #2ecc71;
+    text-shadow: 0 0 20px #2ecc71, 0 0 40px #2ecc71;
+    text-align: center;
+    animation: glow 2s infinite alternate;
+    margin: 0;
 }
 
-.tooltip-info .info-group {
+@keyframes glow {
+  from {
+    text-shadow: 0 0 10px #2ecc71, 0 0 20px #2ecc71;
+  }
+  to {
+    text-shadow: 0 0 20px #2ecc71, 0 0 40px #2ecc71;
+  }
+}
+
+.summary-cards {
     display: flex;
-    justify-content: space-between; /* Trennung von Titel und Inhalt */
-    border-bottom: 1px solid #eaeaea; /* Dezente Trennlinie */
-    padding-bottom: 0.3rem;
-    margin-bottom: 0.3rem;
+    gap: 1rem;
+    justify-content: center;
+    flex-wrap: wrap;
 }
 
-.tooltip-info .info-group:last-child {
-    border-bottom: none; /* Keine Linie für das letzte Element */
+.card {
+    flex: 1;
+    min-width: 250px;
+    background: rgba(0,0,0,0.4);
+    border-radius: 12px;
+    box-shadow: 0 0 20px rgba(0,0,0,0.5);
+    padding: 1.5rem;
+    text-align: center;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    cursor: pointer;
 }
 
-/* Sicherstellen, dass Elterncontainer kein Scroll-Verhalten blockieren */
-.order-item {
-    position: relative; /* Wichtig für absolute Positionierung der Tooltip-Box */
-    overflow: visible;
+.card:hover {
+    transform: translateY(-10px);
+    box-shadow: 0 0 25px #2ecc71;
 }
 
-    .error-message, .loading {
-        text-align: center;
-        font-size: 1.2rem;
-        margin-top: 3rem;
-        color: #e74c3c;
-    }
+.card h3 {
+    font-size: 2rem;
+    margin: 0;
+    color: #2ecc71;
+    text-shadow: 0 0 10px #2ecc71;
+}
+
+.card p {
+    font-size: 1rem;
+    color: #ddd;
+    margin-top: 0.5rem;
+}
+
+/* Fehlermeldungen oder Ladezustände */
+.error-message, .loading {
+    text-align: center;
+    font-size: 1.2rem;
+    margin-top: 3rem;
+    color: #e74c3c;
+    text-shadow: 0 0 5px #e74c3c;
+}
+
 </style>
 
 <main class="orders-container">

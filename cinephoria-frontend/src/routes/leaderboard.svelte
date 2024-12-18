@@ -16,47 +16,46 @@
         max-width: 900px;
         margin: 2rem auto;
         padding: 2rem;
-        background: linear-gradient(to bottom, #fdfdfd, #e9e9e9);
+        
         border-radius: 20px;
-        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+      
         font-family: 'Roboto', sans-serif;
         max-width: 1200px;
     }
 
     .leaderboard-header {
-        text-align: center;
-        margin-bottom: 3rem;
+        font-size: 20px;
+    margin: 0;
+    color: #2ecc71;
+    text-shadow: 0 0 20px #2ecc71, 0 0 40px #2ecc71;
+    animation: glow 2s infinite alternate;
     }
 
-    .leaderboard-header h1 {
-        font-size: 2.5rem;
-        color: #f39c12;
-        margin-bottom: 0.5rem;
-    }
+    
 
-    .leaderboard-header p {
-        font-size: 1.2rem;
-        color: #555;
-    }
+  
 
     /* Rangliste */
     .leaderboard-list {
-        display: flex;
-        flex-direction: column;
-        gap: 1.5rem;
-    }
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1.5rem;
+    justify-content: center;
+}
 
     .leaderboard-card {
         display: flex;
         align-items: center;
         justify-content: space-between;
-        background: #ffffff;
+        background: rgba(0,0,0,0.4);
         border-radius: 12px;
         box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
         padding: 1rem 1.5rem;
         transition: transform 0.3s ease;
         position: relative;
     }
+
+    
 
     .leaderboard-card:hover {
         transform: scale(1.02);
@@ -114,6 +113,20 @@
         width: 40px;
         height: 40px;
     }
+
+    @media (max-width: 768px) {
+    .leaderboard-card {
+        flex: 0 0 calc(50% - 1rem);
+    }
+}
+
+@media (max-width: 480px) {
+    .leaderboard-card {
+        flex: 0 0 100%;
+    }
+}
+
+    
 </style>
 
 <main class="leaderboard-container">

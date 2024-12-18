@@ -204,7 +204,7 @@ body {
 .header-section {
   text-align: center;
   margin-bottom: 3rem;
-  margin-top: 4rem;
+  margin-top: 6rem;
 }
 
 .header-text {
