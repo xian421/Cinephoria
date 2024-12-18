@@ -2059,6 +2059,21 @@ def get_points_transactions():
     except Exception as e:
         logger.error(f"Fehler beim Abrufen der Punkte-Transaktionen: {e}")
         return jsonify({'error': 'Fehler beim Abrufen der Punkte-Transaktionen'}), 500
+    
+
+
+@app.route('/rewards', methods=['GET'])
+def get_rewards():
+    try:
+        with psycopg2.connect(DATABASE_URL) as conn:
+            with conn.cursor(cursor_factory=psycopg2.extras.DictCursor) as cursor:
+                cursor.execute("SELECT reward_id, title, points, description, image FROM rewards")
+                rewards = cursor.fetchall()
+                rewards_list = [dict(r) for r in rewards]
+        return jsonify({'rewards': rewards_list}), 200
+    except Exception as e:
+        logger.error(f"Fehler beim Abrufen der Belohnungen: {e}")
+        return jsonify({'error': 'Fehler beim Abrufen der Belohnungen'}), 500
 
 
 if __name__ == '__main__':

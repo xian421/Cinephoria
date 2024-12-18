@@ -972,3 +972,41 @@ export async function  fetchBookings(token) {
     }
     return data.bookings;
 }
+
+
+// Funktion zum Abrufen der aktuellen Punkte
+export async function getUserPoints(token) {
+    const response = await fetch(`${API_BASE_URL}/user/points`, {
+        method: 'GET',
+        headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+        }
+    });
+    return response.json();
+}
+
+// Funktion zum Einlösen von Punkten
+export async function redeemPoints(token, points) {
+    const response = await fetch(`${API_BASE_URL}/user/points/redeem`, {
+        method: 'POST',
+        headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ points })
+    });
+    return response.json();
+}
+
+// Funktion zum Abrufen der Punkte-Transaktionshistorie
+export async function getPointsTransactions(token) {
+    const response = await fetch(`${API_BASE_URL}/user/points/transactions`, {
+        method: 'GET',
+        headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+        }
+    });
+    return response.json();
+}
