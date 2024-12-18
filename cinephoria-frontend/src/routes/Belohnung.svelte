@@ -45,7 +45,7 @@
     async function redeemReward(reward) {
         if (userPoints >= reward.points) {
             try {
-                const message = await redeemUserPointsStore(token, reward.points);
+                const message = await redeemUserPointsStore(token, reward.points, reward.reward_id); 
                 console.log(`Belohnung eingelöst: ${reward.title}, verbleibende Punkte: ${userPoints}`);
                 Swal.fire({
                     title: 'Erfolg!',
