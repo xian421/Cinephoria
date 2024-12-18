@@ -994,7 +994,7 @@ def profile():
             with psycopg2.connect(DATABASE_URL) as conn:
                 with conn.cursor() as cursor:
                     cursor.execute("""
-                        SELECT vorname, nachname, email, role, profile_image 
+                        SELECT vorname, nachname, email, role, profile_image, nickname 
                         FROM users 
                         WHERE id = %s
                     """, (user_id,))
@@ -1007,7 +1007,8 @@ def profile():
                         'nachname': nachname,
                         'email': email,
                         'role': role,
-                        'profile_image': profile_image
+                        'profile_image': profile_image,
+                        'nickname': nickname
                     }), 200
         except Exception as e:
             print(f"Fehler beim Abrufen des Profils: {e}")
@@ -1018,6 +1019,8 @@ def profile():
         vorname = data.get('vorname')
         nachname = data.get('nachname')
         email = data.get('email')
+        nickname = data.get('nickname')
+        role = data.get('role')
 
         if not vorname or not nachname or not email:
             return jsonify({'error': 'Alle Felder sind erforderlich'}), 400
@@ -1027,9 +1030,9 @@ def profile():
                 with conn.cursor() as cursor:
                     cursor.execute("""
                         UPDATE users 
-                        SET vorname = %s, nachname = %s, email = %s 
+                        SET vorname = %s, nachname = %s, email = %s, nickname = %s, role = %s
                         WHERE id = %s
-                    """, (vorname, nachname, email, user_id))
+                    """, (vorname, nachname, email, user_id, nickname, role))
                     conn.commit()
             return jsonify({'message': 'Profil aktualisiert'}), 200
         except Exception as e:
