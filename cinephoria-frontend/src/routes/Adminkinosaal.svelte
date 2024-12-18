@@ -77,75 +77,39 @@
 </div>
 
 <style>
+body {
+    margin: 0;
+    font-family: 'Roboto', sans-serif;
+    background: linear-gradient(135deg, #000428, #004e92);
+    color: #fff;
+    overflow-x: hidden;
+    max-width: 100%;
+}
+
 .admin-page {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
     gap: 20px;
-    padding: 20px;
+    padding: 40px;
+    max-width: 1200px;
+    margin: 0 auto;
+    margin-top: 6rem;
 }
 
 .card {
     position: relative;
-    background: #333;
+    background: rgba(0,0,0,0.4);
     border-radius: 12px;
     overflow: hidden;
-    color: white;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
     text-align: center;
-    transition: transform 0.3s ease;
+    transition: transform 0.3s, box-shadow 0.3s;
+    cursor: pointer;
+    box-shadow: 0 0 20px rgba(0,0,0,0.5);
 }
 
 .card:hover {
-    transform: scale(1.05);
-}
-
-.card img {
-    width: 100%;
-    height: 200px;
-    object-fit: cover;
-}
-
-.card-name {
-    position: absolute;
-    bottom: 10px;
-    left: 50%;
-    transform: translateX(-50%);
-    font-size: 1.5rem;
-    font-weight: bold;
-    color: white;
-    text-shadow: 0px 0px 10px rgba(0, 0, 0, 0.8);
-    background: rgba(0, 0, 0, 0.5);
-    padding: 5px 10px;
-    border-radius: 8px;
-}
-
-.card-overlay {
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(0, 0, 0, 0.5);
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    padding: 20px;
-    opacity: 0;
-    transition: opacity 0.3s ease-in-out;
-}
-
-.card:hover .card-overlay {
-    opacity: 1;
-}
-
-.card-info {
-    text-align: center;
-}
-
-.card-info p {
-    margin: 5px 0;
-    font-size: 1rem;
+    transform: translateY(-10px);
+    box-shadow: 0 0 25px #2ecc71;
 }
 
 .image-container {
@@ -159,5 +123,51 @@
     width: 100%;
     height: 100%;
     object-fit: cover;
+    transition: transform 0.3s;
 }
+
+.card:hover .image-container img {
+    transform: scale(1.1);
+}
+
+.card-name {
+    position: absolute;
+    bottom: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: #2ecc71;
+    text-shadow: 0 0 10px #2ecc71;
+    background: rgba(0,0,0,0.5);
+    padding: 5px 10px;
+    border-radius: 8px;
+}
+
+.card-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(to bottom, transparent, rgba(0,0,0,0.8));
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+    opacity: 0;
+    transition: opacity 0.3s ease-in-out;
+}
+
+.card:hover .card-overlay {
+    opacity: 1;
+}
+
+.card-info p {
+    margin: 5px 0;
+    font-size: 1rem;
+    color: #ddd;
+}
+
 </style>

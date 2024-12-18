@@ -12,82 +12,103 @@
   </script>
   
   <style>
-    /* Gesamtcontainer */
-    .settings-container {
-      max-width: 800px;
-      margin: 2rem auto;
-      padding: 2rem;
-      background: linear-gradient(145deg, #ffffff, #f8f9fa);
-      border-radius: 12px;
-      box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
-      font-family: Arial, sans-serif;
-      max-width: 1200px;
-    }
+
+    
+body {
+    margin: 0;
+    font-family: 'Roboto', sans-serif;
+   
+    color: #fff;
+    overflow-x: hidden;
+    max-width: 100%;
+}
+
+.settings-container {
+    max-width: 1200px;
+    margin: 4rem auto;
+    padding: 2rem;
   
-    /* Überschrift */
-    .settings-header {
-      text-align: center;
-      margin-bottom: 2rem;
-    }
-  
-    .settings-header h1 {
-      font-size: 2rem;
-      color: #333;
-      margin: 0;
-    }
-  
-    /* Einstellungen-Liste */
-    .settings-list {
-      display: flex;
-      flex-direction: column;
-      gap: 1rem;
-    }
-  
-    .setting-item {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      background: #ffffff;
-      padding: 1rem;
-      border-radius: 8px;
-      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-    }
-  
-    .setting-item label {
-      font-size: 1.2rem;
-      color: #555;
-      cursor: pointer;
-    }
-  
-    .setting-item input[type="checkbox"] {
-      width: 20px;
-      height: 20px;
-      cursor: pointer;
-    }
-  
-    /* Speicher-Button */
-    .save-button {
-      width: 100%;
-      padding: 0.8rem;
-      font-size: 1.2rem;
-      font-weight: bold;
-      color: #fff;
-      background: #3498db;
-      border: none;
-      border-radius: 8px;
-      cursor: pointer;
-      transition: background 0.3s ease, transform 0.2s ease;
-      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-      margin-top: 2rem;
-    }
-  
-    .save-button:hover {
-      background: #24b497;
-    }
-  
-    .save-button:active {
-      transform: scale(0.98);
-    }
+    border-radius: 12px;
+    
+    margin-top: 6rem;
+}
+
+.settings-header h1 {
+    font-size: 3rem;
+    margin: 0;
+    color: #2ecc71;
+    text-shadow: 0 0 20px #2ecc71, 0 0 40px #2ecc71;
+    text-align: center;
+    animation: glow 2s infinite alternate;
+}
+
+@keyframes glow {
+  from {
+    text-shadow: 0 0 10px #2ecc71, 0 0 20px #2ecc71;
+  }
+  to {
+    text-shadow: 0 0 20px #2ecc71, 0 0 40px #2ecc71;
+  }
+}
+
+.settings-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    margin-top: 3rem;
+}
+
+.setting-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: rgba(0,0,0,0.4);
+    padding: 1rem;
+    border-radius: 8px;
+    box-shadow: 0 0 20px rgba(0,0,0,0.5);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.setting-item:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 0 25px #2ecc71;
+}
+
+.setting-item label {
+    font-size: 1.2rem;
+    color: #fff;
+    cursor: pointer;
+    text-shadow: 0 0 5px #fff;
+}
+
+.setting-item input[type="checkbox"] {
+    width: 20px;
+    height: 20px;
+    cursor: pointer;
+}
+
+.save-button {
+    width: 100%;
+    padding: 0.8rem;
+    font-size: 1.2rem;
+    font-weight: bold;
+    color: #000;
+    background: #2ecc71;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    box-shadow: 0 0 10px #2ecc71;
+    margin-top: 2rem;
+    text-shadow: 0 0 10px #fff;
+    transition: background-color 0.3s ease, transform 0.3s ease, box-shadow 0.3s;
+}
+
+.save-button:hover {
+    background: #27ae60;
+    transform: translateY(-3px) scale(1.05);
+    box-shadow: 0 0 15px #27ae60;
+}
+
   </style>
   
   <div class="settings-container">

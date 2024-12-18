@@ -3,74 +3,102 @@
 </script>
 
 <style>
-    main {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        padding: 20px;
-        font-family: Arial, sans-serif;
-    }
+    body {
+    margin: 0;
+    font-family: 'Roboto', sans-serif;
+    background: linear-gradient(135deg, #000428, #004e92);
+    color: #fff;
+    overflow-x: hidden;
+    max-width: 100%;
+}
 
-    h1 {
-        margin-bottom: 20px;
-    }
+main {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 40px;
+    max-width: 1200px;
+    margin: 0 auto;
+}
 
-    .card-container {
-        display: flex;
-        flex-wrap: wrap;
-        justify-content: center;
-        gap: 20px;
-    }
+h1 {
+    margin-bottom: 40px;
+    font-size: 3rem;
+    color: #2ecc71;
+    text-shadow: 0 0 20px #2ecc71, 0 0 40px #2ecc71;
+    animation: glow 2s infinite alternate;
+}
 
+@keyframes glow {
+  from {
+    text-shadow: 0 0 10px #2ecc71, 0 0 20px #2ecc71;
+  }
+  to {
+    text-shadow: 0 0 20px #2ecc71, 0 0 40px #2ecc71;
+  }
+}
+
+.card-container {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 30px;
+}
+
+.card {
+    background: rgba(0,0,0,0.4);
+    width: 250px;
+    padding: 20px;
+    border-radius: 12px;
+    box-shadow: 0 0 20px rgba(0,0,0,0.5);
+    text-align: center;
+    transition: transform 0.3s, box-shadow 0.3s;
+    cursor: pointer;
+}
+
+.card:hover {
+    transform: translateY(-10px);
+    box-shadow: 0 0 25px #2ecc71;
+}
+
+.card h2 {
+    margin-bottom: 15px;
+    font-size: 1.5rem;
+    color: #2ecc71;
+    text-shadow: 0 0 10px #2ecc71;
+}
+
+.card p {
+    font-size: 1rem;
+    color: #ddd;
+    margin-bottom: 20px;
+}
+
+.card button {
+    background-color: #2ecc71;
+    color: #000;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 8px;
+    font-size: 1rem;
+    cursor: pointer;
+    box-shadow: 0 0 10px #2ecc71;
+    transition: background-color 0.3s, transform 0.3s;
+}
+
+.card button:hover {
+    background-color: #27ae60;
+    transform: translateY(-3px) scale(1.05);
+    box-shadow: 0 0 15px #27ae60;
+}
+
+@media (max-width: 600px) {
     .card {
-        background-color: #f9f9f9;
-        width: 250px;
-        padding: 20px;
-        border-radius: 12px;
-        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-        text-align: center;
-        transition: transform 0.3s, box-shadow 0.3s;
-        cursor: pointer;
+        width: 100%;
+        max-width: 300px;
     }
+}
 
-    .card:hover {
-        transform: translateY(-10px);
-        box-shadow: 0 6px 10px rgba(0, 0, 0, 0.15);
-    }
-
-    .card h2 {
-        margin-bottom: 15px;
-        font-size: 1.5rem;
-        color: #333;
-    }
-
-    .card p {
-        font-size: 1rem;
-        color: #666;
-        margin-bottom: 20px;
-    }
-
-    .card button {
-        background-color: #1976d2;
-        color: white;
-        border: none;
-        padding: 10px 20px;
-        border-radius: 8px;
-        font-size: 1rem;
-        cursor: pointer;
-        transition: background-color 0.3s;
-    }
-
-    .card button:hover {
-        background-color: #1565c0;
-    }
-
-    @media (max-width: 600px) {
-        .card {
-            width: 100%;
-            max-width: 300px;
-        }
-    }
 </style>
 
 <main>

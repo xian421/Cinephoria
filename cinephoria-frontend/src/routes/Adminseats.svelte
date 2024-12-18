@@ -280,186 +280,231 @@
 </script>
 
 <style>
-    main {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        font-family: Arial, sans-serif;
-        padding: 20px;
-    }
+    body {
+    margin: 0;
+    font-family: 'Roboto', sans-serif;
+    background: linear-gradient(135deg, #000428, #004e92);
+    color: #fff;
+    overflow-x: hidden;
+    max-width: 100%;
+}
 
-    .grid-container {
-        display: grid;
-        overflow-x: auto;
-        justify-content: center;
-        margin: 20px auto;
-    }
+main {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 40px;
+    max-width: 1200px;
+    margin: 0 auto;
+    text-align: center;
+    gap: 30px; /* Mehr Abstand zwischen den Sektionen */
+}
 
-    .column-labels {
-        display: grid;
-        grid-template-columns: 50px repeat(3, 50px); /* Temporärer Wert, dynamisch wird via style */
-        gap: 2px;
-    }
+h1 {
+    margin-top: 20px;
+    margin-bottom: 10px;
+    font-size: 3rem;
+    color: #2ecc71;
+    text-shadow: 0 0 20px #2ecc71, 0 0 40px #2ecc71;
+    animation: glow 2s infinite alternate;
+}
 
-    .column-selector {
-        width: 50px;
-        height: 50px;
-        background-color: lightgray;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        cursor: pointer;
-        font-weight: bold;
-        border: 1px solid #ddd;
-        user-select: none;
-    }
+@keyframes glow {
+  from {
+    text-shadow: 0 0 10px #2ecc71, 0 0 20px #2ecc71;
+  }
+  to {
+    text-shadow: 0 0 20px #2ecc71, 0 0 40px #2ecc71;
+  }
+}
 
-    .row {
-        display: flex;
-        align-items: center;
-    }
+.error {
+    color: #e74c3c;
+    font-weight: bold;
+    margin-bottom: 20px;
+    font-size: 1.2rem;
+}
 
-    .row-selector {
-        width: 50px;
-        height: 50px;
-        background-color: lightgray;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        cursor: pointer;
-        font-weight: bold;
-        border: 1px solid #ddd;
-        user-select: none;
-    }
+.grid-container {
+    display: grid;
+    overflow-x: auto;
+    justify-content: center;
+    margin: 40px auto;
+}
 
-    .cell {
-        width: 50px;
-        height: 50px;
-        border: 1px solid #ddd;
-        cursor: pointer;
-        transition: background-color 0.3s;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-    }
+.column-labels, .row {
+    display: flex;
+}
 
-    .cell.null {
-        background-color: rgba(0, 0, 0, 0.05);
-    }
+.column-selector, .row-selector {
+    width: 50px;
+    height: 50px;
+    background: rgba(0,0,0,0.4);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    border: 1px solid #333;
+    user-select: none;
+    color: #fff;
+    cursor: pointer;
+    transition: transform 0.3s, box-shadow 0.3s;
+    text-shadow: 0 0 5px #fff;
+}
 
-    .error {
-        color: red;
-        font-weight: bold;
+.column-selector:hover, .row-selector:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 0 20px #2ecc71;
+}
+
+.cell {
+    width: 50px;
+    height: 50px;
+    border: 1px solid #333;
+    cursor: pointer;
+    transition: transform 0.3s, box-shadow 0.3s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+    color: #fff;
+    text-shadow: 0 0 5px #fff;
+}
+
+.cell:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 0 15px #2ecc71;
+}
+
+.cell.null {
+    background-color: rgba(0,0,0,0.2);
+}
+
+.controls {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 10px;
+    margin-bottom: 20px;
+}
+
+button {
+    padding: 10px 20px;
+    font-size: 1rem;
+    cursor: pointer;
+    border: none;
+    border-radius: 8px;
+    transition: background-color 0.3s, transform 0.3s, box-shadow 0.3s;
+    font-weight: bold;
+    color: #000;
+    background: #2ecc71;
+    box-shadow: 0 0 10px #2ecc71;
+}
+
+button:hover {
+    background: #27ae60;
+    transform: translateY(-3px) scale(1.05);
+    box-shadow: 0 0 15px #27ae60;
+}
+
+.add-buttons {
+    background: #2ecc71;
+}
+
+.remove-buttons {
+    background: #e74c3c;
+    color: #fff;
+    box-shadow: 0 0 10px #e74c3c;
+}
+
+.remove-buttons:hover {
+    background: #c0392b;
+    box-shadow: 0 0 15px #c0392b;
+}
+
+.submit-button {
+    background: #fff;
+    color: #000;
+    border: 3px solid #1976d2;
+    font-size: 1.2rem;
+    text-shadow: none;
+    box-shadow: none;
+}
+
+.submit-button:hover {
+    background: #e0e0e0;
+    border-color: #1565c0;
+    transform: translateY(-3px) scale(1.05);
+    box-shadow: 0 0 15px #3498db;
+}
+
+.mode-switch {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 20px;
+}
+
+.switch {
+    position: relative;
+    display: inline-block;
+    width: 60px;
+    height: 30px;
+    margin: 0 10px;
+}
+
+.switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background-color: green;
+    border-radius: 30px;
+    transition: 0.4s;
+}
+
+.slider:before {
+    position: absolute;
+    content: "";
+    height: 24px; width: 24px;
+    left: 3px; bottom: 3px;
+    background-color: white;
+    border-radius: 50%;
+    transition: 0.4s;
+}
+
+input:checked + .slider {
+    background-color: #1976d2;
+}
+
+input:checked + .slider:before {
+    transform: translateX(30px);
+}
+
+.mode-label {
+    font-size: 1.2rem;
+    font-weight: bold;
+    color: #2ecc71;
+    text-shadow: 0 0 10px #2ecc71;
+}
+
+@media (max-width: 600px) {
+    .cell, .row-selector, .column-selector {
+        width: 40px;
+        height: 40px;
     }
 
     button {
-        margin: 10px;
-        padding: 10px 20px;
-        font-size: 16px;
-        cursor: pointer;
-        border: none;
-        background-color: #1976d2;
-        color: white;
-        border-radius: 5px;
-        transition: background-color 0.3s;
+        padding: 8px 16px;
+        font-size: 0.9rem;
     }
+}
 
-    button:hover {
-        background-color: #1565c0;
-    }
-
-    h1 {
-        margin-top: 20px;
-        margin-bottom: 10px;
-    }
-
-    .controls {
-        display: flex;
-        flex-wrap: wrap;
-        justify-content: center;
-        gap: 10px;
-    }
-
-    .add-buttons {
-        background-color: rgb(0, 114, 28);
-    }
-
-    .remove-buttons {
-        background-color: darkred;
-    }
-
-    .submit-button {
-        background-color: white;
-        color: black;
-        border: 3px solid #1976d2;
-        font-weight: bold;
-        font-size: 18px;
-        font-family: Arial, sans-serif;
-    }
-
-    .switch {
-        position: relative;
-        display: inline-block;
-        width: 60px;
-        height: 30px;
-        margin: 0 10px;
-    }
-
-    .switch input {
-        opacity: 0;
-        width: 0;
-        height: 0;
-    }
-
-    .slider {
-        position: absolute;
-        cursor: pointer;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        background-color: green;
-        transition: 0.4s;
-        border-radius: 30px;
-    }
-
-    .slider:before {
-        position: absolute;
-        content: "";
-        height: 24px;
-        width: 24px;
-        left: 3px;
-        bottom: 3px;
-        background-color: white;
-        transition: 0.4s;
-        border-radius: 50%;
-    }
-
-    input:checked + .slider {
-        background-color: #1976d2;
-    }
-
-    input:checked + .slider:before {
-        transform: translateX(30px);
-    }
-
-    .mode-label {
-        font-size: 18px;
-        font-weight: bold;
-        color: #333;
-    }
-
-    @media (max-width: 600px) {
-        .cell, .row-selector, .column-selector {
-            width: 40px;
-            height: 40px;
-        }
-
-        button {
-            padding: 8px 16px;
-            font-size: 14px;
-        }
-    }
 </style>
 
 <main>

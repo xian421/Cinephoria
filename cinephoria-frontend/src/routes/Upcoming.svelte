@@ -97,6 +97,93 @@
 * {
   box-sizing: border-box;
 }
+body {
+    margin: 0;
+    font-family: 'Roboto', sans-serif;
+    background: #000;
+    color: #fff;
+}
+
+.settings-container {
+    max-width: 1200px;
+    margin: 2rem auto;
+    padding: 2rem;
+    background: #111;
+    border-radius: 12px;
+    box-shadow: 0 5px 20px rgba(0,0,0,0.5);
+}
+
+.settings-header h1 {
+    font-size: 3rem;
+    margin: 0;
+    color: #2ecc71;
+    text-shadow: 0 0 20px #2ecc71, 0 0 40px #2ecc71;
+    text-align: center;
+    animation: glow 2s infinite alternate;
+}
+
+@keyframes glow {
+  from {
+    text-shadow: 0 0 10px #2ecc71, 0 0 20px #2ecc71;
+  }
+  to {
+    text-shadow: 0 0 20px #2ecc71, 0 0 40px #2ecc71;
+  }
+}
+
+.setting-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: #111;
+    padding: 1rem;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.5);
+    color: #fff;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.setting-item:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 30px rgba(0,0,0,0.7);
+}
+
+.setting-item label {
+    font-size: 1.2rem;
+    cursor: pointer;
+    color: #fff;
+    text-shadow: 0 0 5px #fff;
+}
+
+input[type="checkbox"] {
+    width: 20px;
+    height: 20px;
+    cursor: pointer;
+}
+
+.save-button {
+    width: 100%;
+    padding: 0.8rem;
+    font-size: 1.2rem;
+    font-weight: bold;
+    color: #000;
+    background: #2ecc71;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background 0.3s ease, transform 0.2s ease;
+    box-shadow: 0 5px 20px rgba(0,0,0,0.5);
+    margin-top: 2rem;
+    text-shadow: 0 0 10px #fff;
+}
+
+.save-button:hover {
+    background: #24b497;
+}
+
+.save-button:active {
+    transform: scale(0.98);
+}
 
 body {
     margin: 0;
