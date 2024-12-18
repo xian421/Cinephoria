@@ -1990,16 +1990,32 @@ def redeem_points():
     user_id = request.user.get('user_id')
     data = request.get_json()
     points_to_redeem = data.get('points')
+    reward_id = data.get('reward_id')  # Neuen Parameter hinzufügen
 
     # Validierung der Eingabedaten
     if not points_to_redeem or not isinstance(points_to_redeem, int) or points_to_redeem <= 0:
         return jsonify({'error': 'Ungültige Punkteanzahl'}), 400
+
+    if not reward_id or not isinstance(reward_id, int):
+        return jsonify({'error': 'Ungültige reward_id'}), 400
 
     try:
         with psycopg2.connect(DATABASE_URL) as conn:
             with conn.cursor() as cursor:
                 # Beginne eine Transaktion
                 cursor.execute("BEGIN;")
+
+                # Überprüfen, ob die Belohnung existiert und die erforderlichen Punkte stimmt
+                cursor.execute("SELECT points FROM rewards WHERE reward_id = %s", (reward_id,))
+                reward = cursor.fetchone()
+                if not reward:
+                    conn.rollback()
+                    return jsonify({'error': 'Belohnung nicht gefunden'}), 404
+
+                required_points = reward[0]
+                if points_to_redeem != required_points:
+                    conn.rollback()
+                    return jsonify({'error': 'Die Anzahl der einzulösenden Punkte stimmt nicht mit der Belohnung überein'}), 400
 
                 # Überprüfen, ob der Benutzer genügend Punkte hat
                 cursor.execute("SELECT points FROM user_points WHERE user_id = %s FOR UPDATE", (user_id,))
@@ -2016,16 +2032,16 @@ def redeem_points():
                     WHERE user_id = %s
                 """, (points_to_redeem, user_id))
 
-                # Transaktion protokollieren
+                # Transaktion protokollieren mit reward_id
                 cursor.execute("""
-                    INSERT INTO points_transactions (user_id, points_change, description)
-                    VALUES (%s, %s, %s)
-                """, (user_id, -points_to_redeem, 'Einlösung von Punkten'))
+                    INSERT INTO points_transactions (user_id, points_change, description, reward_id)
+                    VALUES (%s, %s, %s, %s)
+                """, (user_id, -points_to_redeem, 'Einlösung von Punkten für Belohnung', reward_id))
 
                 # Transaktion committen
                 conn.commit()
 
-        return jsonify({'message': f'{points_to_redeem} Punkte erfolgreich eingelöst'}), 200
+        return jsonify({'message': f'{points_to_redeem} Punkte erfolgreich für die Belohnung eingelöst'}), 200
 
     except Exception as e:
         logger.error(f"Fehler beim Einlösen der Punkte: {e}")
@@ -2040,8 +2056,9 @@ def get_points_transactions():
         with psycopg2.connect(DATABASE_URL) as conn:
             with conn.cursor(cursor_factory=psycopg2.extras.DictCursor) as cursor:
                 cursor.execute("""
-                    SELECT transaction_id, points_change, description, timestamp
-                    FROM points_transactions
+                    SELECT pt.transaction_id, pt.points_change, pt.description, pt.timestamp, pt.reward_id, r.title AS reward_title, r.points AS reward_points, r.image AS reward_image, r.description AS reward_description
+                    FROM points_transactions pt
+                    JOIN rewards r ON pt.reward_id = r.reward_id
                     WHERE user_id = %s
                     ORDER BY timestamp DESC
                 """, (user_id,))
@@ -2051,7 +2068,15 @@ def get_points_transactions():
                         'transaction_id': t['transaction_id'],
                         'points_change': t['points_change'],
                         'description': t['description'],
-                        'timestamp': t['timestamp'].isoformat()
+                        'timestamp': t['timestamp'].isoformat(),
+                        'reward': {
+                            'reward_id': t['reward_id'],
+                            'title': t['reward_title'],
+                            'points': t['reward_points'],
+                            'image': t['reward_image'],
+                            'description': t['reward_description']
+                        }
+
                     }
                     for t in transactions
                 ]
