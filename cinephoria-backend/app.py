@@ -811,6 +811,23 @@ def create_booking_route():
                         VALUES (%s, %s, %s)
                     """, (booking_id, seat_id, price))
                 
+                # **Neuer Code: Punkte gutschreiben**
+                points_to_add = int(total_amount)  # 1 Euro = 1 Punkt
+
+                # Aktualisiere user_points
+                cursor.execute("""
+                    UPDATE user_points
+                    SET points = points + %s,
+                        last_updated = CURRENT_TIMESTAMP
+                    WHERE user_id = %s
+                """, (points_to_add, user_id))
+
+                # Protokolliere die Punkte-Transaktion
+                cursor.execute("""
+                    INSERT INTO points_transactions (user_id, points_change, description)
+                    VALUES (%s, %s, %s)
+                """, (user_id, points_to_add, f'Punkte für Buchung {booking_id}'))
+
                 # Commit der Transaktion
                 conn.commit()
         
@@ -1947,6 +1964,101 @@ def get_user_bookings():
         logger.error(f"Fehler beim Abrufen der Buchungen: {e}")
         return jsonify({'error': 'Fehler beim Abrufen der Buchungen'}), 500
 
+
+
+@app.route('/user/points', methods=['GET'])
+@token_required
+def get_user_points():
+    user_id = request.user.get('user_id')
+    try:
+        with psycopg2.connect(DATABASE_URL) as conn:
+            with conn.cursor() as cursor:
+                cursor.execute("SELECT points FROM user_points WHERE user_id = %s", (user_id,))
+                result = cursor.fetchone()
+                if result:
+                    return jsonify({'points': result[0]}), 200
+                else:
+                    return jsonify({'points': 0}), 200
+    except Exception as e:
+        logger.error(f"Fehler beim Abrufen der Punkte: {e}")
+        return jsonify({'error': 'Fehler beim Abrufen der Punkte'}), 500
+
+
+@app.route('/user/points/redeem', methods=['POST'])
+@token_required
+def redeem_points():
+    user_id = request.user.get('user_id')
+    data = request.get_json()
+    points_to_redeem = data.get('points')
+
+    # Validierung der Eingabedaten
+    if not points_to_redeem or not isinstance(points_to_redeem, int) or points_to_redeem <= 0:
+        return jsonify({'error': 'Ungültige Punkteanzahl'}), 400
+
+    try:
+        with psycopg2.connect(DATABASE_URL) as conn:
+            with conn.cursor() as cursor:
+                # Beginne eine Transaktion
+                cursor.execute("BEGIN;")
+
+                # Überprüfen, ob der Benutzer genügend Punkte hat
+                cursor.execute("SELECT points FROM user_points WHERE user_id = %s FOR UPDATE", (user_id,))
+                result = cursor.fetchone()
+                if not result or result[0] < points_to_redeem:
+                    conn.rollback()
+                    return jsonify({'error': 'Nicht genügend Punkte'}), 400
+
+                # Punkte abziehen
+                cursor.execute("""
+                    UPDATE user_points
+                    SET points = points - %s,
+                        last_updated = CURRENT_TIMESTAMP
+                    WHERE user_id = %s
+                """, (points_to_redeem, user_id))
+
+                # Transaktion protokollieren
+                cursor.execute("""
+                    INSERT INTO points_transactions (user_id, points_change, description)
+                    VALUES (%s, %s, %s)
+                """, (user_id, -points_to_redeem, 'Einlösung von Punkten'))
+
+                # Transaktion committen
+                conn.commit()
+
+        return jsonify({'message': f'{points_to_redeem} Punkte erfolgreich eingelöst'}), 200
+
+    except Exception as e:
+        logger.error(f"Fehler beim Einlösen der Punkte: {e}")
+        return jsonify({'error': 'Fehler beim Einlösen der Punkte'}), 500
+
+
+@app.route('/user/points/transactions', methods=['GET'])
+@token_required
+def get_points_transactions():
+    user_id = request.user.get('user_id')
+    try:
+        with psycopg2.connect(DATABASE_URL) as conn:
+            with conn.cursor(cursor_factory=psycopg2.extras.DictCursor) as cursor:
+                cursor.execute("""
+                    SELECT transaction_id, points_change, description, timestamp
+                    FROM points_transactions
+                    WHERE user_id = %s
+                    ORDER BY timestamp DESC
+                """, (user_id,))
+                transactions = cursor.fetchall()
+                transactions_list = [
+                    {
+                        'transaction_id': t['transaction_id'],
+                        'points_change': t['points_change'],
+                        'description': t['description'],
+                        'timestamp': t['timestamp'].isoformat()
+                    }
+                    for t in transactions
+                ]
+        return jsonify({'transactions': transactions_list}), 200
+    except Exception as e:
+        logger.error(f"Fehler beim Abrufen der Punkte-Transaktionen: {e}")
+        return jsonify({'error': 'Fehler beim Abrufen der Punkte-Transaktionen'}), 500
 
 
 if __name__ == '__main__':
