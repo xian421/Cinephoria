@@ -2083,13 +2083,6 @@ def add_reward():
     points = data.get('points')
     description = data.get('description', '')
     image = data.get('image', '')
-    # Wie sieht heir der Body aus in json Format:
-    # {
-    #     "title": "Belohnung 1",
-    #     "points": 100,
-    #     "description": "Beschreibung der Belohnung",
-    #     "image": "/popcorn.webp"
-    # }
 
     if not title or not points:
         return jsonify({'error': 'Titel und Punkte sind erforderlich'}), 400
@@ -2106,6 +2099,53 @@ def add_reward():
     except Exception as e:
         logger.error(f"Fehler beim Hinzufügen der Belohnung: {e}")
         return jsonify({'error': 'Fehler beim Hinzufügen der Belohnung'}), 500
+    
+@app.route('/rewards/<int:reward_id>', methods=['PUT'])
+@admin_required
+def update_reward(reward_id):
+    data = request.get_json()
+    title = data.get('title')
+    points = data.get('points')
+    description = data.get('description', '')
+    image = data.get('image', '')
+
+    if not title or not points:
+        return jsonify({'error': 'Titel und Punkte sind erforderlich'}), 400
+
+    try:
+        with psycopg2.connect(DATABASE_URL) as conn:
+            with conn.cursor() as cursor:
+                cursor.execute("""
+                    UPDATE rewards
+                    SET title = %s,
+                        points = %s,
+                        description = %s,
+                        image = %s
+                    WHERE reward_id = %s
+                """, (title, points, description, image, reward_id))
+                if cursor.rowcount == 0:
+                    return jsonify({'error': 'Belohnung nicht gefunden'}), 404
+                conn.commit()
+                return jsonify({'message': 'Belohnung aktualisiert'}), 200
+    except Exception as e:
+        logger.error(f"Fehler beim Aktualisieren der Belohnung: {e}")
+        return jsonify({'error': 'Fehler beim Aktualisieren der Belohnung'}), 500
+    
+
+@app.route('/rewards/<int:reward_id>', methods=['DELETE'])
+@admin_required
+def delete_reward(reward_id):
+    try:
+        with psycopg2.connect(DATABASE_URL) as conn:
+            with conn.cursor() as cursor:
+                cursor.execute("DELETE FROM rewards WHERE reward_id = %s", (reward_id,))
+                if cursor.rowcount == 0:
+                    return jsonify({'error': 'Belohnung nicht gefunden'}), 404
+                conn.commit()
+                return jsonify({'message': 'Belohnung gelöscht'}), 200
+    except Exception as e:
+        logger.error(f"Fehler beim Löschen der Belohnung: {e}")
+        return jsonify({'error': 'Fehler beim Löschen der Belohnung'}), 500
 
 
 if __name__ == '__main__':
