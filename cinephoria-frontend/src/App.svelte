@@ -45,6 +45,15 @@
     let kontakt = [];
     let firstCinema = "";
   
+    // Reaktive Zuweisung der Store-Werte
+    $: isLoggedIn = $authStore.isLoggedIn;
+    $: isAdmin = $authStore.isAdmin;
+    $: userFirstName = $authStore.userFirstName;
+    $: userLastName = $authStore.userLastName;
+    $: initials = $authStore.initials;
+    $: token = $authStore.token;
+    
+  
     // Ladezustand
     let isLoading = true;
   
@@ -80,6 +89,10 @@
                 localStorage.setItem('token', data.token);
                 updateAuth(current => ({
                     isLoggedIn: true,
+                    userFirstName: data.first_name,
+                    userLastName: data.last_name,
+                    initials: data.initials,
+                    isAdmin: data.role.toLowerCase() === 'admin',
                     token: data.token, // Token im Store speichern
                 }));
   
@@ -162,10 +175,14 @@
                 // Da validateToken keine isValid zurückgibt, setze den Auth-Zustand direkt
                 updateAuth(current => ({
                     isLoggedIn: true,
+                    userFirstName: data.first_name,
+                    userLastName: data.last_name,
+                    initials: data.initials,
+                    isAdmin: data.role.toLowerCase() === 'admin',
                     token: storedToken,
                 }));
   
-                // loadProfile wird automatisch durch die reaktive Anweisung aufgerufen
+                await loadProfile(); // Profildaten laden nach der Token-Validierung
             } catch (error) {
                 console.error("Fehler beim Validieren des Tokens:", error);
                 localStorage.removeItem('token');
@@ -182,11 +199,6 @@
   
         isLoading = false;
     });
-  
-    // Reaktive Anweisung: Sobald das Token gesetzt ist, lade die Profildaten
-    $: if ($authStore.token) {
-        loadProfile();
-    }
 </script>
 
 {#if isLoading}
@@ -200,8 +212,8 @@
           isLoginOpen={isLoginOpen} 
           isProfileDropdownOpen={isProfileDropdownOpen} 
           handleLogin={handleLogin} 
-          initials={$authStore.initials} 
-          isLoggedIn={$authStore.isLoggedIn}
+          initials={initials} 
+          isLoggedIn={isLoggedIn}
       />
 
       <!-- Routen -->
