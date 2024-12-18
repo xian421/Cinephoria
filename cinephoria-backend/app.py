@@ -1006,6 +1006,29 @@ def profile():
     except Exception as e:
         print(f"Fehler beim Abrufen des Profils: {e}")
         return jsonify({'error': 'Fehler beim Abrufen des Profils'}), 500
+    
+
+@app.route('/profile', methods=['PUT'])
+@token_required
+def update_profile():
+    user_id = request.user.get('user_id')
+    data = request.get_json()
+    vorname = data.get('vorname')
+    nachname = data.get('nachname')
+    email = data.get('email')
+
+    if not vorname or not nachname or not email:
+        return jsonify({'error': 'Alle Felder sind erforderlich'}), 400
+
+    try:
+        with psycopg2.connect(DATABASE_URL) as conn:
+            with conn.cursor() as cursor:
+                cursor.execute("UPDATE users SET vorname = %s, nachname = %s, email = %s WHERE id = %s", (vorname, nachname, email, user_id))
+                conn.commit()
+        return jsonify({'message': 'Profil aktualisiert'}), 200
+    except Exception as e:
+        print(f"Fehler beim Aktualisieren des Profils: {e}")
+        return jsonify({'error': 'Fehler beim Aktualisieren des Profils'}), 500
 
 # Neuer Endpunkt zum Aktualisieren des Profilbildes
 @app.route('/profile/image', methods=['PUT'])

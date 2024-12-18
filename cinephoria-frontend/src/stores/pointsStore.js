@@ -21,10 +21,10 @@ export async function fetchUserPointsStore(token) {
     }
 }
 
-// Funktion zum Einlösen von Punkten
-export async function redeemUserPointsStore(token, points) {
+// Funktion zum Einlösen von Punkten mit reward_id
+export async function redeemUserPointsStore(token, points, reward_id) {
     try {
-        const message = await redeemPoints(token, points);
+        const message = await redeemPoints(token, points, reward_id); // reward_id übergeben
         // Aktualisiere den Store nach erfolgreichem Einlösen
         pointsStore.update(currentPoints => currentPoints - points);
         // Transaktionshistorie abrufen (optional)

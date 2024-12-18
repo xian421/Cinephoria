@@ -404,6 +404,31 @@ export const fetchProfile = async (token) => {
     }
 };
 
+
+// Funktion zum Aktualisieren des Profils
+export const updateProfile = async (token, updates) => {
+    try {
+        const response = await fetch(`${API_BASE_URL}/profile`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify(updates)
+        });
+        
+        const data = await response.json();
+        if (!response.ok) {
+            throw new Error(data.error || 'Fehler beim Aktualisieren des Profils');
+        }
+        return data;
+    } catch (error) {
+        console.error('Error updating profile:', error);
+        throw error;
+    }
+};
+
+
 // Funktion zum Aktualisieren des Profilbildes
 export const updateProfileImage = async (token, profileImage) => {
     try {
@@ -991,14 +1016,14 @@ export async function getUserPoints(token) {
 }
 
 // Funktion zum Einlösen von Punkten
-export async function redeemPoints(token, points) {
+export async function redeemPoints(token, points, reward_id) {
     const response = await fetch(`${API_BASE_URL}/user/points/redeem`, {
         method: 'POST',
         headers: {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ points })
+        body: JSON.stringify({ points, reward_id }) // reward_id hinzufügen
     });
     const data = await response.json();
     if (!response.ok) {
@@ -1006,6 +1031,7 @@ export async function redeemPoints(token, points) {
     }
     return data;
 }
+
 
 // Funktion zum Abrufen der Punkte-Transaktionshistorie
 export async function getPointsTransactions(token) {
