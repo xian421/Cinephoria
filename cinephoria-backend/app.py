@@ -1032,7 +1032,7 @@ def profile():
                         UPDATE users 
                         SET vorname = %s, nachname = %s, email = %s, nickname = %s, role = %s
                         WHERE id = %s
-                    """, (vorname, nachname, email, user_id, nickname, role))
+                    """, (vorname, nachname, email, nickname, role, user_id))
                     conn.commit()
             return jsonify({'message': 'Profil aktualisiert'}), 200
         except Exception as e:
