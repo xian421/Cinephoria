@@ -160,7 +160,8 @@
   position: relative;
   min-height: 100vh;
   padding: 2rem; /* Entferne oder passe das Padding an */
-  background: linear-gradient(135deg, #000428, #004e92);
+ 
+  
   overflow: hidden;
   /* padding-top: 120px; Entfernen */
   box-sizing: border-box;
@@ -170,6 +171,7 @@
   .header-section {
     text-align: center;
     margin-bottom: 3rem;
+    margin-top: 4rem;
   }
 
   .header-text {

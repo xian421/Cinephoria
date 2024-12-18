@@ -109,7 +109,7 @@ body {
   position: relative;
   min-height: 100vh;
   padding: 2rem;
-  background: linear-gradient(135deg, #000428, #004e92);
+
   overflow: hidden;
 }
 
@@ -119,6 +119,7 @@ body {
 .header-section {
   text-align: center;
   margin-bottom: 3rem;
+  margin-top: 4rem;
 }
 
 .header-text {
