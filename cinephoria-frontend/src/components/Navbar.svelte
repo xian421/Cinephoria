@@ -1,331 +1,496 @@
-
 <!-- src/components/Navbar.svelte -->
 <script>
-  import { navigate, useLocation } from "svelte-routing";
-  import { authStore } from '../stores/authStore';
-  
-  export let toggleLoginDropdown;
-  export let toggleProfileMenu;
-  export let logout;
-  export let isLoginOpen = false;
-  export let isProfileDropdownOpen;
-  export let handleLogin;
-  
-  // Reaktive Variable für authStore mit der $-Syntax
-  // Svelte übernimmt automatisch das Abonnieren und Aktualisieren
-  // Kein Bedarf für manuelle Subscription oder `get`-Funktion
-  // Verwenden Sie $authStore direkt im Template
+    import { navigate, useLocation } from "svelte-routing";
+    import { authStore } from '../stores/authStore';
+    import Swal from "sweetalert2";
 
-  // Lokale Zustände für Login
-  let email = "";
-  let password = "";
-  
-  const onLoginSubmit = () => {
-      handleLogin(email, password);
-      // Reset der Eingabefelder und Schließen des Dropdowns
-      email = "";
-      password = "";
-      toggleLoginDropdown(false);
-  };
-  
-  // Nutzung des useLocation-Hooks
-  const location = useLocation();
+    export let toggleLoginDropdown;
+    export let toggleProfileMenu;
+    export let logout;
+    export let handleLogin;
+    
+    export let isLoginOpen = false;
+    export let isProfileDropdownOpen;
+    
+    let email = "";
+    let password = "";
+    let firstName = "";
+    let lastName = "";
+    
+    let currentView = 'login'; // 'login', 'register', 'forgotPassword'
+
+    const onLoginSubmit = async () => {
+        if (!email || !password) {
+            Swal.fire("Fehler", "Bitte gib E-Mail und Passwort ein.", "error");
+            return;
+        }
+        await handleLogin(email, password);
+        email = "";
+        password = "";
+        toggleLoginDropdown(false);
+    };
+
+    const handleRegisterFn = async () => {
+        if (!firstName || !lastName || !email || !password) {
+            Swal.fire("Fehler", "Bitte fülle alle Felder aus.", "error");
+            return;
+        }
+
+        try {
+            const response = await fetch("https://cinephoria-backend-c53f94f0a255.herokuapp.com/register", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ first_name: firstName, last_name: lastName, email, password }),
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+                Swal.fire("Erfolgreich registriert!", "Du kannst dich jetzt einloggen.", "success");
+                currentView = 'login';
+                firstName = "";
+                lastName = "";
+                email = "";
+                password = "";
+            } else {
+                Swal.fire("Fehler", data.error || "Ein Fehler ist aufgetreten.", "error");
+            }
+        } catch (error) {
+            Swal.fire("Fehler", "Es konnte keine Verbindung zum Server hergestellt werden.", "error");
+        }
+    };
+
+    const handleForgotPasswordFn = async () => {
+        if (!email) {
+            Swal.fire("Fehler", "Bitte gib deine E-Mail-Adresse ein.", "error");
+            return;
+        }
+
+        try {
+            const response = await fetch("https://cinephoria-backend-c53f94f0a255.herokuapp.com/forgot-password", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ email }),
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+                Swal.fire(
+                    "E-Mail gesendet!",
+                    "Falls die E-Mail existiert, erhältst du in Kürze Anweisungen zum Zurücksetzen des Passworts.",
+                    "success"
+                );
+                email = "";
+                currentView = 'login';
+            } else {
+                Swal.fire("Fehler", data.error || "Ein Fehler ist aufgetreten.", "error");
+            }
+        } catch (error) {
+            Swal.fire("Fehler", "Es konnte keine Verbindung zum Server hergestellt werden.", "error");
+        }
+    };
+
+    const location = useLocation();
+
+    // Helper function to determine active class
+    const isActive = (path) => location.pathname === path;
 </script>
 
+<div class="navbar-background">
+    <nav>
+        <a href="/" class="logo" on:click={() => navigate('/')}>
+            <img src="/Logo.png" alt="Logo" />
+        </a>
+
+        <button class="{isActive('/') ? 'active' : ''}" on:click={() => navigate('/')}>Alle Filme</button>
+        <button class="{isActive('/nowplaying') ? 'active' : ''}" on:click={() => navigate('/nowplaying')}>Programm</button>
+        <button class="{isActive('/upcoming') ? 'active' : ''}" on:click={() => navigate('/upcoming')}>Upcoming</button>
+        <button class="{isActive('/warenkorb') ? 'active' : ''}" on:click={() => navigate('/warenkorb')}>Warenkorb</button>
+
+        {#if $authStore.isLoggedIn}
+            <div class="profile-dropdown-container {isProfileDropdownOpen ? 'open' : ''}">
+                <div class="profile-container" on:click={toggleProfileMenu}>
+                    {#if $authStore.profile_image && $authStore.profile_image !== 'default.png'}
+                        <img src={`/Profilbilder/${$authStore.profile_image}`} alt="Profilbild" class="profile-image" />
+                    {:else}
+                        <div class="profile-initials">{$authStore.initials}</div>
+                    {/if}
+                </div>
+                <div class="profile-dropdown-menu">
+                    <ul>
+                        <li on:click={() => { navigate('/profile'); toggleProfileMenu(false); }}>Profil anzeigen</li>
+                        <li on:click={() => { navigate('/einstellungen'); toggleProfileMenu(false); }}>Einstellungen</li>
+                        {#if $authStore.isAdmin}
+                            <li on:click={() => { navigate('/admin'); toggleProfileMenu(false); }}>Admin</li>
+                        {/if}
+                        <li on:click={() => { navigate('/bestellungen'); toggleProfileMenu(false); }}>Meine Bestellungen</li>
+                        <li on:click={logout}>Abmelden</li>
+                    </ul>
+                </div>
+            </div>
+        {:else}
+            <div class="dropdown-container {isLoginOpen ? 'open' : ''}">
+                <button on:click={() => toggleLoginDropdown(!isLoginOpen)}>Login</button>
+                <div class="dropdown-menu">
+                    {#if currentView === 'login'}
+                        <form on:submit|preventDefault={onLoginSubmit}>
+                            <input type="email" placeholder="E-Mail" bind:value={email} required />
+                            <input type="password" placeholder="Passwort" bind:value={password} required />
+                            <div class="login-button-container">
+                                <button type="submit">Einloggen</button>
+                            </div>
+                            <div class="button-container">
+                                <button type="button" class="secondary-button" on:click={() => currentView = 'register'}>Registrieren</button>
+                                <button type="button" class="secondary-button" on:click={() => currentView = 'forgotPassword'}>Passwort vergessen?</button>
+                            </div>
+                        </form>
+                    {:else if currentView === 'register'}
+                        <div>
+                            <input type="text" placeholder="Vorname" bind:value={firstName} />
+                            <input type="text" placeholder="Nachname" bind:value={lastName} />
+                            <input type="email" placeholder="E-Mail" bind:value={email} />
+                            <input type="password" placeholder="Passwort" bind:value={password} />
+                            <div class="login-button-container">
+                                <button on:click={handleRegisterFn}>Registrieren</button>
+                            </div>
+                            <div class="button-container">
+                                <button type="button" class="secondary-button" on:click={() => currentView = 'login'}>Zurück</button>
+                            </div>
+                        </div>
+                    {:else if currentView === 'forgotPassword'}
+                        <div>
+                            <input type="email" placeholder="E-Mail-Adresse" bind:value={email} />
+                            <div class="login-button-container">
+                                <button on:click={handleForgotPasswordFn}>Link senden</button>
+                            </div>
+                            <div class="button-container">
+                                <button type="button" class="secondary-button" on:click={() => currentView = 'login'}>Zurück</button>
+                            </div>
+                        </div>
+                    {/if}
+                </div>
+            </div>
+        {/if}
+    </nav>
+</div>
 
 <style>
-  /* Navbar-Stile */
-  nav {
-    display: flex;
-    align-items: center;
-    justify-content: space-around;
-    background: #ffffff;
-    padding: 1rem;
-    border-radius: 12px;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
-    position: sticky;
-    top: 0;
-    z-index: 1000;
-  }
+    @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap');
+    @import url('https://use.fontawesome.com/releases/v5.15.4/css/all.css');
 
-  /* Logo-Stile */
-  .logo {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    text-decoration: none;
-    color: white;
-    font-size: 1.2rem;
-    font-weight: bold;
-    transition: transform 0.4s ease;
-  }
+    /* Globale Stile */
+    * {
+        box-sizing: border-box;
+    }
 
-  .logo:hover {
-    transform: scale(1.25);
-  }
+    html, body {
+        margin: 0;
+        padding: 0;
+        width: 100%;
+        height: 100%;
+        font-family: 'Roboto', sans-serif;
+        background: linear-gradient(135deg, #000428, #004e92);
+        color: #fff;
+        overflow-x: hidden;
+    }
 
-  .logo img {
-    height: 60px;
-    width: auto;
-    object-fit: contain;
-  }
+    /* Navbar-Hintergrund */
+    .navbar-background {
+      
+        top: 0;
+        left: 0;
+        width: 100%;
+        z-index: 99999999;
+        padding: 1rem 2rem;
+        
+        box-sizing: border-box;
+    }
 
-  /* Button-Stile */
-  button {
-    font-size: 1.2rem;
-    font-weight: bold;
-    color: rgb(0, 0, 0);
-    background: #ffffff;
-    border: 2px solid transparent;
-    border-radius: 12px;
-    padding: 1rem 2rem;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-    cursor: pointer;
-    transition: all 0.3s ease;
-    min-width: 160px;
-    text-align: center;
-  }
+    .navbar-background::after {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-image: radial-gradient(white, transparent 20%), radial-gradient(white, transparent 20%);
+        background-size: 10px 10px;
+        background-position: 0 0, 5px 5px;
+        opacity: 0.1;
+        pointer-events: none;
+        z-index: -1;
+    }
 
-  button:hover {
-    border-color: #1abc9c;
-    transform: scale(1.1);
-  }
+    /* Navigation */
+    nav {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        position: relative;
+        width: 100%;
+        z-index: 999999999;
+        box-sizing: border-box;
+    }
 
-  button.active {
-    color: rgb(0, 0, 0);
-    border-color: rgb(21, 151, 112);
-    transform: scale(1.05);
-  }
+    /* Logo */
+    .logo {
+        display: flex;
+        align-items: center;
+        text-decoration: none;
+        font-size: 1.2rem;
+        font-weight: bold;
+        transition: transform 0.3s ease;
+        color: #2ecc71;
+        text-shadow: 0 0 10px #2ecc71, 0 0 20px #2ecc71;
+        z-index: 999999999;
+    }
 
-  /* Login-Dropdown-Stile */
-  .dropdown-container {
-    position: relative;
-  }
+    .logo img {
+        height: 60px;
+        object-fit: contain;
+        margin-right: 10px;
+        z-index: 999999999;
+    }
 
-  .dropdown-menu {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    position: absolute;
-    top: calc(100% + 10px);
-    right: 0;
-    background: #ffffff;
-    padding: 1rem 20px;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
-    border-radius: 12px;
-    z-index: 1000;
-    width: 300px;
-    transform: scaleY(0);
-    transform-origin: top;
-    transition: transform 0.3s ease-in-out;
-  }
+    .logo:hover {
+        transform: scale(1.1);
+    }
 
-  .dropdown-container.open .dropdown-menu {
-    transform: scaleY(1);
-  }
+    /* Navigation Buttons */
+    nav button {
+        font-size: 1rem;
+        font-weight: bold;
+        background: transparent;
+        color: #fff;
+        border: 2px solid transparent;
+        border-radius: 12px;
+        padding: 0.6rem 1.2rem;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        margin: 0 0.5rem;
+        text-shadow: 0 0 5px #fff;
+        z-index: 999999999;
+    }
 
-  .dropdown-menu input {
-    width: calc(100% - 16px);
-    padding: 0.8rem;
-    margin: 0.5rem 0;
-    border: 1px solid #ccc;
-    border-radius: 8px;
-    font-size: 1rem;
-    box-sizing: border-box;
-  }
+    nav button:hover {
+        border-color: #2ecc71;
+        transform: scale(1.05);
+        box-shadow: 0 0 10px #2ecc71;
+    }
 
-  .dropdown-menu input:focus {
-    outline: none;
-    border-color: #1abc9c;
-    box-shadow: 0 0 4px rgba(26, 188, 156, 0.5);
-  }
+    /* Aktiver Navigationselement */
+    nav button.active {
+        border-color: #2ecc71;
+        transform: scale(1.05);
+        box-shadow: 0 0 10px #2ecc71;
+        /* Entferne zusätzliche Styles, die das Aussehen ändern könnten */
+    }
 
-  .dropdown-menu button {
-    width: 100%;
-    background: #3498db;
-    color: #ffffff;
-    font-size: 1rem;
-    font-weight: bold;
-    padding: 0.8rem;
-    border: none;
-    border-radius: 12px;
-    cursor: pointer;
-    transition: all 0.3s ease;
-  }
+    /* Dropdown-Container */
+    .dropdown-container, .profile-dropdown-container {
+        position: relative;
+        z-index: 999999999;
+    }
 
-  .dropdown-menu button:hover {
-    background: #24b497;
-  }
+    /* Dropdown-Menü */
+    .dropdown-menu, .profile-dropdown-menu {
+        position: absolute;
+        top: calc(100% + 10px);
+        right: 0;
+        background: linear-gradient(135deg, rgba(0,4,40,0.9), rgba(0,78,146,0.9));
+        box-shadow: 0 4px 8px rgba(0,0,0,0.7);
+        border-radius: 12px;
+        padding: 1rem;
+        opacity: 0;
+        transform: scaleY(0);
+        transform-origin: top;
+        transition: transform 0.3s ease, opacity 0.3s ease;
+        z-index: 999999999;
+        text-align: center;
+        width: 320px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+    }
 
-  /* Profil-Dropdown-Stile */
-  .profile-dropdown-container {
-    position: relative;
-  }
+    .dropdown-container.open .dropdown-menu,
+    .profile-dropdown-container.open .profile-dropdown-menu {
+        transform: scaleY(1);
+        opacity: 1;
+    }
 
-  .profile-dropdown-menu {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    justify-content: flex-start;
-    position: absolute;
-    top: calc(100% + 10px);
-    right: 0;
-    background: #ffffff;
-    padding: 1rem;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
-    border-radius: 12px;
-    z-index: 1000;
-    width: 200px;
-    transform: scaleY(0);
-    transform-origin: top;
-    transition: transform 0.3s ease-in-out;
-  }
+    /* Dropdown-Inhalt */
+    .dropdown-menu form,
+    .dropdown-menu div {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        width: 100%;
+    }
 
-  .profile-dropdown-container.open .profile-dropdown-menu {
-    transform: scaleY(1);
-  }
+    .dropdown-menu input {
+        width: 100%;
+        padding: 0.8rem;
+        margin: 0.5rem 0;
+        border: 1px solid #333;
+        border-radius: 8px;
+        font-size: 1rem;
+        box-sizing: border-box;
+        background: #222;
+        color: #fff;
+        text-align: center;
+    }
 
-  .profile-dropdown-menu ul {
-    list-style: none;
-    padding: 0;
-    margin: 0;
-    width: 100%;
-  }
+    .dropdown-menu input:focus {
+        border-color: #2ecc71;
+        box-shadow: 0 0 4px #2ecc71;
+        outline: none;
+    }
 
-  .profile-dropdown-menu li {
-    padding: 0.8rem;
-    font-size: 1rem;
-    color: #333;
-    cursor: pointer;
-    transition: background-color 0.3s ease;
-    width: 100%;
-    text-align: left;
-  }
+    /* Login-Button Container */
+    .login-button-container {
+        display: flex;
+        justify-content: center;
+        width: 100%;
+        margin-top: 0.5rem;
+    }
 
-  .profile-dropdown-menu li:hover {
-    background-color: #f0f0f0;
-    border-radius: 8px;
+    .login-button-container button {
+        width: 100%;
+        background: #2ecc71;
+        color: #000;
+        padding: 0.8rem;
+        border-radius: 12px;
+        border: none;
+        cursor: pointer;
+        font-weight: bold;
+        text-align: center;
+        transition: background-color 0.3s;
+    }
 
-  }
+    .login-button-container button:hover {
+        background: #34d399;
+    }
 
-  .profile-container {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    cursor: pointer;
-    font-size: 1rem;
-    font-weight: bold;
-    color: black;
-    transition: all 0.3s ease;
+    /* Secondary Buttons */
+    .button-container {
+        display: flex !important;
+        justify-content: center !important;
+        gap: 0.5rem !important;
+        margin-top: 1rem !important;
+        width: 100%;
+    }
 
-  }
+    .secondary-button {
+        background-color: #222 !important;
+        color: #2ecc71 !important;
+        font-size: 0.9rem !important;
+        font-weight: 600 !important;
+        border-radius: 8px !important;
+        padding: 0.5rem 1rem !important;
+        cursor: pointer !important;
+        transition: all 0.3s ease !important;
+        text-align: center !important;
+        border: 2px solid #2ecc71 !important;
+        flex: 1 1 0;
+        box-sizing: border-box;
+        white-space: nowrap;
+    }
 
-  .profile-container:hover {
-    transform: scale(1.1);
+    .secondary-button:hover {
+        background-color: #2ecc71 !important;
+        color: #000 !important;
+        transform: scale(1.05) !important;
+    }
 
+    /* Profil Dropdown Menü */
+    .profile-dropdown-menu ul {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        width: 100%;
+    }
 
-  }
+    .profile-dropdown-menu li {
+        padding: 0.8rem;
+        cursor: pointer;
+        border-radius: 8px;
+        transition: background 0.3s, transform 0.2s;
+        color: #fff;
+    }
 
-  .profile-initials {
-    width: 50px;
-    height: 50px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 50%;
-    background-color: #3498db;
-    color: white;
-    font-size: 20px;
-    font-weight: bold;
-  }
+    .profile-dropdown-menu li:hover {
+        background: #2ecc71;
+        color: #000;
+        transform: translateX(5px);
+        font-weight: bold;
+    }
 
-  .profile-image {
-      width: 50px;
-      height: 50px;
-      border-radius: 50%;
-      object-fit: cover;
-  }
+    /* Profil-Container */
+    .profile-container {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        cursor: pointer;
+    }
 
-  </style>
+    .profile-image {
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        object-fit: cover;
+        border: 2px solid #2ecc71;
+    }
 
-<nav>
-  <!-- Logo -->
-  <a href="/" class="logo" on:click={() => navigate('/')}>
-      <img src="/Logo.png" alt="Logo" />
-  </a>
+    .profile-initials {
+        width: 50px;
+        height: 50px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 50%;
+        background: #2ecc71;
+        color: #000;
+        font-weight: bold;
+        font-size: 1.2rem;
+        box-shadow: 0 0 10px #2ecc71;
+    }
 
-  <!-- Navigationsbuttons -->
-  <button
-      class="{location.pathname === '/' ? 'active' : ''}"
-      on:click={() => navigate('/')}
-  >
-      Alle Filme
-  </button>
-  <button
-      class="{location.pathname === '/nowplaying' ? 'active' : ''}"
-      on:click={() => navigate('/nowplaying')}
-  >
-      Programm
-  </button>
-  <button
-      class="{location.pathname === '/upcoming' ? 'active' : ''}"
-      on:click={() => navigate('/upcoming')}
-  >
-      Upcoming
-  </button>
-  <button
-      class="{location.pathname === '/warenkorb' ? 'active' : ''}"
-      on:click={() => navigate('/warenkorb')}
-  >
-      Warenkorb
-  </button>
+    /* Fehlernachrichten */
+    p.error {
+        color: #e74c3c;
+        text-align: center;
+        font-weight: bold;
+        margin-top: 20px;
+    }
 
-  <!-- Benutzerbereich -->
-  {#if $authStore.isLoggedIn}
-      <!-- Profil-Dropdown -->
-      <div class="profile-dropdown-container {isProfileDropdownOpen ? 'open' : ''}">
-          <div class="profile-container" on:click={toggleProfileMenu}>
-              {#if $authStore.profile_image && $authStore.profile_image !== 'default.png'}
-                  <img src={`/Profilbilder/${$authStore.profile_image}`} alt="Profilbild" class="profile-image" />
-              {:else}
-                  <div class="profile-initials">{$authStore.initials}</div>
-              {/if}
-          </div>
-          <div class="profile-dropdown-menu">
-              <ul>
-                  <li on:click={() => { navigate('/profile'); toggleProfileMenu(false); }}>Profil anzeigen</li>
-                  <li on:click={() => { navigate('/einstellungen'); toggleProfileMenu(false); }}>Einstellungen</li>
-                  <!-- Admin-Menüpunkt hinzufügen -->
-                  {#if $authStore.isAdmin}
-                      <li on:click={() => { navigate('/admin'); toggleProfileMenu(false); }}>Admin</li>
-                  {/if}
-                  <li on:click={() => { navigate('/bestellungen'); toggleProfileMenu(false); }}>Meine Bestellungen</li>
-                  <li on:click={logout}>Abmelden</li>
-              </ul>
-          </div>
-      </div>
-{:else}
-      <!-- Login-Dropdown -->
-      <div class="dropdown-container {isLoginOpen ? 'open' : ''}">
-          <button on:click={() => toggleLoginDropdown(!isLoginOpen)}>Login</button>
-          <div class="dropdown-menu">
-            <form on:submit|preventDefault={onLoginSubmit}>
-                  <input type="email" placeholder="E-Mail" bind:value={email} required />
-                  <input type="password" placeholder="Passwort" bind:value={password} required />
-                  <button type="submit">Einloggen</button>
-                  <div class="button-container" style="display: flex; justify-content: space-between; gap: 10px; margin-top: 10px;">
-                      <button type="button" on:click={() => { navigate('/register'); toggleLoginDropdown(false); }}
-                         style="background: none; border: none; color: #007bff; cursor: pointer;">
-                          Stattdessen Registrieren
-                      </button>
-                      <button type="button" on:click={() => { navigate('/forgot-password'); toggleLoginDropdown(false); }}
-                         style="background: none; border: none; color: #007bff; cursor: pointer;">
-                          Passwort vergessen?
-                      </button>
-                  </div>
-              </form>
-          </div>
-      </div>
-{/if}
-</nav>
+    /* Responsives Design */
+    @media (max-width: 768px) {
+        nav button {
+            padding: 0.5rem 1rem;
+            font-size: 0.9rem;
+        }
+
+        .dropdown-menu, .profile-dropdown-menu {
+            width: 280px;
+        }
+
+        .logo img {
+            height: 50px;
+        }
+
+        .profile-image, .profile-initials {
+            width: 40px;
+            height: 40px;
+        }
+    }
+
+    /* Sicherstellen, dass alle Bilder nicht überlaufen */
+    img {
+        max-width: 100%;
+        height: auto;
+        display: block;
+    }
+</style>

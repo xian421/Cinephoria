@@ -29,6 +29,7 @@
     import Bestellungen from './routes/Bestellungen.svelte';
     import Belohnung from './routes/Belohnung.svelte';
     import Leaderboard from './routes/leaderboard.svelte';
+    import Bestelluebersicht from './routes/Bestelluebersicht.svelte';
   
     // Import von Svelte Stores
     import { authStore, setAuth, updateAuth } from './stores/authStore.js';
@@ -231,6 +232,8 @@
         <Route path="/bestellungen" component={Bestellungen} />
         <Route path="/belohnung" component={Belohnung} />
         <Route path="/leaderboard" component={Leaderboard} />
+        <Route path="/bestelluebersicht" component={Bestelluebersicht} />
+
 
 
   
@@ -273,4 +276,21 @@
         <Footer firstCinema={firstCinema} />
     </Router>
   {/if}
+
+
+
+  <style>
+
+
+/* Globale Stile für html und body */
+:global(html, body) {
+ 
+    font-family: 'Roboto', sans-serif;
+    background: linear-gradient(135deg, #000428, #004e92);
+    color: #fff;
+    overflow-x: hidden; /* Verhindert horizontales Scrollen */
+  }
+
+  
+  </style>
   

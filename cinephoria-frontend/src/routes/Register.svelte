@@ -1,4 +1,3 @@
-<!-- src/routes/Register.svelte -->
 <script>
   import Swal from "sweetalert2";
 
@@ -7,7 +6,7 @@
   let email = "";
   let password = "";
 
-  const handleRegisterm = async () => {
+  const handleRegister = async () => {
     if (!firstName || !lastName || !email || !password) {
       Swal.fire({
         title: "Fehler",
@@ -61,22 +60,26 @@
 
 <style>
   .register-container {
-    max-width: 400px;
+    max-width: 500px;
     margin: 2rem auto;
     padding: 2rem;
-    background: linear-gradient(145deg, #f8f9fa, #e9ecef);
-    border-radius: 12px;
-    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
+    background: #fdfdfd;
+    border-radius: 20px;
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
     text-align: center;
-    font-family: Arial, sans-serif;
-    text-align: center;
+    font-family: "Roboto", sans-serif;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+  }
+
+  .register-container:hover {
+    transform: translateY(-10px);
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.2);
   }
 
   .register-container h1 {
-    font-size: 1.8rem;
-    color: #333;
+    font-size: 2rem;
+    color: #3498db;
     margin-bottom: 1.5rem;
-    font-weight: bold;
   }
 
   .form-group {
@@ -85,67 +88,58 @@
 
   .form-group input {
     width: 100%;
-    padding: 0.9rem;
-    border: 1px solid #ddd;
-    border-radius: 8px;
+    padding: 0.8rem;
+    border: 2px solid #ddd;
+    border-radius: 12px;
     font-size: 1rem;
-    color: #555;
-    background: #f8f9fa;
-    transition: all 0.3s ease;
+    color: #333;
+    background-color: #f9f9f9;
+    transition: border-color 0.3s ease, box-shadow 0.3s ease;
   }
 
   .form-group input:focus {
-    border-color: #1abc9c;
-    box-shadow: 0 0 8px rgba(26, 188, 156, 0.5);
+    border-color: #3498db;
+    box-shadow: 0 0 8px rgba(52, 152, 219, 0.5);
     outline: none;
-    background: #ffffff;
   }
 
   .register-button {
     width: 100%;
-    padding: 0.9rem;
+    padding: 0.8rem;
     font-size: 1.2rem;
     font-weight: bold;
-    color: #fff;
+    color: #ffffff;
     background: linear-gradient(145deg, #3498db, #2980b9);
     border: none;
-    border-radius: 8px;
+    border-radius: 12px;
     cursor: pointer;
-    transition: background 0.3s ease, transform 0.2s ease;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
+    transition: background 0.3s ease, transform 0.3s ease;
   }
 
   .register-button:hover {
     background: linear-gradient(145deg, #2980b9, #1abc9c);
+    transform: scale(1.05);
   }
 
   .register-button:active {
     transform: scale(0.98);
   }
 
-  .register-button:disabled {
-    background: #ccc;
-    cursor: not-allowed;
-    box-shadow: none;
+  .register-footer {
+    margin-top: 1rem;
+    font-size: 0.9rem;
+    color: #555;
   }
 
-  @media (max-width: 480px) {
-    .register-container {
-      padding: 1.5rem;
-    }
+  .register-footer a {
+    color: #3498db;
+    text-decoration: none;
+    transition: color 0.3s ease;
+  }
 
-    .register-container h1 {
-      font-size: 1.5rem;
-    }
-
-    .form-group input {
-      font-size: 0.9rem;
-    }
-
-    .register-button {
-      font-size: 1rem;
-      padding: 0.8rem;
-    }
+  .register-footer a:hover {
+    color: #1abc9c;
   }
 </style>
 
@@ -163,5 +157,9 @@
   <div class="form-group">
     <input type="password" id="password" bind:value={password} placeholder="Passwort" />
   </div>
-  <button class="register-button" on:click={handleRegisterm}>Registrieren</button>
+  <button class="register-button" on:click={handleRegister}>Registrieren</button>
+
+  <div class="register-footer">
+    <p>Hast du bereits ein Konto? <a href="/login">Hier einloggen</a></p>
+  </div>
 </div>

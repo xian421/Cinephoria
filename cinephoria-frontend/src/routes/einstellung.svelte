@@ -21,6 +21,7 @@
       border-radius: 12px;
       box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
       font-family: Arial, sans-serif;
+      max-width: 1200px;
     }
   
     /* Überschrift */
