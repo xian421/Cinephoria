@@ -536,9 +536,9 @@ input:checked + .slider:before {
         
 
         <div class="grid-container">
-            <!-- Dynamische Spaltenanzahl mit korrektem Template Literal -->
+            <!-- Spaltenbeschriftungen mit erstem leeren div -->
             <div class="column-labels" style={`grid-template-columns: 50px repeat(${grid[0].length}, 50px);`}>
-                <div></div>
+                <div class="row-selector"></div> <!-- Hinzugefügt: Klasse für gleiche Ausrichtung -->
                 {#each grid[0] as _, colIndex}
                     <div class="column-selector"
                          on:click={() => toggleColumn(colIndex)}
@@ -547,7 +547,7 @@ input:checked + .slider:before {
                     </div>
                 {/each}
             </div>
-
+        
             {#each grid as row, rowIndex}
                 <div class="row">
                     <div class="row-selector"
@@ -583,6 +583,7 @@ input:checked + .slider:before {
                 </div>
             {/each}
         </div>
+        
     {/if}
 
     <button on:click={() => navigate('/adminkinosaal')}>Zurück zu Überblick der Kinosäle</button>
