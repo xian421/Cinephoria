@@ -3,19 +3,21 @@
     import Swal from 'sweetalert2';
     import "@fortawesome/fontawesome-free/css/all.min.css";
     import { derived } from 'svelte/store';
-
     import { onMount } from 'svelte';
-import { cart, cartError, removeFromCart, clearCart, loadCart } from '../stores/cartStore.js';
+    import { cart, cartError, removeFromCart, clearCart, loadCart } from '../stores/cartStore.js';
 
-onMount(() => {
-    loadCart(); // Lade den Warenkorb beim Neuladen der Seite
-});
-    
+    onMount(() => {
+        loadCart(); // Lade den Warenkorb beim Neuladen der Seite
+    });
+
     // Rabattoptionen
     const discountOptions = [
         { id: 'none', label: 'Kein Rabatt', amount: 0 },
-        { id: 'student', label: 'Student', amount: 5 }, // 5 Euro Rabatt
-        { id: 'senior', label: 'Senior', amount: 3 }    // 3 Euro Rabatt
+        { id: 'student', label: 'Student', amount: 5 },
+        { id: 'senior', label: 'Senior', amount: 3 },
+        { id: 'child', label: 'Kind', amount: 2 },
+        { id: 'member', label: 'Mitglied', amount: 4 },
+        { id: 'somethingElse', label: 'Sonstiges', amount: 6 }
     ];
 
     // Reaktive Berechnung des Gesamtpreises unter Berücksichtigung der Rabatte
@@ -36,7 +38,6 @@ onMount(() => {
     // Gruppieren der Sitzplätze nach showtime_id
     const groupedCart = derived(cart, $cart => {
         const groups = {};
-
         $cart.forEach(seat => {
             const key = seat.showtime_id;
             if (!groups[key]) {
@@ -48,7 +49,6 @@ onMount(() => {
             }
             groups[key].seats.push(seat);
         });
-
         return Object.values(groups);
     });
 
@@ -131,8 +131,7 @@ onMount(() => {
     }
 
     // Funktion zum Aktualisieren des Rabatts eines Sitzplatzes
-    function handleDiscountChange(seat, event) {
-        const selectedId = event.target.value;
+    function handleDiscountChange(seat, selectedId) {
         const selectedDiscount = discountOptions.find(d => d.id === selectedId) || { id: 'none', label: 'Kein Rabatt', amount: 0 };
 
         // Update des Sitzplatzes mit dem ausgewählten Rabatt
@@ -141,139 +140,221 @@ onMount(() => {
         // Aktualisieren des Stores immutabel
         const updatedCart = $cart.map(s => s.seat_id === seat.seat_id && s.showtime_id === seat.showtime_id ? updatedSeat : s);
         cart.set(updatedCart);
+    }
 
-        // Optional: Anzeige einer Bestätigung
-        if (selectedId !== 'none') {
-            Swal.fire({
-                title: "Rabatt angewendet",
-                text: `Du hast einen Rabatt von ${selectedDiscount.amount} € für diesen Sitzplatz ausgewählt. Bitte bringe deinen ${selectedDiscount.label}-Ausweis mit.`,
-                icon: "success",
-                timer: 2000,
-                showConfirmButton: false
-            });
+    function getDiscountIcon(discountId) {
+        switch (discountId) {
+            case 'none': return 'fas fa-times-circle';
+            case 'student': return 'fas fa-user-graduate';
+            case 'senior': return 'fas fa-user';
+            case 'child': return 'fas fa-child';
+            case 'member': return 'fas fa-id-card';
+            case 'somethingElse': return 'fas fa-gift';
+            default: return 'fas fa-tag';
+        }
+    }
+
+    // Lokaler Zustand für sichtbare Rabatt-Auswahl
+    let visibleDiscountSeat = null;
+
+    function toggleDiscountSelection(seat) {
+        // Wenn der gleiche Sitz erneut geklickt wird, schließe die Auswahl
+        if (visibleDiscountSeat && visibleDiscountSeat.seat_id === seat.seat_id && visibleDiscountSeat.showtime_id === seat.showtime_id) {
+            visibleDiscountSeat = null;
         } else {
-            Swal.fire({
-                title: "Rabatt entfernt",
-                text: `Der Rabatt für diesen Sitzplatz wurde entfernt.`,
-                icon: "info",
-                timer: 2000,
-                showConfirmButton: false
-            });
+            visibleDiscountSeat = seat;
         }
     }
 </script>
 
 <style>
     .cart-container {
-    max-width: 900px;
-    margin: 2rem auto;
-    padding: 2rem;
-    background: #fdfdfd;
-    border-radius: 20px;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
-    font-family: 'Roboto', sans-serif;
-    transition: transform 0.3s ease, box-shadow 0.3s ease;
-}
+        margin: 2rem auto;
+        padding: 2rem;
+        background: #fdfdfd;
+        border-radius: 20px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        font-family: 'Roboto', sans-serif;
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+        max-width: 1200px;
+    }
 
-.cart-container:hover {
-    transform: translateY(-10px);
-    box-shadow: 0 15px 40px rgba(0, 0, 0, 0.15);
-}
+    .cart-container:hover {
+        box-shadow: 0 15px 40px rgba(0, 0, 0, 0.15);
+    }
 
-h1, h2 {
-    text-align: center;
-    color: #2c3e50;
-}
+    h1, h2 {
+        text-align: center;
+        color: #2c3e50;
+    }
 
-.cart-table {
-    width: 100%;
-    border-collapse: separate;
-    border-spacing: 0;
-    margin-bottom: 2rem;
-}
+    .cart-table {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0;
+        margin-bottom: 2rem;
+    }
 
-.cart-table th, .cart-table td {
-    padding: 1rem;
-    text-align: center;
-    border-bottom: 1px solid #ddd;
-}
-
-.cart-table th {
-    background-color: #ecf0f1;
-    color: #34495e;
-    font-weight: bold;
-}
-
-.cart-table tr:hover {
-    background-color: #f9f9f9;
-    transform: scale(1.01);
-    transition: transform 0.3s ease;
-}
-
-.remove-btn, .clear-btn, .proceed-btn {
-    font-size: 1rem;
-    font-weight: bold;
-    border: none;
-    border-radius: 10px;
-    padding: 0.7rem 1.2rem;
-    cursor: pointer;
-    transition: background-color 0.3s ease, transform 0.2s;
-}
-
-.remove-btn {
-    background-color: #e74c3c;
-    color: #fff;
-}
-
-.clear-btn {
-    background-color: #95a5a6;
-    color: white;
-}
-
-.proceed-btn {
-    background-color: #3498db;
-    color: #fff;
-}
-
-.remove-btn:hover, .clear-btn:hover, .proceed-btn:hover {
-    transform: translateY(-3px);
-    opacity: 0.9;
-}
-
-.showtime-details {
-    background: #f9f9f9;
-    border: 1px solid #ddd;
-    border-radius: 16px;
-    padding: 1.5rem;
-    margin-bottom: 1rem;
-    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
-}
-
-.discount-select {
-    padding: 0.5rem;
-    border-radius: 8px;
-    border: 1px solid #ccc;
-    transition: border-color 0.3s ease;
-}
-
-.discount-select:focus {
-    border-color: #3498db;
-    outline: none;
-}
-
-
-/* Responsive Design */
-@media (max-width: 768px) {
     .cart-table th, .cart-table td {
-        padding: 0.5rem;
-        font-size: 0.9rem;
+        padding: 1rem;
+        text-align: center;
+        border-bottom: 1px solid #ddd;
     }
-    button {
-        font-size: 0.9rem;
-        background: #3498db;
-    }
-}
 
+    .cart-table th {
+        background-color: #ecf0f1;
+        color: #34495e;
+        font-weight: bold;
+    }
+
+    .cart-table tr:hover {
+        background-color: #f9f9f9;
+    
+    }
+
+    .remove-btn, .clear-btn, .proceed-btn {
+        font-size: 1rem;
+        font-weight: bold;
+        border: none;
+        border-radius: 10px;
+        padding: 0.7rem 1.2rem;
+        cursor: pointer;
+        transition: background-color 0.3s ease, transform 0.2s;
+    }
+
+    .remove-btn {
+        background-color: #e74c3c;
+        color: #fff;
+    }
+
+    .clear-btn {
+        background-color: #95a5a6;
+        color: white;
+    }
+
+    .proceed-btn {
+        background-color: #3498db;
+        color: #fff;
+    }
+
+    .remove-btn:hover, .clear-btn:hover, .proceed-btn:hover {
+        transform: translateY(-3px);
+        opacity: 0.9;
+    }
+
+    .showtime-details {
+        background: #f9f9f9;
+        border: 1px solid #ddd;
+        border-radius: 16px;
+        padding: 1.5rem;
+        margin-bottom: 1rem;
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+    }
+
+    .discount-section {
+        position: relative;
+
+    }
+
+
+    .discount-section:hover {
+        position: relative;
+        transform: scale(1.0);
+        transition: transform 0.3s ease;
+        
+    }
+
+    .discount-selected {
+        display: flex;
+        gap: 0.5rem;
+        align-items: center;
+        justify-content: center;
+        background: #ecf0f1;
+        border-radius: 12px;
+        padding: 0.5rem 1rem;
+        cursor: pointer;
+        font-size: 0.9rem;
+        color: #34495e;
+        transition: background 0.3s, transform 0.3s;
+        margin: 0 auto;
+        width: fit-content;
+    }
+
+    .discount-selected i {
+        font-size: 1.2rem;
+    }
+
+    .discount-options-wrapper {
+        position: absolute;
+        top: 100%;
+        left: 50%;
+        transform: translateX(-50%);
+        background: #f9f9f9;
+        border: 1px solid #ddd;
+        border-radius: 16px;
+        padding: 1rem;
+        margin-top: 0.5rem;
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+        display: flex;
+        gap: 1rem;
+        
+        /* Horizontales Scrolling */
+        max-width: 220px; 
+        overflow-x: auto;
+        white-space: nowrap;
+    }
+
+    .discount-option {
+        background: #ecf0f1;
+        border-radius: 12px;
+        padding: 0.5rem 1rem;
+        cursor: pointer;
+        font-size: 0.9rem;
+        color: #34495e;
+        transition: background 0.3s, transform 0.3s;
+        display: inline-block; 
+        text-align: center;
+        min-width: 100px;
+        vertical-align: middle;
+    }
+
+    .discount-option i {
+        font-size: 1.5rem;
+        margin-bottom: 0.5rem;
+        display: block;
+    }
+
+    .discount-option:hover {
+        background: #dce4e6;
+        transform: scale(1.05);
+    }
+
+    .discount-option.selected {
+        background: #3498db;
+        color: #fff;
+    }
+
+    .button-group {
+        display: flex;
+        justify-content: center;
+        gap: 1rem;
+        margin-top: 2rem;
+    }
+
+    @media (max-width: 768px) {
+        .cart-table th, .cart-table td {
+            padding: 0.5rem;
+            font-size: 0.9rem;
+        }
+        button {
+            font-size: 0.9rem;
+            background: #3498db;
+        }
+
+        .discount-options-wrapper {
+            max-width: 180px; 
+        }
+    }
 </style>
 
 <main class="cart-container">
@@ -287,7 +368,6 @@ h1, h2 {
             <div class="showtime-details">
                 <h2>Film: {group.movie.title}</h2>
                 <p>Startzeit: {new Date(group.showtime.start_time).toLocaleString('de-DE', { hour: '2-digit', minute: '2-digit' })}, Kinosaal: {group.showtime.screen_id}</p>
-                
             </div>
 
             <!-- Anzeige der Sitzplätze für diese Gruppe -->
@@ -297,7 +377,7 @@ h1, h2 {
                         <th>Sitzplatz</th>
                         <th>Typ</th>
                         <th>Preis</th>
-                        <th>Ermäßigung auswählen</th>
+                        <th>Ermäßigung</th>
                         <th>Aktion</th>
                     </tr>
                 </thead>
@@ -324,11 +404,36 @@ h1, h2 {
                             <td>{seat.type ? seat.type.charAt(0).toUpperCase() + seat.type.slice(1) : 'Standard'}</td>
                             <td>{seat.price.toFixed(2)} € {seat.discount ? `(-${seat.discount.amount} €)` : ''}</td>
                             <td>
-                                <select class="discount-select" value={seat.discount?.id || 'none'} on:change={(e) => handleDiscountChange(seat, e)}>
-                                    {#each discountOptions as discount}
-                                        <option value="{discount.id}">{discount.label}</option>
-                                    {/each}
-                                </select>
+                                <!-- Aktuell ausgewählter Rabatt als Kärtchen -->
+                                <div class="discount-section">
+                                    <div class="discount-selected" on:click={() => toggleDiscountSelection(seat)}>
+                                        <i class={getDiscountIcon(seat.discount?.id || 'none')}></i>
+                                        <span>{seat.discount?.label || 'Kein Rabatt'}</span>
+                                        {#if seat.discount?.amount > 0}
+                                            <small>(-{seat.discount.amount} €)</small>
+                                        {/if}
+                                    </div>
+
+                                    {#if visibleDiscountSeat && visibleDiscountSeat.seat_id === seat.seat_id && visibleDiscountSeat.showtime_id === seat.showtime_id}
+                                        <div class="discount-options-wrapper">
+                                            {#each discountOptions as discount}
+                                                <div 
+                                                    class="discount-option {seat.discount?.id === discount.id ? 'selected' : ''}"
+                                                    on:click={() => {
+                                                        handleDiscountChange(seat, discount.id);
+                                                        toggleDiscountSelection(seat);
+                                                    }}
+                                                >
+                                                    <i class={getDiscountIcon(discount.id)}></i>
+                                                    <span>{discount.label}</span>
+                                                    {#if discount.amount > 0}
+                                                        <small>(-{discount.amount} €)</small>
+                                                    {/if}
+                                                </div>
+                                            {/each}
+                                        </div>
+                                    {/if}
+                                </div>
                             </td>
                             <td>
                                 <button class="remove-btn" on:click={() => handleRemove(seat.seat_id, seat.showtime_id)}>
@@ -339,6 +444,7 @@ h1, h2 {
                     {/each}
                 </tbody>
             </table>
+            
         {/each}
 
         <div class="button-group">

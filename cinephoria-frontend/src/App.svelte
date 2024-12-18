@@ -276,4 +276,21 @@
         <Footer firstCinema={firstCinema} />
     </Router>
   {/if}
+
+
+
+  <style>
+
+
+/* Globale Stile für html und body */
+:global(html, body) {
+ 
+    font-family: 'Roboto', sans-serif;
+    background: linear-gradient(135deg, #000428, #004e92);
+    color: #fff;
+    overflow-x: hidden; /* Verhindert horizontales Scrollen */
+  }
+
+  
+  </style>
   
