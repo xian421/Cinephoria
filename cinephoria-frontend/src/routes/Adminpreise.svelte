@@ -202,90 +202,115 @@
 <style>
    @import "@fortawesome/fontawesome-free/css/all.min.css";
 
+@import "@fortawesome/fontawesome-free/css/all.min.css";
+
+body {
+    margin: 0;
+    font-family: 'Roboto', sans-serif;
+    background: linear-gradient(135deg, #000428, #004e92);
+    color: #fff;
+    overflow-x: hidden;
+    max-width: 100%;
+}
+
 main {
     display: flex;
     flex-direction: column;
     align-items: center;
-    font-family: 'Roboto', sans-serif;
-    padding: 20px;
-    background-color: #f7f9fc;
-    border-radius: 10px;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    padding: 40px;
+    max-width: 1200px;
+    margin: 0 auto;
 }
 
-h1 {
-    font-size: 2.5rem;
-    color: #2c3e50;
-    margin-bottom: 1rem;
-    text-align: center;
-    border-bottom: 2px solid #3498db;
-    display: inline-block;
-    padding-bottom: 0.5rem;
+h1, h2 {
+    color: #2ecc71;
+    text-shadow: 0 0 20px #2ecc71, 0 0 40px #2ecc71;
+    margin-bottom: 40px;
+    font-size: 2rem;
+    animation: glow 2s infinite alternate;
 }
 
-h2 {
-    font-size: 1.8rem;
-    color: #34495e;
-    margin-top: 2rem;
-    margin-bottom: 1rem;
-    text-align: center;
+@keyframes glow {
+  from {
+    text-shadow: 0 0 10px #2ecc71, 0 0 20px #2ecc71;
+  }
+  to {
+    text-shadow: 0 0 20px #2ecc71, 0 0 40px #2ecc71;
+  }
 }
 
+.error {
+    color: #e74c3c;
+    font-weight: bold;
+    text-shadow: 0 0 10px #e74c3c;
+    margin-bottom: 20px;
+}
+
+/* Tabellen-Styling */
 table {
     border-collapse: collapse;
     width: 100%;
     max-width: 800px;
     margin-bottom: 20px;
-    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
-    background-color: #ffffff;
-    border-radius: 8px;
+    background: rgba(0,0,0,0.4);
+    border-radius: 12px;
     overflow: hidden;
+    box-shadow: 0 0 20px rgba(0,0,0,0.5);
+    color: #fff;
+    text-shadow: 0 0 5px #2ecc71;
 }
 
 th, td {
-    text-align: left;
-    padding: 15px;
-    border-bottom: 1px solid #ddd;
+    padding: 12px;
+    text-align: center;
     font-size: 1rem;
-    vertical-align: middle;
+    border-bottom: 1px solid #2ecc71;
 }
 
 th {
-    background-color: #3498db;
-    color: white;
-    font-weight: bold;
-    text-transform: uppercase;
-    white-space: nowrap;
-    padding: 15px;
-    text-align: center;
+    background-color: #000;
+    font-size: 1.1rem;
+    color: #2ecc71;
+    border-bottom: 2px solid #2ecc71;
 }
 
-td {
-    color: #555;
+tbody tr:nth-child(even) {
+    background-color: rgba(42,42,42,0.3);
 }
 
-.actions-column {
-    text-align: center;
-    width: 100px;
+tbody tr:hover {
+    background-color: rgba(46, 204, 113, 0.1);
+    cursor: pointer;
+    box-shadow: inset 0 0 10px #2ecc71;
 }
 
-input[type="number"], input[type="color"], select, input[type="text"] {
-    padding: 10px;
-    border: 1px solid #ddd;
-    border-radius: 5px;
-    margin-right: 10px;
-    font-size: 1rem;
+/* Inputs */
+input[type="text"],
+input[type="number"],
+input[type="color"],
+select {
     width: 100%;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-    transition: all 0.3s ease;
+    padding: 10px;
+    font-size: 1rem;
+    border-radius: 8px;
+    border: none;
+    background: #000;
+    color: #2ecc71;
+    box-shadow: inset 0 0 10px #2ecc71;
+    margin-bottom: 10px;
+    transition: box-shadow 0.3s;
+    text-shadow: none;
 }
 
-input[type="number"]:focus, input[type="color"]:focus, select:focus, input[type="text"]:focus {
-    border-color: #3498db;
+input[type="text"]:focus,
+input[type="number"]:focus,
+input[type="color"]:focus,
+select:focus {
+    box-shadow: inset 0 0 15px #2ecc71;
     outline: none;
-    box-shadow: 0 2px 6px rgba(52, 152, 219, 0.3);
 }
 
+/* Icon-Container */
 .icon-container {
     display: flex;
     align-items: center;
@@ -298,15 +323,16 @@ input[type="number"]:focus, input[type="color"]:focus, select:focus, input[type=
     justify-content: center;
     width: 60px;
     height: 40px;
-    background-color: var(--bg-color, #3498db);
+    background-color: var(--bg-color, #2ecc71);
     border-radius: 10%;
     transition: background-color 0.3s, transform 0.3s;
     cursor: pointer;
     position: relative;
+    box-shadow: 0 0 10px #2ecc71;
 }
 
 .icon-background i {
-    color: white;
+    color: #000;
     font-size: 18px;
 }
 
@@ -322,125 +348,55 @@ input[type="number"]:focus, input[type="color"]:focus, select:focus, input[type=
     cursor: pointer;
 }
 
+/* Buttons */
+button, .delete-button {
+    background-color: #2ecc71;
+    color: #000;
+    border: none;
+    padding: 12px;
+    border-radius: 8px;
+    font-size: 1rem;
+    cursor: pointer;
+    box-shadow: 0 0 10px #2ecc71;
+    transition: background-color 0.3s, transform 0.3s;
+    font-weight: bold;
+    margin: 5px;
+    text-shadow: 0 0 10px #000;
+}
 
-
+button:hover, .delete-button:hover {
+    background-color: #27ae60;
+    transform: translateY(-3px) scale(1.05);
+}
 
 .delete-button {
-    padding: 8px 16px;
-    font-size: 0.9rem;
-    cursor: pointer;
-    border: none;
     background-color: #e74c3c;
-    color: white;
-    border-radius: 5px;
-    transition: background-color 0.3s ease, transform 0.3s ease;
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 0 10px #e74c3c;
 }
 
 .delete-button:hover {
     background-color: #c0392b;
-    transform: translateY(-2px);
 }
 
-select {
-    padding: 10px;
-    border-radius: 8px;
-    border: 1px solid #ddd;
-    background-color: #f7f9fc;
-    font-size: 1rem;
-    transition: border-color 0.3s, box-shadow 0.3s;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-    width: 100%;
-}
-
-select:focus {
-    border-color: #3498db;
-    box-shadow: 0 2px 6px rgba(52, 152, 219, 0.3);
-    outline: none;
-}
-
-button {
-    padding: 12px 24px;
-    font-size: 1rem;
-    cursor: pointer;
-    border: none;
-    background-color: #3498db;
-    color: white;
-    border-radius: 8px;
-    transition: background-color 0.3s ease, transform 0.3s ease;
-    margin: 5px;
-    font-weight: bold;
-    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
-}
-
-button:hover {
-    background-color: #2980b9;
-    transform: translateY(-3px);
-}
-
+/* Button-Container */
 .button-container {
     display: flex;
     justify-content: center;
     gap: 15px;
     flex-wrap: wrap;
+    margin-top: 20px;
 }
 
-.new-seat-type {
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: 15px;
-    background-color: #ffffff;
-    padding: 20px;
-    border-radius: 8px;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-    margin-top: 2rem;
-    width: 100%;
-    max-width: 800px;
-}
-
-.new-seat-type .row {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 15px;
-}
-
-.new-seat-type .row > div {
-    flex: 1;
-    min-width: 200px;
-}
-
-.new-seat-type button {
-    grid-column: 1 / -1;
-    justify-self: center;
-    margin-top: 15px;
-}
-
-@media (max-width: 600px) {
-    input[type="number"], input[type="color"], select {
-        width: 100%;
-        margin-bottom: 10px;
-    }
-
-    button {
-        padding: 8px 16px;
-        font-size: 14px;
-    }
-
-    .new-seat-type {
-        grid-template-columns: 1fr;
-    }
-}
-
-
+/* Neuer Sitztyp Bereich */
 .new-seat-type {
     display: flex;
     flex-direction: column;
     text-align: center;
     gap: 15px;
-    background-color: #ffffff;
+    background: rgba(0,0,0,0.4);
     padding: 20px;
     border-radius: 8px;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 0 20px rgba(0,0,0,0.5);
     margin-top: 2rem;
     width: 100%;
     max-width: 500px;
@@ -451,26 +407,19 @@ button:hover {
     flex-direction: column;
     gap: 5px;
     width: 95%;
-}
-
-.field label {
-    font-size: 0.9rem;
-    color: #34495e;
+    margin: 0 auto;
+    color: #2ecc71;
+    text-shadow: 0 0 10px #2ecc71;
     font-weight: bold;
 }
 
-.field input, .field select {
-    padding: 10px;
-    font-size: 1rem;
-    border: 1px solid #ddd;
-    border-radius: 5px;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+.field label {
+    text-shadow: 0 0 10px #2ecc71;
 }
 
-.field input:focus, .field select:focus {
-    border-color: #3498db;
-    box-shadow: 0 2px 6px rgba(52, 152, 219, 0.3);
-    outline: none;
+.field input,
+.field select {
+    text-shadow: none;
 }
 
 

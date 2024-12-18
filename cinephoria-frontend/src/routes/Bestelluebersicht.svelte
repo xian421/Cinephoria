@@ -75,148 +75,164 @@
 </script>
 
 <style>
-    .orders-container {
-        max-width: 900px;
-        margin: 2rem auto;
-        padding: 2rem;
-        background: #fdfdfd;
-        border-radius: 20px;
-        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
-        font-family: 'Roboto', sans-serif;
-        text-align: left;
-        max-width: 1200px;
-    }
+    body {
+    margin: 0;
+    font-family: 'Roboto', sans-serif;
+    background: linear-gradient(135deg, #000428, #004e92);
+    color: #fff;
+    overflow-x: hidden;
+    max-width: 100%;
+}
 
-    .summary-cards {
-        display: flex;
-        gap: 1rem;
-        justify-content: space-between;
-        margin-bottom: 2rem;
-        flex-wrap: wrap;
-        max-width: 800px;
-    }
+main.orders-container {
+    max-width: 1200px;
+    margin: 4rem auto;
+    padding: 2rem;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 3rem;
+    text-align: left;
+}
 
-    .card {
-        flex: 1;
-        min-width: 250px;
-        background: #ffffff;
-        border-radius: 12px;
-        box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
-        padding: 1.5rem;
-        text-align: center;
-        transition: transform 0.3s ease, box-shadow 0.3s ease;
-    }
+h2 {
+    font-size: 2.5rem;
+    color: #2ecc71;
+    text-shadow: 0 0 20px #2ecc71, 0 0 40px #2ecc71;
+    text-align: center;
+    animation: glow 2s infinite alternate;
+    margin: 0;
+}
 
-    .card:hover {
-        transform: translateY(-10px);
-        box-shadow: 0 15px 40px rgba(0, 0, 0, 0.15);
-    }
+@keyframes glow {
+  from {
+    text-shadow: 0 0 10px #2ecc71, 0 0 20px #2ecc71;
+  }
+  to {
+    text-shadow: 0 0 20px #2ecc71, 0 0 40px #2ecc71;
+  }
+}
 
-    .card h3 {
-        font-size: 1.5rem;
-        margin: 0;
-        color: #3498db;
-    }
+.orders-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
 
-    .card p {
-        font-size: 1rem;
-        color: #555;
-    }
+.order-item {
+    background: rgba(0,0,0,0.4);
+    border-radius: 12px;
+    box-shadow: 0 0 20px rgba(0,0,0,0.5);
+    padding: 1rem;
+    display: flex;
+    position: relative;
+    justify-content: space-between;
+    align-items: center;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    cursor: pointer;
+}
 
-    .orders-list {
-        display: flex;
-        flex-direction: column;
-        gap: 1rem;
-    }
+.order-item:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 0 25px #2ecc71;
+}
 
-    .order-item {
-        background: #f9f9f9;
-        border-radius: 12px;
-        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-        padding: 1rem;
-        display: flex;
-        position: relative;
-        justify-content: space-between;
-        align-items: center;
-        transition: transform 0.3s;
-    }
+.order-details h4 {
+    margin: 0;
+    font-size: 1.5rem;
+    color: #2ecc71;
+    text-shadow: 0 0 5px #2ecc71;
+}
 
-    .order-item:hover {
-        transform: translateY(-5px);
-    }
+.order-details p {
+    margin: 0.3rem 0;
+    color: #ddd;
+    font-size: 1rem;
+    text-shadow: 0 0 2px #fff;
+}
 
-    .order-details {
-        flex-grow: 1;
+.price {
+    font-weight: bold;
+    font-size: 1.2rem;
+    color: #fff;
+    background: #2ecc71;
+    padding: 0.5rem 1rem;
+    border-radius: 8px;
+    text-shadow: 0 0 5px #fff;
+}
+
+/* Tooltip */
+.tooltip-info {
+    position: absolute;
+    top: 50%;
+    left: 105%;
+    transform: translateY(-50%);
+    width: 280px;
+    background: rgba(0,0,0,0.7);
+    color: #fff;
+    padding: 1rem;
+    border-radius: 12px;
+    box-shadow: 0 0 20px #2ecc71;
+    font-size: 0.9rem;
+    text-align: left;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    animation: fadeIn 0.3s ease forwards;
+    z-index: 10;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-50%) scale(0.95); }
+  to { opacity: 1; transform: translateY(-50%) scale(1); }
+}
+
+.tooltip-info h5 {
+    margin: 0;
+    font-size: 1.2rem;
+    color: #2ecc71;
+    text-shadow: 0 0 5px #2ecc71;
+    border-bottom: 1px solid #2ecc71;
+    padding-bottom: 0.3rem;
+}
+
+.tooltip-info p {
+    margin: 0.3rem 0;
+    color: #ddd;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+/* Kleine Icons für Sitze und Saal */
+.tooltip-info .info-icon {
+    color: #f1c40f;
+    text-shadow: 0 0 5px #f1c40f;
+}
+
+/* Fehler- und Lade-Anzeige */
+.error-message, .loading {
+    text-align: center;
+    font-size: 1.2rem;
+    margin-top: 3rem;
+    color: #e74c3c;
+    text-shadow: 0 0 5px #e74c3c;
+}
+
+/* Responsives Verhalten */
+@media (max-width: 600px) {
+    .tooltip-info {
+        left: 50%;
+        top: 110%;
+        transform: translate(-50%, 0);
+        width: 90%;
     }
 
     .order-details h4 {
-        margin: 0;
         font-size: 1.2rem;
-        color: #34495e;
     }
-
-    .order-details p {
-        margin: 0.3rem 0;
-        color: #777;
-    }
-
-    .price {
-        font-weight: bold;
-        color: #2ecc71;
-    }
-
-    .tooltip-info {
-    position: absolute;
-    left: 700px;
-    top: 50%;
-    transform: translateY(-50%);
-    width: 300px;
-    background: #f9f9f9;
-    color: #333;
-    padding: 0.75rem;
-    border-radius: 8px;
-  
-    font-size: 0.9rem;
-    text-align: left; /* Zentriert horizontal den Text */
-
-    /* Flexbox für vertikale und horizontale Zentrierung */
-    display: flex;
-    justify-content: center; /* Horizontal zentrieren */
-    align-items: center; /* Vertikal zentrieren */
-
-    /* Scrollbar bei Bedarf */
-    max-height: 110px;
 }
 
-
-.tooltip-info p {
-    margin: 0.5rem 0; /* Abstand zwischen Zeilen */
-}
-
-.tooltip-info .info-group {
-    display: flex;
-    justify-content: space-between; /* Trennung von Titel und Inhalt */
-    border-bottom: 1px solid #eaeaea; /* Dezente Trennlinie */
-    padding-bottom: 0.3rem;
-    margin-bottom: 0.3rem;
-}
-
-.tooltip-info .info-group:last-child {
-    border-bottom: none; /* Keine Linie für das letzte Element */
-}
-
-/* Sicherstellen, dass Elterncontainer kein Scroll-Verhalten blockieren */
-.order-item {
-    position: relative; /* Wichtig für absolute Positionierung der Tooltip-Box */
-    overflow: visible;
-}
-
-    .error-message, .loading {
-        text-align: center;
-        font-size: 1.2rem;
-        margin-top: 3rem;
-        color: #e74c3c;
-    }
 </style>
 
 <main class="orders-container">

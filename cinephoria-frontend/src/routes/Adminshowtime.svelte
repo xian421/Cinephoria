@@ -202,172 +202,201 @@
 </script>
 
 <style>
-    main {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        font-family: Arial, sans-serif;
-        padding: 20px;
-        background: linear-gradient(145deg, #f8f9fa, #ffffff);
-        min-height: 100vh;
-        color: #333;
-    }
+    body {
+    margin: 0;
+    font-family: 'Roboto', sans-serif;
+    background: linear-gradient(135deg, #000428, #004e92);
+    color: #fff;
+    overflow-x: hidden;
+    max-width: 100%;
+}
 
-    h1, h2 {
-        color: #1976d2;
-        margin-bottom: 20px;
-        text-align: center;
-    }
+main {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 40px;
+    max-width: 1200px;
+    margin: 0 auto;
+}
 
-    form {
-        display: flex;
-        flex-direction: column;
-        gap: 15px;
-        width: 100%;
-        max-width: 400px;
-        background: #ffffff;
-        padding: 20px;
-        border-radius: 12px;
-        box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
-    }
+h1, h2 {
+    color: #2ecc71;
+    text-shadow: 0 0 20px #2ecc71, 0 0 40px #2ecc71;
+    margin-bottom: 40px;
+    font-size: 2rem;
+    animation: glow 2s infinite alternate;
+}
 
-    form label {
-        display: flex;
-        flex-direction: column;
-        font-weight: bold;
-        font-size: 1rem;
-        margin-bottom: 5px;
-    }
+@keyframes glow {
+  from {
+    text-shadow: 0 0 10px #2ecc71, 0 0 20px #2ecc71;
+  }
+  to {
+    text-shadow: 0 0 20px #2ecc71, 0 0 40px #2ecc71;
+  }
+}
 
-    form select, form input {
-        padding: 10px;
-        font-size: 1rem;
-        border: 1px solid #ccc;
-        border-radius: 8px;
-        background: #f8f9fa;
-        transition: all 0.3s ease;
-    }
+/* Form Styling */
+form {
+    background: rgba(0,0,0,0.4);
+    padding: 20px;
+    border-radius: 12px;
+    box-shadow: 0 0 20px rgba(0,0,0,0.5);
+    width: 100%;
+    max-width: 400px;
+    color: #fff;
+    font-weight: bold;
+}
 
-    form select:focus, form input:focus {
-        border-color: #1976d2;
-        box-shadow: 0 0 8px rgba(25, 118, 210, 0.3);
-        outline: none;
-    }
+form label {
+    margin-bottom: 10px;
+    text-shadow: 0 0 10px #2ecc71;
+    font-size: 1.1rem;
+}
 
-    form button {
-        padding: 12px;
-        font-size: 1rem;
-        cursor: pointer;
-        border: none;
-        background: #1976d2;
-        color: #ffffff;
-        border-radius: 8px;
-        transition: background-color 0.3s ease, transform 0.2s ease;
-        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-    }
+form select, form input {
+    width: 100%;
+    padding: 10px;
+    font-size: 1rem;
+    border-radius: 8px;
+    border: none;
+    background: #000;
+    color: #2ecc71;
+    margin-top: 5px;
+    box-shadow: inset 0 0 10px #2ecc71;
+    transition: box-shadow 0.3s;
+}
 
-    form button:hover {
-        background-color: #1565c0;
-    }
+form select:hover, form input:hover,
+form select:focus, form input:focus {
+    box-shadow: inset 0 0 15px #2ecc71;
+    outline: none;
+}
 
-    form button:active {
-        transform: scale(0.98);
-    }
+form button {
+    background-color: #2ecc71;
+    color: #000;
+    border: none;
+    padding: 12px;
+    border-radius: 8px;
+    font-size: 1rem;
+    cursor: pointer;
+    box-shadow: 0 0 10px #2ecc71;
+    transition: background-color 0.3s, transform 0.3s;
+    margin-top: 10px;
+    width: 100%;
+    font-weight: bold;
+    text-shadow: 0 0 10px #000;
+}
 
-    .back-button {
-        margin-top: 20px;
-        background-color: #757575;
-        font-size: 1rem;
-        padding: 10px 20px;
-        border-radius: 8px;
-        color: #fff;
-        cursor: pointer;
-        transition: background-color 0.3s ease;
-    }
+form button:hover {
+    background-color: #27ae60;
+    transform: translateY(-3px) scale(1.05);
+    box-shadow: 0 0 15px #27ae60;
+}
 
-    .back-button:hover {
-        background-color: #616161;
-    }
+/* Error Text */
+.error {
+    color: #e74c3c;
+    font-weight: bold;
+    margin-bottom: 20px;
+    text-shadow: 0 0 10px #e74c3c;
+}
 
-    .error {
-        color: red;
-        font-weight: bold;
-        margin-bottom: 20px;
-    }
+/* Table Styling */
+table {
+    width: 100%;
+    max-width: 800px;
+    border-collapse: collapse;
+    margin-top: 30px;
+    background: rgba(0,0,0,0.4);
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 0 20px rgba(0,0,0,0.5);
+    color: #fff;
+}
 
-    table {
-        width: 100%;
-        max-width: 800px;
-        border-collapse: collapse;
-        margin-top: 30px;
-        background: #ffffff;
-        border-radius: 12px;
-        overflow: hidden;
-        box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
-    }
+th, td {
+    padding: 12px;
+    text-align: center;
+    font-size: 1rem;
+    border-bottom: 1px solid #2ecc71;
+    text-shadow: 0 0 5px #2ecc71;
+}
 
-    th, td {
-        border: 1px solid #ddd;
-        padding: 12px;
-        text-align: center;
-        font-size: 1rem;
-    }
+th {
+    background-color: #000;
+    font-size: 1.1rem;
+    color: #2ecc71;
+    border-bottom: 2px solid #2ecc71;
+}
 
-    th {
-        background-color: #1976d2;
-        color: white;
-        font-size: 1.1rem;
-    }
+tbody tr:nth-child(even) {
+    background-color: rgba(42, 42, 42, 0.3);
+}
 
-    tbody tr:nth-child(even) {
-        background-color: #f8f9fa;
-    }
+tbody tr:hover {
+    background-color: rgba(46, 204, 113, 0.1);
+    cursor: pointer;
+    box-shadow: inset 0 0 10px #2ecc71;
+}
 
-    tbody tr:hover {
-        background-color: #f1f1f1;
-    }
+/* Edit Buttons */
+.edit-buttons {
+    display: flex;
+    gap: 10px;
+    margin-top: 10px;
+}
 
-    .edit-form {
-        display: flex;
-        flex-direction: column;
-        gap: 15px;
-        width: 100%;
-        max-width: 400px;
-        margin: 20px auto;
-        background: #ffffff;
-        padding: 20px;
-        border-radius: 12px;
-        box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
-    }
+.edit-buttons button {
+    flex: 1;
+    background-color: #2ecc71;
+    color: #000;
+    border: none;
+    padding: 10px;
+    border-radius: 8px;
+    transition: background-color 0.3s, transform 0.3s;
+    box-shadow: 0 0 10px #2ecc71;
+    font-weight: bold;
+    text-shadow: 0 0 10px #000;
+}
 
-    .edit-buttons {
-        display: flex;
-        gap: 10px;
-        margin-top: 10px;
-    }
+.edit-buttons button:hover {
+    background-color: #27ae60;
+    transform: translateY(-3px) scale(1.05);
+}
 
-    .cancel-button {
-        background-color: #f44336;
-        padding: 12px;
-        font-size: 1rem;
-        color: white;
-        border: none;
-        border-radius: 8px;
-        cursor: pointer;
-        transition: background-color 0.3s ease;
-    }
+.cancel-button {
+    background-color: #e74c3c !important;
+    box-shadow: 0 0 10px #e74c3c;
+}
 
-    .cancel-button:hover {
-        background-color: #d32f2f;
-    }
+.cancel-button:hover {
+    background-color: #c0392b !important;
+}
 
-    .edit-buttons button {
-        flex: 1;
-    }
+/* Back Button */
+.back-button {
+    margin-top: 20px;
+    background-color: #2ecc71;
+    font-size: 1rem;
+    padding: 10px 20px;
+    border-radius: 8px;
+    color: #000;
+    cursor: pointer;
+    box-shadow: 0 0 10px #2ecc71;
+    transition: background-color 0.3s, transform 0.3s;
+    font-weight: bold;
+    text-shadow: 0 0 10px #000;
+}
 
-    .edit-buttons button:hover {
-        transform: none;
-    }
+.back-button:hover {
+    background-color: #27ae60;
+    transform: translateY(-3px) scale(1.05);
+}
+
+
 </style>
 
 
