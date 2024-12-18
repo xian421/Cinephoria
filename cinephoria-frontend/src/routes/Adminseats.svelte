@@ -298,6 +298,7 @@ main {
     margin: 0 auto;
     text-align: center;
     gap: 30px; /* Mehr Abstand zwischen den Sektionen */
+    margin-top: 4rem;
 }
 
 h1 {
@@ -442,7 +443,7 @@ button:hover {
     display: flex;
     align-items: center;
     justify-content: center;
-    margin-bottom: 20px;
+    margin-bottom: 1px;
 }
 
 .switch {
@@ -515,13 +516,7 @@ input:checked + .slider:before {
     {:else}
         <h1>Kinositz-Editor für Screen {screenId}</h1>
 
-        <div class="controls">
-            <button on:click={submitChanges} class="submit-button">EINTRAGEN</button>
-            <button on:click={addRow} class="add-buttons" disabled={isEditMode}>Zeile hinzufügen</button>
-            <button on:click={addColumn} class="add-buttons" disabled={isEditMode}>Spalte hinzufügen</button>
-            <button on:click={removeRow} class="remove-buttons" disabled={isEditMode || grid.length <= 1}>Zeile entfernen</button>
-            <button on:click={removeColumn} class="remove-buttons" disabled={isEditMode || grid[0].length <= 1}>Spalte entfernen</button>
-        </div>
+        
         
         <div class="mode-switch">
             <label class="switch">
@@ -530,9 +525,15 @@ input:checked + .slider:before {
             </label>
             <span class="mode-label">{mode()}</span>
         </div>
+
+        <div class="controls">
+            <button on:click={submitChanges} class="submit-button">EINTRAGEN</button>
+            <button on:click={addRow} class="add-buttons" disabled={isEditMode}>Zeile hinzufügen</button>
+            <button on:click={addColumn} class="add-buttons" disabled={isEditMode}>Spalte hinzufügen</button>
+            <button on:click={removeRow} class="remove-buttons" disabled={isEditMode || grid.length <= 1}>Zeile entfernen</button>
+            <button on:click={removeColumn} class="remove-buttons" disabled={isEditMode || grid[0].length <= 1}>Spalte entfernen</button>
+        </div>
         
-        <p> LEINWAND <br>
-        _____________________________________ </p>
 
         <div class="grid-container">
             <!-- Dynamische Spaltenanzahl mit korrektem Template Literal -->
