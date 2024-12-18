@@ -103,5 +103,13 @@
             <h2>Discounts</h2>
             <p>Neue Discounts hinzufügen und verwalten.</p>
             <button>Discounts verwalten</button>
+        </div>
+
+        <!-- Karte für Rewards -->
+        <div class="card" on:click={() => navigate('/adminrewards')}>
+            <h2>Belohnungen</h2>
+            <p>Neue Belohnungen hinzufügen und verwalten.</p>
+            <button>Belohnungen verwalten</button>
+        </div>
     </div>
 </main>

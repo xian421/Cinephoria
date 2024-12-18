@@ -2059,6 +2059,93 @@ def get_points_transactions():
     except Exception as e:
         logger.error(f"Fehler beim Abrufen der Punkte-Transaktionen: {e}")
         return jsonify({'error': 'Fehler beim Abrufen der Punkte-Transaktionen'}), 500
+    
+
+
+@app.route('/rewards', methods=['GET'])
+def get_rewards():
+    try:
+        with psycopg2.connect(DATABASE_URL) as conn:
+            with conn.cursor(cursor_factory=psycopg2.extras.DictCursor) as cursor:
+                cursor.execute("SELECT reward_id, title, points, description, image FROM rewards")
+                rewards = cursor.fetchall()
+                rewards_list = [dict(r) for r in rewards]
+        return jsonify({'rewards': rewards_list}), 200
+    except Exception as e:
+        logger.error(f"Fehler beim Abrufen der Belohnungen: {e}")
+        return jsonify({'error': 'Fehler beim Abrufen der Belohnungen'}), 500
+    
+@app.route('/rewards', methods=['POST'])
+@admin_required
+def add_reward():
+    data = request.get_json()
+    title = data.get('title')
+    points = data.get('points')
+    description = data.get('description', '')
+    image = data.get('image', '')
+
+    if not title or not points:
+        return jsonify({'error': 'Titel und Punkte sind erforderlich'}), 400
+
+    try:
+        with psycopg2.connect(DATABASE_URL) as conn:
+            with conn.cursor() as cursor:
+                cursor.execute("""
+                    INSERT INTO rewards (title, points, description, image)
+                    VALUES (%s, %s, %s, %s)
+                """, (title, points, description, image))
+                conn.commit()
+                return jsonify({'message': 'Belohnung hinzugefügt'}), 201
+    except Exception as e:
+        logger.error(f"Fehler beim Hinzufügen der Belohnung: {e}")
+        return jsonify({'error': 'Fehler beim Hinzufügen der Belohnung'}), 500
+    
+@app.route('/rewards/<int:reward_id>', methods=['PUT'])
+@admin_required
+def update_reward(reward_id):
+    data = request.get_json()
+    title = data.get('title')
+    points = data.get('points')
+    description = data.get('description', '')
+    image = data.get('image', '')
+
+    if not title or not points:
+        return jsonify({'error': 'Titel und Punkte sind erforderlich'}), 400
+
+    try:
+        with psycopg2.connect(DATABASE_URL) as conn:
+            with conn.cursor() as cursor:
+                cursor.execute("""
+                    UPDATE rewards
+                    SET title = %s,
+                        points = %s,
+                        description = %s,
+                        image = %s
+                    WHERE reward_id = %s
+                """, (title, points, description, image, reward_id))
+                if cursor.rowcount == 0:
+                    return jsonify({'error': 'Belohnung nicht gefunden'}), 404
+                conn.commit()
+                return jsonify({'message': 'Belohnung aktualisiert'}), 200
+    except Exception as e:
+        logger.error(f"Fehler beim Aktualisieren der Belohnung: {e}")
+        return jsonify({'error': 'Fehler beim Aktualisieren der Belohnung'}), 500
+    
+
+@app.route('/rewards/<int:reward_id>', methods=['DELETE'])
+@admin_required
+def delete_reward(reward_id):
+    try:
+        with psycopg2.connect(DATABASE_URL) as conn:
+            with conn.cursor() as cursor:
+                cursor.execute("DELETE FROM rewards WHERE reward_id = %s", (reward_id,))
+                if cursor.rowcount == 0:
+                    return jsonify({'error': 'Belohnung nicht gefunden'}), 404
+                conn.commit()
+                return jsonify({'message': 'Belohnung gelöscht'}), 200
+    except Exception as e:
+        logger.error(f"Fehler beim Löschen der Belohnung: {e}")
+        return jsonify({'error': 'Fehler beim Löschen der Belohnung'}), 500
 
 
 if __name__ == '__main__':

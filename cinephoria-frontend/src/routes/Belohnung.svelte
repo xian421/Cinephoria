@@ -1,26 +1,64 @@
 <script>
     import Swal from 'sweetalert2';
+    import { onMount } from 'svelte';
+    import { pointsStore, fetchUserPointsStore, redeemUserPointsStore } from '../stores/pointsStore';
+    import { fetchRewards } from '../services/api';
 
     // Beispielhafte Belohnungen, jedes Objekt hat ein `image`-Attribut
-    const rewards = [
-        { id: 1, title: 'Popcorn-Gutschein', points: 50, description: 'Ein mittelgroßer Popcorn-Gutschein.', image: '/popcorn.webp' },
-        { id: 2, title: 'Freikarte', points: 100, description: 'Eine kostenlose Kinokarte für einen Film deiner Wahl.', image: '/freikarte.webp' },
-        { id: 3, title: 'VIP-Lounge Zugang', points: 200, description: 'Ein exklusiver Zugang zur VIP-Lounge.', image: '/vip.webp' },
-        { id: 4, title: 'Softdrink-Gutschein', points: 30, description: 'Ein Softdrink deiner Wahl.', image: '/trinken.webp' },
-        { id: 5, title: 'Nacho-Gutschein', points: 70, description: 'Eine Portion leckere Nachos.', image: '/nachos.webp' },
-        { id: 6, title: 'Premium-Upgrade', points: 150, description: 'Upgraden zu Premium-Sitzen.', image: '/premium.webp' }
-    ];
+    let rewards = [];
 
-    let userPoints = 150; // Beispielhafte Punkte des Benutzers
+    let userPoints = 0;
+    let errorMessage = '';
 
-    function redeemReward(reward) {
+    // Abrufen des Tokens (angepasst an deine Authentifizierungslogik)
+    const token = localStorage.getItem('token'); // Stelle sicher, dass der Token korrekt gespeichert ist
+
+    onMount(async () => {
+        if (!token) {
+            errorMessage = 'Kein Authentifizierungs-Token gefunden.';
+            console.error(errorMessage);
+            return;
+        }
+
+        try {
+            const points = await fetchUserPointsStore(token);
+            console.log(`Aktuelle Punkte: ${points}`);
+        } catch (error) {
+            errorMessage = error.message || 'Fehler beim Abrufen der Punkte.';
+            console.error('Fehler beim Abrufen der Punkte:', errorMessage);
+        }
+
+        try {
+            rewards = await fetchRewards();
+        } catch (error) {
+            errorMessage = error.message || 'Fehler beim Abrufen der Belohnungen.';
+            console.error('Fehler beim Abrufen der Belohnungen:', errorMessage);
+        }
+    });
+
+    // Abonniere den Store, um den Punktestand zu aktualisieren
+    pointsStore.subscribe(value => {
+        userPoints = value;
+        console.log(`Store Points Updated: ${userPoints}`);
+    });
+
+    async function redeemReward(reward) {
         if (userPoints >= reward.points) {
-            userPoints -= reward.points;
-            Swal.fire({
-                title: 'Erfolg!',
-                text: `Du hast die Belohnung "${reward.title}" eingelöst!`,
-                icon: 'success'
-            });
+            try {
+                const message = await redeemUserPointsStore(token, reward.points);
+                console.log(`Belohnung eingelöst: ${reward.title}, verbleibende Punkte: ${userPoints}`);
+                Swal.fire({
+                    title: 'Erfolg!',
+                    text: `Du hast die Belohnung "${reward.title}" eingelöst!`,
+                    icon: 'success'
+                });
+            } catch (error) {
+                Swal.fire({
+                    title: 'Fehler',
+                    text: error.message,
+                    icon: 'error'
+                });
+            }
         } else {
             Swal.fire({
                 title: 'Nicht genug Punkte',
@@ -118,6 +156,13 @@
         <h1>Belohnungen einlösen</h1>
         <p>Wähle eine Belohnung aus und löse deine gesammelten Punkte ein!</p>
     </div>
+
+    <!-- Fehlernachricht anzeigen -->
+    {#if errorMessage}
+        <div class="error-message">
+            <p>{errorMessage}</p>
+        </div>
+    {/if}
 
     <!-- Benutzerpunkte anzeigen -->
     <div class="summary-points">
