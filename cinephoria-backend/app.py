@@ -2074,6 +2074,38 @@ def get_rewards():
     except Exception as e:
         logger.error(f"Fehler beim Abrufen der Belohnungen: {e}")
         return jsonify({'error': 'Fehler beim Abrufen der Belohnungen'}), 500
+    
+@app.route('/rewards', methods=['POST'])
+@admin_required
+def add_reward():
+    data = request.get_json()
+    title = data.get('title')
+    points = data.get('points')
+    description = data.get('description', '')
+    image = data.get('image', '')
+    # Wie sieht heir der Body aus in json Format:
+    # {
+    #     "title": "Belohnung 1",
+    #     "points": 100,
+    #     "description": "Beschreibung der Belohnung",
+    #     "image": "/popcorn.webp"
+    # }
+
+    if not title or not points:
+        return jsonify({'error': 'Titel und Punkte sind erforderlich'}), 400
+
+    try:
+        with psycopg2.connect(DATABASE_URL) as conn:
+            with conn.cursor() as cursor:
+                cursor.execute("""
+                    INSERT INTO rewards (title, points, description, image)
+                    VALUES (%s, %s, %s, %s)
+                """, (title, points, description, image))
+                conn.commit()
+                return jsonify({'message': 'Belohnung hinzugefügt'}), 201
+    except Exception as e:
+        logger.error(f"Fehler beim Hinzufügen der Belohnung: {e}")
+        return jsonify({'error': 'Fehler beim Hinzufügen der Belohnung'}), 500
 
 
 if __name__ == '__main__':
