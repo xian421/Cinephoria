@@ -259,8 +259,7 @@
 
     .discount-section:hover {
         position: relative;
-        transform: scale(1.0);
-        transition: transform 0.3s ease;
+        transform: scale(1.05);
         
     }
 

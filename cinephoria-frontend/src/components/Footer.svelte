@@ -109,7 +109,7 @@
       color: #fff;
       padding: 2rem 1rem;
       border-radius: 0 0 12px 12px;
-      background: #003869;
+     
       display: flex;
       flex-direction: column;
       align-items: center;
@@ -122,33 +122,40 @@
 
   /* Button-Stile */
   button {
-      font-size: 1.2rem;
-      font-weight: bold;
-      color: #fff;
-      background: transparent;
-      border: 2px solid #fff;
-      border-radius: 12px;
-      padding: 1rem 2rem;
-      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-      cursor: pointer;
-      transition: all 0.3s ease;
-      min-width: 160px;
-      text-align: center;
+    font-size: 1rem;
+        font-weight: bold;
+        background: transparent;
+        color: #fff;
+        border: 2px solid transparent;
+        border-radius: 12px;
+        padding: 0.6rem 1.2rem;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        margin: 0 0.5rem;
+        text-shadow: 0 0 5px #fff;
+        z-index: 1001;
   }
 
   button:hover {
-      border-color: #1abc9c;
-      transform: scale(1.1);
-      color: #1abc9c;
+    border-color: #2ecc71;
+        transform: scale(1.05);
+        box-shadow: 0 0 10px #2ecc71;
   }
 
   /* Anpassung der Footer-Buttons */
   .footer-buttons {
-      display: flex;
-      gap: 1.5rem;
-      margin-bottom: 1.5rem;
-      flex-wrap: wrap;
-      justify-content: center;
+    font-size: 1rem;
+        font-weight: bold;
+        background: transparent;
+        color: #fff;
+        border: 2px solid transparent;
+        border-radius: 12px;
+        padding: 0.6rem 1.2rem;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        margin: 0 0.5rem;
+        text-shadow: 0 0 5px #fff;
+        z-index: 1001;
   }
 
   .footer-buttons button {
@@ -162,9 +169,9 @@
   }
 
   .footer-buttons button:hover {
-      border-color: #1abc9c;
-      transform: scale(1.1);
-      background: rgba(26, 188, 156, 0.2);
+    border-color: #2ecc71;
+        transform: scale(1.05);
+        box-shadow: 0 0 10px #2ecc71;
   }
 
   /* Social-Media-Icons */
@@ -190,8 +197,9 @@
   }
 
   .social-icons a:hover {
-      background: #1abc9c;
-      transform: scale(1.1);
+     border-color: #2ecc71;
+        transform: scale(1.05);
+        box-shadow: 0 0 10px #2ecc71;
   }
 
   .social-icons img {

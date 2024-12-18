@@ -238,7 +238,7 @@
     position: relative;
     min-height: 100vh;
     padding: 2rem;
-    background: linear-gradient(135deg, #000428, #004e92);
+    
     overflow: hidden;
   }
 
@@ -246,6 +246,7 @@
   .header-section {
     text-align: center;
     margin-bottom: 3rem;
+    margin-top: 4rem;
   }
 
   .header-text {
@@ -308,7 +309,7 @@
   section {
     margin: 20px 0;
     padding: 10px 20px;
-    background: rgba(0, 0, 0, 0.5);
+    background: rgba(0, 0, 0, 0.1);
     border-radius: 12px;
   }
 
