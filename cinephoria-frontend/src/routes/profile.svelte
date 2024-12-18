@@ -8,7 +8,7 @@
     import { navigate } from 'svelte-routing';
     import ProfileImage from './ProfileImage.svelte';
     import ProfileModal from './ProfileModal.svelte';
-  
+
     let profile = {
         vorname: '',
         nachname: '',
@@ -20,7 +20,7 @@
     let error = null;
     let isModalOpen = false;
     let availableImages = [];
-  
+
     onMount(async () => {
         const token = get(authStore).token;
         if (!token) {
@@ -34,26 +34,23 @@
             });
             return;
         }
-  
+
         try {
-            // Profilinformationen abrufen
             const data = await fetchProfile(token);
             profile = data;
-  
-            // Aktualisieren Sie den authStore mit den neuen Profilinformationen
+
             updateAuth(current => ({
                 ...current,
                 isLoggedIn: true,
                 userFirstName: data.vorname,
                 userLastName: data.nachname,
                 initials: getInitials(data.vorname, data.nachname),
-                isAdmin: data.role === 'admin', // Passen Sie dies an Ihre Rollenlogik an
+                isAdmin: data.role === 'admin',
                 profile_image: data.profile_image || 'default.png',
-                email: data.email, // Fügen Sie weitere benötigte Felder hinzu
+                email: data.email,
                 role: data.role
             }));
-  
-            // Verfügbare Profilbilder abrufen
+
             const images = await fetchAvailableProfileImages(token);
             availableImages = images;
         } catch (err) {
@@ -69,32 +66,25 @@
             isLoading = false;
         }
     });
-  
-    // Funktion zur Berechnung der Initialen
+
     function getInitials(vorname, nachname) {
         const vorInitial = vorname ? vorname.charAt(0).toUpperCase() : '';
         const nachInitial = nachname ? nachname.charAt(0).toUpperCase() : '';
         return `${vorInitial}${nachInitial}`;
     }
-  
-    // Funktionen zur Handhabung des Modals
+
     function openModal() {
         isModalOpen = true;
-        console.log('Modal geöffnet'); // Log Modal öffnen
     }
-  
+
     function closeModal() {
         isModalOpen = false;
-        console.log('Modal geschlossen'); // Log Modal schließen
     }
-  
-    // Funktion zum Aktualisieren des Profilbildes
+
     async function selectProfileImage(imageName) {
-        console.log('Ausgewähltes Bild:', imageName); // Log ausgewähltes Bild
         const token = get(authStore).token;
         try {
-            const response = await updateProfileImage(token, imageName);
-            console.log('Antwort nach Aktualisierung des Profilbildes:', response); // Log Antwort
+            await updateProfileImage(token, imageName);
             profile.profile_image = imageName;
             updateAuth(current => ({
                 ...current,
@@ -118,115 +108,213 @@
             });
         }
     }
-  </script>
-  
-  <!-- Ihr CSS bleibt unverändert -->
-  
-  <main>
-    {#if isLoading}
-        <p class="loading">Profil wird geladen...</p>
-    {:else if error}
-        <p class="error-message">{error}</p>
-    {:else}
-        <div class="profile-container">
-            <div class="profile-header">
-                {#if profile.profile_image && profile.profile_image !== 'default.png'}
-                    <ProfileImage src={`/Profilbilder/${profile.profile_image}`} on:click={openModal} />
-                {:else}
-                    <div class="initials" on:click={openModal}>
-                        {getInitials(profile.vorname, profile.nachname)}
+</script>
+
+<div class="background">
+    <header class="header-section">
+        <h1 class="header-text">CINEPHORIA - Dein Profil</h1>
+        <p class="tagline">Verwalte deine Daten in futuristischem Stil!</p>
+    </header>
+
+    <main>
+        {#if isLoading}
+            <p class="loading">Profil wird geladen...</p>
+        {:else if error}
+            <p class="error-message">{error}</p>
+        {:else}
+            <div class="profile-container">
+                <!-- Eine Art Überschrift / Titel für die Profilsektion -->
+                <h2 class="section-title">Übersicht deiner persönlichen Daten</h2>
+
+                <div class="profile-header">
+                    {#if profile.profile_image && profile.profile_image !== 'default.png'}
+                        <div class="image-container" on:click={openModal} title="Klicke, um dein Profilbild zu ändern">
+                            <ProfileImage src={`/Profilbilder/${profile.profile_image}`} class="profile-image-wrapper" />
+                            <div class="change-hint">Profilbild ändern</div>
+                        </div>
+                    {:else}
+                        <div class="initials" on:click={openModal} title="Klicke, um dein Profilbild zu ändern">
+                            {getInitials(profile.vorname, profile.nachname)}
+                            <div class="change-hint">Profilbild ändern</div>
+                        </div>
+                    {/if}
+
+                    <div class="profile-details">
+                        <h1>{profile.vorname} {profile.nachname}</h1>
+                        <p class="email">{profile.email}</p>
+                        <!-- Rolle mit einem kleinen Badge dargestellt -->
+                        <div class="role-badge" title="Deine Rolle im System">
+                            {#if profile.role === 'admin'}
+                                <i class="fas fa-user-shield"></i> Administrator
+                            {:else}
+                                <i class="fas fa-user"></i> {profile.role.charAt(0).toUpperCase() + profile.role.slice(1)}
+                            {/if}
+                        </div>
                     </div>
+                </div>
+
+                <div class="profile-info">
+                    <div>
+                        <h3>Vorname</h3>
+                        <p>{profile.vorname}</p>
+                    </div>
+                    <div>
+                        <h3>Nachname</h3>
+                        <p>{profile.nachname}</p>
+                    </div>
+                    <div>
+                        <h3>Email</h3>
+                        <p>{profile.email}</p>
+                    </div>
+                    <div>
+                        <h3>Rolle</h3>
+                        <p>{profile.role}</p>
+                    </div>
+                </div>
+
+                <div class="profile-actions">
+                    <button on:click={() => navigate('/edit-profile')}>
+                        <i class="fas fa-user-edit"></i> Profil bearbeiten
+                    </button>
+                </div>
+
+                <button class="back-button" on:click={() => navigate('/')}>
+                    <i class="fas fa-home"></i> Zurück zur Startseite
+                </button>
+
+                {#if isModalOpen}
+                    <ProfileModal 
+                        images={availableImages} 
+                        selectedImage={profile.profile_image} 
+                        onSelect={selectProfileImage} 
+                        onClose={closeModal} 
+                    />
                 {/if}
-                <div class="profile-details">
-                    <h1>{profile.vorname} {profile.nachname}</h1>
-                    <p>{profile.email}</p>
-                </div>
             </div>
-  
-            <div class="profile-info">
-                <div>
-                    <h3>Vorname</h3>
-                    <p>{profile.vorname}</p>
-                </div>
-                <div>
-                    <h3>Nachname</h3>
-                    <p>{profile.nachname}</p>
-                </div>
-                <div>
-                    <h3>Email</h3>
-                    <p>{profile.email}</p>
-                </div>
-                <div>
-                    <h3>Rolle</h3>
-                    <p>{profile.role}</p>
-                </div>
-            </div>
-  
-            <div class="profile-actions">
-                <button on:click={() => navigate('/edit-profile')}>Profil bearbeiten</button>
-            </div>
-  
-            <button class="back-button" on:click={() => navigate('/')}>Zurück zur Startseite</button>
-  
-            {#if isModalOpen}
-                <ProfileModal 
-                    images={availableImages} 
-                    selectedImage={profile.profile_image} 
-                    onSelect={selectProfileImage} 
-                    onClose={closeModal} 
-                />
-            {/if}
-        </div>
-    {/if}
-  </main>
-  
-  <style>
-    /* Gesamtcontainer */
-.profile-container {
-    max-width: 900px;
-    margin: 2rem auto;
-    padding: 2rem;
-    background: #fdfdfd;
-    border-radius: 20px;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        {/if}
+    </main>
+</div>
+
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap');
+@import url('https://use.fontawesome.com/releases/v5.15.4/css/all.css');
+
+* {
+    box-sizing: border-box;
+}
+
+
+
+body {
+    margin: 0;
     font-family: 'Roboto', sans-serif;
-    transition: transform 0.3s ease, box-shadow 0.3s ease;
-
-    max-width: 1200px;
+    background: linear-gradient(135deg, #000428, #004e92);
+    color: #fff;
+    overflow-x: hidden;
+    max-width: 100%;
 }
 
-.profile-container:hover {
-    
-    box-shadow: 0 15px 40px rgba(0, 0, 0, 0.15);
+.background {
+    position: relative;
+    min-height: 100vh;
+    padding: 2rem;
+    overflow: hidden;
 }
 
-/* Profilüberschrift */
+.header-section {
+    text-align: center;
+    margin-bottom: 3rem;
+    margin-top: 4rem;
+}
+
+.header-text {
+    font-size: 3rem;
+    margin: 0;
+    color: #2ecc71;
+    text-shadow: 0 0 20px #2ecc71, 0 0 40px #2ecc71;
+    animation: glow 2s infinite alternate;
+}
+
+.tagline {
+    font-size: 1.5rem;
+    color: #fff;
+    margin-top: 1rem;
+    text-shadow: 0 0 10px #fff;
+    text-align: center;
+}
+
+@keyframes glow {
+  from {
+    text-shadow: 0 0 10px #2ecc71, 0 0 20px #2ecc71;
+  }
+  to {
+    text-shadow: 0 0 20px #2ecc71, 0 0 40px #2ecc71;
+  }
+}
+
+/* Profilcontainer im gleichen Stil wie vorherige Layouts (max-width:1200px) */
+
+
+.section-title {
+    text-align: center;
+    color: #2ecc71;
+    text-shadow: 0 0 10px #2ecc71;
+    margin-bottom: 3rem;
+    font-size: 1.8rem;
+}
+
 .profile-header {
     display: flex;
     align-items: center;
-    gap: 1rem;
+    gap: 2rem;
     margin-bottom: 2rem;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+.image-container {
+    position: relative;
+    display: inline-block;
+}
+
+.change-hint {
+    position: absolute;
+    bottom: -1.5rem;
+    width: 100%;
+    text-align: center;
+    font-size: 0.8rem;
+    color: #2ecc71;
+    text-shadow: 0 0 5px #2ecc71;
+    opacity: 0;
+    transform: translateY(10px);
+    transition: opacity 0.3s, transform 0.3s;
+}
+
+.image-container:hover .change-hint {
+    opacity: 1;
+    transform: translateY(0);
 }
 
 .initials, .profile-image-wrapper {
-    width: 100px;
-    height: 100px;
+    width: 120px;
+    height: 120px;
     display: flex;
     align-items: center;
     justify-content: center;
     border-radius: 50%;
     background-color: #1abc9c;
     color: #fff;
-    font-size: 2rem;
+    font-size: 2.5rem;
     font-weight: bold;
     box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1);
     cursor: pointer;
-    transition: background-color 0.3s ease, transform 0.3s ease;
+    transition: background-color 0.3s ease, transform 0.3s ease, box-shadow 0.3s;
 }
 
 .initials:hover, .profile-image-wrapper:hover {
     background-color: #16a085;
     transform: scale(1.1);
+    box-shadow: 0 0 10px #2ecc71;
 }
 
 .profile-image-wrapper img {
@@ -238,18 +326,40 @@
 
 .profile-details {
     flex-grow: 1;
+    text-align: center;
 }
 
 .profile-details h1 {
     font-size: 2rem;
-    color: #34495e;
+    color: #2ecc71;
+    text-shadow: 0 0 10px #2ecc71;
     margin: 0;
 }
 
-.profile-details p {
+.profile-details .email {
     font-size: 1rem;
     color: #7f8c8d;
     margin-top: 0.5rem;
+}
+
+.role-badge {
+    margin-top: 1rem;
+    display: inline-block;
+    background: rgba(0,0,0,0.4);
+    padding: 0.5rem 1rem;
+    border-radius: 20px;
+    color: #fff;
+    font-weight: bold;
+    box-shadow: 0 0 10px #2ecc71;
+    font-size: 0.9rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    justify-content: center;
+}
+
+.role-badge i {
+    color: #f1c40f;
 }
 
 /* Profilinformationen */
@@ -261,54 +371,60 @@
 }
 
 .profile-info div {
-    background: #ffffff;
+    background: rgba(0,0,0,0.4);
     padding: 1.5rem;
     border-radius: 16px;
-    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.05);
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
     transition: transform 0.3s ease, box-shadow 0.3s ease;
+    text-align: center;
 }
 
 .profile-info div:hover {
     transform: translateY(-5px);
-    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 0 25px #2ecc71;
 }
 
 .profile-info div h3 {
     font-size: 1.2rem;
-    color: #2c3e50;
+    color: #2ecc71;
     margin-bottom: 0.5rem;
+    text-shadow: 0 0 5px #2ecc71;
 }
 
 .profile-info div p {
     font-size: 1rem;
-    color: #555;
+    color: #ddd;
     margin: 0;
 }
 
 /* Buttons */
 .profile-actions {
     display: flex;
-    justify-content: space-between;
+    justify-content: center;
     gap: 1rem;
     margin-top: 2rem;
 }
 
 .profile-actions button {
-    flex: 1;
     font-size: 1rem;
     font-weight: 600;
-    color: #ffffff;
-    background: #3498db;
+    color: #000;
+    background: #2ecc71;
     border: none;
     border-radius: 12px;
     padding: 0.8rem 1.5rem;
     cursor: pointer;
-    transition: background-color 0.3s ease, transform 0.3s ease;
+    transition: background-color 0.3s ease, transform 0.3s ease, box-shadow 0.3s;
+    box-shadow: 0 0 10px #2ecc71;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
 }
 
 .profile-actions button:hover {
-    background: #2980b9;
-    transform: translateY(-3px);
+    background: #27ae60;
+    transform: translateY(-3px) scale(1.05);
+    box-shadow: 0 0 15px #27ae60;
 }
 
 /* Back Button */
@@ -323,12 +439,17 @@
     background-color: #e74c3c;
     color: white;
     border-radius: 10px;
-    transition: background-color 0.3s, transform 0.3s;
+    transition: background-color 0.3s, transform 0.3s, box-shadow 0.3s;
+    box-shadow: 0 0 10px #e74c3c;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
 }
 
 .back-button:hover {
     background-color: #c0392b;
-    transform: translateY(-3px);
+    transform: translateY(-3px) scale(1.05);
+    box-shadow: 0 0 15px #c0392b;
 }
 
 /* Fehleranzeige */
@@ -363,7 +484,9 @@
     .profile-actions {
         flex-direction: column;
     }
-}
 
-  </style>
-  
+    .profile-details {
+        text-align: center;
+    }
+}
+</style>

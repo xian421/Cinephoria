@@ -99,18 +99,16 @@
 }
 
 body {
-  margin: 0;
-  background: #000;
-  color: #fff;
-  font-family: 'Roboto', sans-serif;
+    margin: 0;
+    font-family: 'Roboto', sans-serif;
+    background: #000;
+    color: #fff;
+    overflow-x: hidden;
 }
 
 .background {
-  position: relative;
-  min-height: 100vh;
-  padding: 2rem;
-
-  overflow: hidden;
+    max-width: 1200px; 
+    margin: 0 auto;
 }
 
 /* Einige schwebende Partikel / Sterne */
