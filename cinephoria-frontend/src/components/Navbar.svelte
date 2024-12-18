@@ -205,6 +205,7 @@
     z-index: 1001;
     padding: 1rem 2rem;
     box-sizing: border-box;
+ 
 }
 
  
