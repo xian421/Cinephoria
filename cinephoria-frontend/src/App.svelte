@@ -30,6 +30,7 @@
     import Belohnung from './routes/Belohnung.svelte';
     import Leaderboard from './routes/leaderboard.svelte';
     import Bestelluebersicht from './routes/Bestelluebersicht.svelte';
+    import Adminrewards from './routes/Adminrewards.svelte';
   
     // Import von Svelte Stores
     import { authStore, setAuth, updateAuth } from './stores/authStore.js';
@@ -264,6 +265,12 @@
         <Route path="/admindiscount" let:params>
             <ProtectedRoute admin={true}>
                 <Admindiscount />
+            </ProtectedRoute>
+        </Route>
+
+        <Route path="/adminrewards" let:params>
+            <ProtectedRoute admin={true}>
+                <Adminrewards />
             </ProtectedRoute>
         </Route>
   

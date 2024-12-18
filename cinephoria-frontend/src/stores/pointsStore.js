@@ -12,6 +12,7 @@ export const transactionsStore = writable([]);
 export async function fetchUserPointsStore(token) {
     try {
         const points = await getUserPoints(token);
+        console.log('Punkte:', points);
         pointsStore.set(points);
         return points;
     } catch (error) {

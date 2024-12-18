@@ -69,7 +69,6 @@
 </script>
 
 <style>
-<<<<<<< Updated upstream
     .rewards-container {
         max-width: 1200px;
         margin: 2rem auto;
@@ -149,9 +148,6 @@
         font-weight: bold;
         color: #e74c3c;
     }
-=======
-    /* Dein vorhandener CSS-Code */
->>>>>>> Stashed changes
 </style>
 
 <main class="rewards-container">

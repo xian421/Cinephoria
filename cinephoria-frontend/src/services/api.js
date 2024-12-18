@@ -983,7 +983,11 @@ export async function getUserPoints(token) {
             'Content-Type': 'application/json'
         }
     });
-    return response.json();
+    const data = await response.json();
+    if (!response.ok) {
+        throw new Error(data.error || 'Fehler beim Laden der Punkte.');
+    }
+    return data.points;
 }
 
 // Funktion zum Einlösen von Punkten
@@ -996,7 +1000,11 @@ export async function redeemPoints(token, points) {
         },
         body: JSON.stringify({ points })
     });
-    return response.json();
+    const data = await response.json();
+    if (!response.ok) {
+        throw new Error(data.error || 'Fehler beim Einlösen von Punkten.');
+    }
+    return data;
 }
 
 // Funktion zum Abrufen der Punkte-Transaktionshistorie
@@ -1008,5 +1016,75 @@ export async function getPointsTransactions(token) {
             'Content-Type': 'application/json'
         }
     });
-    return response.json();
+    const data = await response.json();
+    if (!response.ok) {
+        throw new Error(data.error || 'Fehler beim Laden der Punkte-Transaktionen.');
+    }
+    return data.transactions;
 }
+
+// Funktion zum Abrufen der Belohnungen
+export async function fetchRewards(token) {
+    const response = await fetch(`${API_BASE_URL}/rewards`, {
+        headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${token}`,
+        },
+    });
+    const data = await response.json();
+    if (!response.ok) {
+        throw new Error(data.error || 'Fehler beim Laden der rewards.');
+    }
+    return data.rewards;
+}
+
+//Function to add rewards
+export async function addReward(token, title, points, description, image) {
+    const response = await fetch(`${API_BASE_URL}/rewards`, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${token}`,
+        },
+        body: JSON.stringify({ title, points, description, image })
+    });
+    const data = await response.json();
+    if (!response.ok) {
+        throw new Error(data.error || 'Fehler beim Hinzufügen der Belohnung');
+    }
+    return data;
+}
+
+//Function to update rewards
+export async function updateReward(token, reward_id, title, points, description, image) {
+    const response = await fetch(`${API_BASE_URL}/rewards/${reward_id}`, {
+        method: "PUT",
+        headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${token}`,
+        },
+        body: JSON.stringify({ title, points, description, image })
+    });
+    const data = await response.json();
+    if (!response.ok) {
+        throw new Error(data.error || 'Fehler beim Aktualisieren der Belohnung');
+    }
+    return data;
+}
+
+//Function to delete rewards
+export async function deleteReward(token, reward_id) {
+    const response = await fetch(`${API_BASE_URL}/rewards/${reward_id}`, {
+        method: "DELETE",
+        headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${token}`,
+        },
+    });
+    const data = await response.json();
+    if (!response.ok) {
+        throw new Error(data.error || 'Fehler beim Löschen der Belohnung');
+    }
+    return data;
+}
+
