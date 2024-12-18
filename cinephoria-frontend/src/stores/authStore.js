@@ -9,6 +9,8 @@ export const authStore = writable({
     isAdmin: false,
     token: null,
     profile_image: 'default.png', // Standardprofilbild
+    nickname: '',
+    role: '',
 });
 
 export const setAuth = (auth) => {

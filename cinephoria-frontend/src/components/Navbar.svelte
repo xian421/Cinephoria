@@ -3,6 +3,7 @@
   import { navigate, useLocation } from "svelte-routing";
   import { authStore } from '../stores/authStore';
   import Swal from "sweetalert2";
+  import { profileStore } from "../stores/profileStore";
 
   export let toggleLoginDropdown;
   export let toggleProfileMenu;
@@ -60,6 +61,8 @@
       }
   };
 
+  
+
   const handleForgotPasswordFn = async () => {
       if (!email) {
           Swal.fire("Fehler", "Bitte gib deine E-Mail-Adresse ein.", "error");
@@ -95,6 +98,9 @@
 
   // Helper function to determine active class
   const isActive = (path) => location.pathname === path;
+
+  console.log($authStore.profile_image);
+
 </script>
 
 <div class="navbar-background">

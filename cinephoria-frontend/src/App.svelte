@@ -31,6 +31,7 @@
     import Leaderboard from './routes/leaderboard.svelte';
     import Bestelluebersicht from './routes/Bestelluebersicht.svelte';
     import Adminrewards from './routes/Adminrewards.svelte';
+    import { loadProfile } from './stores/profileStore.js';
   
     // Import von Svelte Stores
     import { authStore, setAuth, updateAuth } from './stores/authStore.js';
@@ -43,14 +44,6 @@
     // State-Variablen
     let kontakt = [];
     let firstCinema = "";
-  
-    // Reaktive Zuweisung der Store-Werte
-    $: isLoggedIn = $authStore.isLoggedIn;
-    $: isAdmin = $authStore.isAdmin;
-    $: userFirstName = $authStore.userFirstName;
-    $: userLastName = $authStore.userLastName;
-    $: initials = $authStore.initials;
-    $: token = $authStore.token;
   
     // Ladezustand
     let isLoading = true;
@@ -77,7 +70,7 @@
                 confirmButtonText: "OK",
             });
             return;
-        }
+        };
   
         try {
             const data = await login(email, password);
@@ -87,10 +80,6 @@
                 localStorage.setItem('token', data.token);
                 updateAuth(current => ({
                     isLoggedIn: true,
-                    userFirstName: data.first_name,
-                    userLastName: data.last_name,
-                    initials: data.initials,
-                    isAdmin: data.role.toLowerCase() === 'admin',
                     token: data.token, // Token im Store speichern
                 }));
   
@@ -173,12 +162,10 @@
                 // Da validateToken keine isValid zurückgibt, setze den Auth-Zustand direkt
                 updateAuth(current => ({
                     isLoggedIn: true,
-                    userFirstName: data.first_name,
-                    userLastName: data.last_name,
-                    initials: data.initials,
-                    isAdmin: data.role.toLowerCase() === 'admin',
                     token: storedToken,
                 }));
+  
+                // loadProfile wird automatisch durch die reaktive Anweisung aufgerufen
             } catch (error) {
                 console.error("Fehler beim Validieren des Tokens:", error);
                 localStorage.removeItem('token');
@@ -195,105 +182,104 @@
   
         isLoading = false;
     });
-  </script>
   
-  {#if isLoading}
-    <p>Loading...</p>
-  {:else}
-    <Router>
-        <Navbar 
-            toggleLoginDropdown={toggleLoginDropdown} 
-            toggleProfileMenu={toggleProfileMenu} 
-            logout={logout} 
-            isLoginOpen={isLoginOpen} 
-            isProfileDropdownOpen={isProfileDropdownOpen} 
-            handleLogin={handleLogin} 
-            initials={initials} 
-            isLoggedIn={isLoggedIn}
-        />
-  
-        <!-- Routen -->
-        <Route path="/" component={Home} />
-        <Route path="/nowplaying" component={NowPlaying} />
-        <Route path="/upcoming" component={Upcoming} />
-        <Route path="/sitzplan" component={Sitzplan} />
-        <Route path="/adminshowtime" component={Adminshowtime} />
-        <Route path="/register" component={Register} />
-        <Route path="/forgot-password" component={Forgotpassword} />
-        <Route path="/checkout" component={Checkout} />
-        
-        <!-- Korrigierte Buchung Route -->
-        <Route path="/buchung/:showtime_id" let:params>
-            <Buchung showtime_id={Number(params.showtime_id)} />
-        </Route>
-  
-        <Route path="/profile" component={Profile} />
-        <Route path="/einstellungen" component={Einstellung} />
-        <Route path="/warenkorb" component={Warenkorb} />
-        <Route path="/bestellungen" component={Bestellungen} />
-        <Route path="/belohnung" component={Belohnung} />
-        <Route path="/leaderboard" component={Leaderboard} />
-        <Route path="/bestelluebersicht" component={Bestelluebersicht} />
-
-
-
-  
-        <!-- Geschützte Admin-Routen mit ProtectedRoute -->
-        <Route path="/adminkinosaal" let:params>
-            <ProtectedRoute admin={true}>
-                <Adminkinosaal />
-            </ProtectedRoute>
-        </Route>
-        <Route path="/adminseats/:screenId" let:params>
-            <ProtectedRoute admin={true}>
-                <Adminseats screenId={params.screenId} />
-            </ProtectedRoute>
-        </Route>
-  
-        <Route path="/adminpreise" let:params>
-            <ProtectedRoute admin={true}>
-                <Adminpreise />
-            </ProtectedRoute>
-        </Route>
-  
-        <Route path="/admin" let:params>
-            <ProtectedRoute admin={true}>
-                <Admin />
-            </ProtectedRoute>
-        </Route>
-
-        <Route path="/admindiscount" let:params>
-            <ProtectedRoute admin={true}>
-                <Admindiscount />
-            </ProtectedRoute>
-        </Route>
-
-        <Route path="/adminrewards" let:params>
-            <ProtectedRoute admin={true}>
-                <Adminrewards />
-            </ProtectedRoute>
-        </Route>
-  
-        <Route path="/beschreibung/:id" let:params>
-            <Beschreibung id={params.id} />
-        </Route>        
-        <Route path="/unauthorized" component={Unauthorized} />
-        <Route path="*" component={NotFound} />
-  
-        <Footer firstCinema={firstCinema} />
-    </Router>
-  {/if}
-
-
-
-  <style>
-    :global(html, body) {
-        font-family: 'Roboto', sans-serif;
-        background: linear-gradient(135deg, #000428, #004e92);
-        color: #fff;
-        
-        overflow-x: hidden; /* Verhindert horizontales Scrollen */
-        position: relative; /* Notwendig für die Pseudo-Elemente */
+    // Reaktive Anweisung: Sobald das Token gesetzt ist, lade die Profildaten
+    $: if ($authStore.token) {
+        loadProfile();
     }
+</script>
+
+{#if isLoading}
+  <p>Loading...</p>
+{:else}
+  <Router>
+      <Navbar 
+          toggleLoginDropdown={toggleLoginDropdown} 
+          toggleProfileMenu={toggleProfileMenu} 
+          logout={logout} 
+          isLoginOpen={isLoginOpen} 
+          isProfileDropdownOpen={isProfileDropdownOpen} 
+          handleLogin={handleLogin} 
+          initials={$authStore.initials} 
+          isLoggedIn={$authStore.isLoggedIn}
+      />
+
+      <!-- Routen -->
+      <Route path="/" component={Home} />
+      <Route path="/nowplaying" component={NowPlaying} />
+      <Route path="/upcoming" component={Upcoming} />
+      <Route path="/sitzplan" component={Sitzplan} />
+      <Route path="/adminshowtime" component={Adminshowtime} />
+      <Route path="/register" component={Register} />
+      <Route path="/forgot-password" component={Forgotpassword} />
+      <Route path="/checkout" component={Checkout} />
+      
+      <!-- Korrigierte Buchung Route -->
+      <Route path="/buchung/:showtime_id" let:params>
+          <Buchung showtime_id={Number(params.showtime_id)} />
+      </Route>
+
+      <Route path="/profile" component={Profile} />
+      <Route path="/einstellungen" component={Einstellung} />
+      <Route path="/warenkorb" component={Warenkorb} />
+      <Route path="/bestellungen" component={Bestellungen} />
+      <Route path="/belohnung" component={Belohnung} />
+      <Route path="/leaderboard" component={Leaderboard} />
+      <Route path="/bestelluebersicht" component={Bestelluebersicht} />
+
+      <!-- Geschützte Admin-Routen mit ProtectedRoute -->
+      <Route path="/adminkinosaal" let:params>
+          <ProtectedRoute admin={true}>
+              <Adminkinosaal />
+          </ProtectedRoute>
+      </Route>
+      <Route path="/adminseats/:screenId" let:params>
+          <ProtectedRoute admin={true}>
+              <Adminseats screenId={params.screenId} />
+          </ProtectedRoute>
+      </Route>
+
+      <Route path="/adminpreise" let:params>
+          <ProtectedRoute admin={true}>
+              <Adminpreise />
+          </ProtectedRoute>
+      </Route>
+
+      <Route path="/admin" let:params>
+          <ProtectedRoute admin={true}>
+              <Admin />
+          </ProtectedRoute>
+      </Route>
+
+      <Route path="/admindiscount" let:params>
+          <ProtectedRoute admin={true}>
+              <Admindiscount />
+          </ProtectedRoute>
+      </Route>
+
+      <Route path="/adminrewards" let:params>
+          <ProtectedRoute admin={true}>
+              <Adminrewards />
+          </ProtectedRoute>
+      </Route>
+
+      <Route path="/beschreibung/:id" let:params>
+          <Beschreibung id={params.id} />
+      </Route>        
+      <Route path="/unauthorized" component={Unauthorized} />
+      <Route path="*" component={NotFound} />
+
+      <Footer firstCinema={firstCinema} />
+  </Router>
+{/if}
+
+<style>
+  :global(html, body) {
+      font-family: 'Roboto', sans-serif;
+      background: linear-gradient(135deg, #000428, #004e92);
+      color: #fff;
+      
+      overflow-x: hidden; /* Verhindert horizontales Scrollen */
+      position: relative; /* Notwendig für die Pseudo-Elemente */
+  }
 </style>
-  

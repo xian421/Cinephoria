@@ -11,12 +11,16 @@
     export let initialProfile = {
         vorname: '',
         nachname: '',
-        email: ''
+        email: '',
+        nickname: '',
+        role: ''
     };
 
     let vorname = initialProfile.vorname;
     let nachname = initialProfile.nachname;
     let email = initialProfile.email;
+    let nickname = initialProfile.nickname;
+    let role = initialProfile.role;
 
     let isSubmitting = false;
 
@@ -37,7 +41,7 @@
         isSubmitting = true;
 
         const token = get(authStore).token;
-        const updates = { vorname, nachname, email };
+        const updates = { vorname, nachname, email, nickname, role };
 
         try {
             const data = await updateProfile(token, updates);
@@ -55,11 +59,13 @@
                 userFirstName: vorname,
                 userLastName: nachname,
                 initials: getInitials(vorname, nachname),
-                email: email
+                email: email,
+                nickname: nickname,
+                role: role
             }));
 
             // Dispatch das 'update' Event mit den neuen Profil-Daten
-            dispatch('update', { vorname, nachname, email });
+            dispatch('update', { vorname, nachname, email, nickname, role });
 
             dispatch('close');
         } catch (err) {
@@ -108,6 +114,17 @@
                     <p class="error-text">{emailError}</p>
                 {/if}
             </div>
+            <div class="form-group">
+                <label for="nickname">Nickname</label>
+                <input id="nickname" type="text" bind:value={nickname} required />
+            </div>
+            <!-- Optional: Rolle nur anzeigen, wenn der Benutzer Admin ist -->
+         <!--    {#if !$authStore.isAdmin} -->
+                <div class="form-group">
+                    <label for="role">Rolle</label>
+                    <input id="role" type="text" bind:value={role} required />
+                </div>
+       <!--      {/if} -->
             <div class="form-actions">
                 <button type="submit" disabled={isSubmitting}>
                     {#if isSubmitting}
