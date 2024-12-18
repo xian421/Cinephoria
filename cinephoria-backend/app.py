@@ -2056,8 +2056,9 @@ def get_points_transactions():
         with psycopg2.connect(DATABASE_URL) as conn:
             with conn.cursor(cursor_factory=psycopg2.extras.DictCursor) as cursor:
                 cursor.execute("""
-                    SELECT transaction_id, points_change, description, timestamp
-                    FROM points_transactions
+                    SELECT pt.transaction_id, pt.points_change, pt.description, pt.timestamp, pt.reward_id, r.title AS reward_title, r.points AS reward_points, r.image AS reward_image, r.description AS reward_description
+                    FROM points_transactions pt
+                    JOIN rewards r ON pt.reward_id = r.reward_id
                     WHERE user_id = %s
                     ORDER BY timestamp DESC
                 """, (user_id,))
@@ -2067,7 +2068,15 @@ def get_points_transactions():
                         'transaction_id': t['transaction_id'],
                         'points_change': t['points_change'],
                         'description': t['description'],
-                        'timestamp': t['timestamp'].isoformat()
+                        'timestamp': t['timestamp'].isoformat(),
+                        'reward': {
+                            'reward_id': t['reward_id'],
+                            'title': t['reward_title'],
+                            'points': t['reward_points'],
+                            'image': t['reward_image'],
+                            'description': t['reward_description']
+                        }
+
                     }
                     for t in transactions
                 ]
