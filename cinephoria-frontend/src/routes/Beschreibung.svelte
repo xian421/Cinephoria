@@ -147,16 +147,18 @@
       <p class="error">{error}</p>
     {:else if movieDetails.title}
       <div class="movie-container">
-        <!-- Linke Spalte: Poster -->
-        <div class="poster-container">
-          <img
-            src="{IMAGE_BASE_URL}{movieDetails.poster_path}"
-            alt="{movieDetails.title}"
-            class="poster"
-            on:click={openTrailerModal}
-          />
-          <div class="poster-overlay">
-            <span class="poster-cta">Trailer ansehen!</span>
+        
+        <!-- Linke Spalte: Poster mit schwebendem Trailer-Button -->
+        <div class="poster-wrapper">
+          <div class="poster-container">
+            <img
+              src="{IMAGE_BASE_URL}{movieDetails.poster_path}"
+              alt="{movieDetails.title}"
+              class="poster"
+            />
+            <button class="trailer-btn" on:click={openTrailerModal}>
+              <i class="fas fa-play"></i> Trailer
+            </button>
           </div>
         </div>
 
@@ -166,36 +168,36 @@
           <div class="tagline-text">{movieDetails.tagline}</div>
           <div class="meta">
             <div><i class="fas fa-clock"></i> {movieDetails.runtime}'</div>    
-            <div>FSK: {movie_certification}</div> 
-            <div>Genre: {movieDetails.genres ? movieDetails.genres.map((genre) => genre.name).join(", ") : 'Keine Angaben'}</div>
+            <div><i class="fas fa-user-shield"></i> FSK: {movie_certification}</div> 
+            <div><i class="fas fa-film"></i> {movieDetails.genres ? movieDetails.genres.map((genre) => genre.name).join(", ") : 'Keine Angaben'}</div>
           </div>
           <div class="description">{movieDetails.overview}</div>
         </div> 
 
-        <!-- Rechte Spalte: Showtimes -->
+        <!-- Rechte Spalte: Showtimes mit besserer Darstellung -->
         <div class="showtimes">
+          <h2 class="showtimes-title">Verfügbare Vorstellungen</h2>
           {#if showtimes.length > 0}
             <div class="showtimes-container">
               {#each showtimes as showtime}
                 <div class="showtime-box" on:click={() => navigateToBooking(showtime)}>
-                  <div class="showtime-date">
-                    {new Date(showtime.start_time).toLocaleDateString()}
+                  <div class="showtime-info">
+                    <div class="showtime-icon"><i class="fas fa-calendar-day"></i></div>
+                    <div class="showtime-data">{new Date(showtime.start_time).toLocaleDateString()}</div>
                   </div>
-                  <div class="showtime-time">
-                    {new Date(showtime.start_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} Uhr
+                  <div class="showtime-info">
+                    <div class="showtime-icon"><i class="fas fa-clock"></i></div>
+                    <div class="showtime-data">{new Date(showtime.start_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} Uhr</div>
                   </div>
-                  <div class="showtime-screen">
-                    {screens[showtime.screen_id]?.name || 'Unbekannt'}
+                  <div class="showtime-info">
+                    <div class="showtime-icon"><i class="fas fa-map-marker-alt"></i></div>
+                    <div class="showtime-data">{screens[showtime.screen_id]?.name || 'Unbekannt'}</div>
                   </div>
                 </div>
               {/each}
-              <div class="more-shows">
-                <div class="more-shows-text">+13(stimmt net)</div>
-                <div class="more-shows-subtext">weitere<br>Vorstellungen</div>
-              </div>
             </div>
           {:else}
-            <p>Keine Vorstellungen verfügbar.</p>
+            <p class="no-shows">Keine Vorstellungen verfügbar.</p>
           {/if}
         </div>
       </div>
@@ -281,13 +283,18 @@ body {
   margin: 0 auto;
 }
 
+/* Poster und Trailerbutton */
+.poster-wrapper {
+  position: relative;
+}
+
 .poster-container {
   position: relative;
-  cursor: pointer;
+  display: inline-block;
 }
 
 .poster {
-  max-width: 300px;
+  max-width: 400px;
   border-radius: 8px;
   box-shadow: 0 5px 20px rgba(0,0,0,0.5);
   transition: transform 0.3s ease;
@@ -297,33 +304,32 @@ body {
   transform: scale(1.05);
 }
 
-.poster-overlay {
+/* Trailer-Button oben links am Poster */
+.trailer-btn {
   position: absolute;
-  bottom: 0;
-  width: 100%;
-  background-color: rgba(46,204,113,0.9);
+  top: 10px;
+  left: 10px;
+  background: #2ecc71;
   color: #000;
-  text-align: center;
-  font-size: 1rem;
+  border: none;
+  border-radius: 20px;
+  padding: 0.5rem 1rem;
+  cursor: pointer;
+  font-size: 0.9rem;
   font-weight: bold;
-  padding: 0.5rem 0;
-  box-sizing: border-box;
-  opacity: 0;
-  transform: translateY(100%);
-  transition: opacity 0.3s, transform 0.3s;
-  z-index: 2;
+  box-shadow: 0 0 10px #2ecc71;
+  transition: transform 0.3s;
 }
 
-.poster-container:hover .poster-overlay {
-  opacity: 1;
-  transform: translateY(0);
+.trailer-btn i {
+  margin-right: 5px;
 }
 
-.poster-cta {
-  letter-spacing: 1px;
-  text-shadow: 0 0 10px #fff;
+.trailer-btn:hover {
+  transform: scale(1.1);
 }
 
+/* Details in der Mitte */
 .details {
   flex: 2;
   min-width: 300px;
@@ -345,7 +351,7 @@ body {
 .tagline-text {
   font-style: italic;
   color: #888;
-  margin-bottom: 1rem;
+  margin-bottom: 1.5rem;
   text-align: center;
 }
 
@@ -362,7 +368,7 @@ body {
 .meta i {
   font-size: 20px; 
   color: #2ecc71; 
-  margin-right: 2px; 
+  margin-right: 5px; 
   vertical-align: middle;
 }
 
@@ -372,76 +378,83 @@ body {
   color: #ddd;
 }
 
+/* Rechte Spalte: Showtimes */
 .showtimes {
   flex: 1;
   min-width: 250px;
   max-width: 300px;
+  background: #111;
+  border-radius: 20px;
+  padding: 1.5rem;
+  box-shadow: 0 5px 20px rgba(0,0,0,0.5);
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.showtimes-title {
+  font-size: 1.5rem;
+  text-align: center;
+  color: #2ecc71;
+  margin-bottom: 1rem;
+  text-shadow: 0 0 10px #2ecc71;
 }
 
 .showtimes-container {
   display: flex;
   flex-direction: column;
   gap: 1rem;
+  overflow-y: auto;
+  max-height: 400px;
+  padding-right: 0.5rem;
 }
 
 .showtime-box {
-  background-color: #2ecc71;
+  background: #2ecc71;
   border-radius: 8px;
-  padding: 0.5rem;
+  padding: 0.7rem;
   cursor: pointer;
   transition: transform 0.2s, box-shadow 0.2s;
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: 0.3rem;
   color: #000;
-  text-align: center;
 }
 
 .showtime-box:hover {
-  transform: translateY(-5px) scale(1.05);
+  transform: translateY(-5px) scale(0.95);
   box-shadow: 0 4px 8px rgba(0,0,0,0.5);
 }
 
-.showtime-date {
+.showtime-info {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.showtime-icon i {
+  color: #000;
+  background: #fff;
+  border-radius: 50%;
+  padding: 0.3rem;
+  font-size: 1rem;
+  width: 30px;
+  height: 30px;
+  text-align: center;
+}
+
+.showtime-data {
   font-weight: bold;
   font-size: 0.9rem;
 }
 
-.showtime-time {
-  font-weight: bold;
-  font-size: 1.6rem;
-}
-
-.showtime-screen {
-  font-size: 0.7rem;
-}
-
-.more-shows {
-  display: inline-block; 
-  padding: 10px; 
-  background-color: #3498db; 
-  color: white; 
-  clip-path: polygon(0 0, 90% 0, 100% 50%, 90% 100%, 0 100%); 
-  font-family: Arial, sans-serif; 
-  font-size: 16px; 
+.no-shows {
   text-align: center;
-  transition: transform 0.3s, box-shadow 0.3s;
-}
-
-.more-shows:hover {
-  transform: translateY(-5px) scale(1.05);
-  box-shadow: 0 4px 8px rgba(0,0,0,0.5);
-}
-
-.more-shows-text {
-  font-size: 24px; 
+  color: #e74c3c;
   font-weight: bold;
 }
 
-.more-shows-subtext {
-  font-size: 14px;
-}
-
+/* Popup Styles */
 .popup-overlay {
   position: fixed;
   top: 0;
