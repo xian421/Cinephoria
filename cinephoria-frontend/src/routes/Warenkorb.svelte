@@ -305,7 +305,6 @@
 
 .header-section {
   text-align: center;
-  margin-bottom: 3rem;
   margin-top: 4rem;
 }
 
@@ -376,8 +375,8 @@
 }
 
 .cart-table th {
-  background-color: #2ecc71;
-  color: #111;
+    background-color: rgba(0,0,0,0.5);
+    color: #fff;
   font-weight: bold;
   text-shadow: none;
 }

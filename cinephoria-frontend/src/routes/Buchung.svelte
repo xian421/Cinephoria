@@ -12,7 +12,7 @@
     } from '../services/api.js';
     import { get } from 'svelte/store';
     import { authStore } from '../stores/authStore'; 
-    import { cart, cartError, addToCart, removeFromCart, clearCart, loadCart, validUntil } from '../stores/cartStore.js';
+    import { cart, cartError, addToCart, removeFromCart, clearCart, loadCart } from '../stores/cartStore.js';
 
     import "@fortawesome/fontawesome-free/css/all.min.css";
 
@@ -25,7 +25,7 @@
     let seatsByRow = {};
     let payPalInitialized = false;
     let paypalContainer: HTMLElement;
-
+    
 
     let totalPrice = 0.0;
     let timer: ReturnType<typeof setInterval> | null = null;
@@ -34,24 +34,21 @@
 
     const PAYPAL_CLIENT_ID = 'AXWfRwPPgPCoOBZzqI-r4gce1HuWZXDnFqUdES0bP8boKSv5KkkPvZrMFwcCDShXjC3aTdChUjOhwxhW';
 
-    // Reaktive Abhängigkeiten mit direkter Zuweisung
     $: totalPrice = $cart.reduce((sum, seat) => sum + seat.price, 0);
 
-    // Nutzung von validUntil statt reserved_until
     $: {
-        if ($validUntil) {
-            const now = new Date();
-            timeLeft = Math.max(0, Math.floor(($validUntil.getTime() - now.getTime()) / 1000));
-            warning = timeLeft <= 60;
-        } else {
+        if ($cart.length === 0) {
             timeLeft = 0;
             warning = false;
+        } else {
+            const now = new Date();
+            const reservationTimes = $cart.map(seat => new Date(seat.reserved_until));
+            const earliest = new Date(Math.min(...reservationTimes));
+            timeLeft = Math.max(0, Math.floor((earliest.getTime() - now.getTime()) / 1000));
+            warning = timeLeft <= 60;
         }
-        console.log('timeLeft:', timeLeft); // Debugging
-        console.log('validUntil:', $validUntil); // Debugging
     }
 
-    // Timer-Logik
     $: {
         clearInterval(timer);
         if (timeLeft > 0) {
@@ -64,13 +61,12 @@
                 }
                 if (timeLeft <= 0) {
                     clearInterval(timer!);
-                    loadCart(); // Aktualisiere den Warenkorb, wenn der Timer abläuft
+                    loadCart();
                 }
             }, 1000);
         }
     }
 
-    // Reaktive Fehleranzeige mit angepasstem SweetAlert
     $: if ($cartError) {
         Swal.fire({
             title: "Fehler",
@@ -81,7 +77,7 @@
         }).then(async (result) => {
             if (result.isConfirmed) {
                 await loadCart();
-                await loadSeats(); // Aktualisiert die Sitzplatzkarte
+                await loadSeats();
             }
             cartError.set(null);
         });
@@ -91,7 +87,6 @@
         isLoading = true;
         try {
             await loadSeats();
-            // Warenkorb laden, damit $cart und $validUntil aktuell sind
             await loadCart();
         } catch (err: any) {
             console.error('Fehler beim Laden der Sitze oder Sitztypen:', err);
@@ -110,7 +105,6 @@
         clearInterval(timer!);
     });
 
-    // Funktion zum Laden der Sitzplatzdaten
     async function loadSeats() {
         try {
             const token = get(authStore).token;
@@ -191,7 +185,6 @@
         return type ? type.icon : null;
     }
 
-    // Funktion zur Überprüfung, ob ein Sitzplatz in der aktuellen Vorstellung im Warenkorb ist
     function isSelectedBySelf(seat: any) {
         return $cart.some(s => s.seat_id === seat.seat_id && s.showtime_id === showtime_id);
     }
@@ -201,33 +194,28 @@
         number: number;
         type?: string;
         price: number;
-    } | null = null; // Neue Variable für das ausgewählte Sitzobjekt
+    } | null = null;
 
     async function toggleSeatSelection(seat: any) {
         console.log('Toggling seat:', seat);
         if (seat.status !== 'available' && !isSelectedBySelf(seat)) {
-            // Nur wenn verfügbar oder bereits von uns ausgewählt
             return;
         }
         if (isSelectedBySelf(seat)) {
             try {
                 console.log(`Entferne Sitzplatz ${seat.seat_id} von Showtime ${showtime_id} aus dem Warenkorb.`);
-                await removeFromCart(seat.seat_id, showtime_id); // showtime_id übergeben
-                // Toast-Benachrichtigung anzeigen
+                await removeFromCart(seat.seat_id, showtime_id);
                 showToast(`Sitzplatz ${seat.row}${seat.number} wurde aus dem Warenkorb entfernt.`);
             } catch (error) {
-                // Fehler wird bereits über cartError behandelt
                 console.error('Fehler beim Entfernen aus dem Warenkorb:', error);
             }
         } else {
             try {
                 console.log(`Füge Sitzplatz ${seat.seat_id} zu Showtime ${showtime_id} dem Warenkorb hinzu.`);
                 await addToCart(seat, showtime_id);
-                // Toast-Benachrichtigung anzeigen
                 showToast(`Sitzplatz ${seat.row}${seat.number} wurde zum Warenkorb hinzugefügt.`);
-                selectedSeat = seat; // Setze das ausgewählte Sitzobjekt, um die Modal zu öffnen
+                selectedSeat = seat;
             } catch (error) {
-                // Fehler wird bereits über cartError behandelt
                 console.error('Fehler beim Hinzufügen zum Warenkorb:', error);
             }
         }
@@ -376,71 +364,24 @@
 </script>
 
 <style>
-    /* Ihr bestehendes CSS bleibt unverändert */
     .booking-container {
         padding: 2rem;
         font-family: Arial, sans-serif;
         max-width: 800px;
         margin: 0 auto;
-    }
-
-    .seating-chart {
-        display: flex;
-        flex-direction: column;
-        gap: 10px;
-        justify-items: center;
-        margin-bottom: 2rem;
-    }
-
-    .seat-row {
-        display: flex;
-        justify-content: center;
-        gap: 5px;
-        align-items: center;
-    }
-
-    .seat {
-        width: 40px;
-        height: 40px;
-        background-color: rgb(103, 139, 224); /* Einheitliche Grundfarbe */
-        border-radius: 4px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        cursor: pointer;
-        transition: background-color 0.3s, transform 0.2s;
-        font-size: 0.8rem;
+     
+        border-radius: 20px;
+       
         position: relative;
-        color: white;
+        color: #fff;
+        margin-top: 4rem;
     }
 
-    .seat.selected {
-        background-color: #2ecc71 !important; /* Grüner Hintergrund für ausgewählte Sitze */
-    }
-
-    .seat.selected::before {
-        content: "\f007"; /* Unicode für das Icon */
-        font-family: "Font Awesome 5 Free";
-        font-weight: 900; /* Fett für das Icon */
-    }
-
-    .seat.vip {
-        background-color: rgb(140, 76, 140);
-    }
-
-    .seat.wheelchair {
-        font-size: 24px; /* Größere Schriftgröße für Icons */
-    }
-
-    .seat.placeholder {
-        background-color: transparent;
-        pointer-events: none;
-        width: 40px;
-        height: 40px;
-    }
-
-    .seat:hover.available {
-        transform: scale(1.1);
+    h1.booking-title {
+        text-align: center;
+        color: #2ecc71;
+        text-shadow: 0 0 10px #2ecc71;
+        margin-bottom: 2rem;
     }
 
     .legend {
@@ -455,6 +396,7 @@
         display: flex;
         align-items: center;
         gap: 0.5rem;
+        font-size: 0.9rem;
     }
 
     .legend-box {
@@ -467,35 +409,6 @@
         color: white;
     }
 
-    .row-label {
-        width: 20px;
-        text-align: right;
-        margin-right: 5px;
-        font-weight: bold;
-    }
-
-    .error-message {
-        color: red;
-        font-weight: bold;
-        text-align: center;
-    }
-
-    .button-container {
-        display: flex;
-        justify-content: center;
-        gap: 10px;
-        margin-bottom: 2rem;
-    }
-
-    button {
-        padding: 0.5rem 1rem;
-        font-size: 1rem;
-        cursor: pointer;
-        border: none;
-        border-radius: 5px;
-        transition: background-color 0.3s;
-    }
-
     .legend-box.available {
         background-color: #3498db;
     }
@@ -504,9 +417,9 @@
         background-color: #2ecc71;
     }
     .legend-box.selected::before {
-        content: "\f007"; /* Unicode für das Icon */
+        content: "\f007";
         font-family: "Font Awesome 5 Free";
-        font-weight: 900; /* Fett für das Icon */
+        font-weight: 900;
     }
 
     .legend-box.unavailable {
@@ -514,26 +427,163 @@
     }
 
     .legend-box.unavailable::before {
-        content: "\f007"; /* Unicode für das Icon */
+        content: "\f007";
         font-family: "Font Awesome 5 Free";
-        font-weight: 900; /* Fett für das Icon */
+        font-weight: 900;
     }
 
-    .seat.unavailable {
-        background-color: #7f8c8d !important; /* Grauer Hintergrund für nicht verfügbare Sitze */
-        cursor: not-allowed;
-    }
-
-    /* Dynamische Legenden für Sitztypen */
     .legend-box.type {
-        width: 20px;
-        height: 20px;
+        box-shadow: 0 0 5px #2ecc71;
+    }
+
+    p.reservation-time {
+        text-align: center;
+        margin-bottom: 1rem;
+        font-size: 1.1rem;
+    }
+
+    .time-highlight {
+        color: #e74c3c;
+        font-weight: bold;
+    }
+
+    .seating-chart {
+        /* Nicht ändern! */
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        justify-items: center;
+        margin-bottom: 2rem;
+    }
+
+    .seat-row {
+        /* Nicht ändern! */
+        display: flex;
+        justify-content: center;
+        gap: 5px;
+        align-items: center;
+    }
+
+    .seat {
+        /* Nicht ändern! */
+        width: 40px;
+        height: 40px;
+        background-color: rgb(103, 139, 224);
         border-radius: 4px;
         display: flex;
         align-items: center;
         justify-content: center;
+        cursor: pointer;
+        transition: background-color 0.3s, transform 0.2s;
+        font-size: 0.8rem;
+        position: relative;
         color: white;
+    }
+
+    .seat.selected {
+        /* Nicht ändern! */
+        background-color: #2ecc71 !important;
+    }
+
+    .seat.selected::before {
+        /* Nicht ändern! */
+        content: "\f007";
+        font-family: "Font Awesome 5 Free";
+        font-weight: 900;
+    }
+
+    .seat.vip {
+        /* Nicht ändern! */
+        background-color: rgb(140, 76, 140);
+    }
+
+    .seat.wheelchair {
+        /* Nicht ändern! */
+        font-size: 24px;
+    }
+
+    .seat.placeholder {
+        /* Nicht ändern! */
+        background-color: transparent;
+        pointer-events: none;
+        width: 40px;
+        height: 40px;
+    }
+
+    .seat:hover.available {
+        /* Nicht ändern! */
+        transform: scale(1.1);
+    }
+
+    .row-label {
+        /* Nicht ändern! */
+        width: 20px;
+        text-align: right;
         margin-right: 5px;
+        font-weight: bold;
+        color: #ddd;
+    }
+
+    .seat.unavailable {
+        /* Nicht ändern! */
+        background-color: #7f8c8d !important;
+        cursor: not-allowed;
+    }
+
+    .error-message {
+        color: red;
+        font-weight: bold;
+        text-align: center;
+    }
+
+    .info-bar {
+        margin: 2rem 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 1rem;
+    }
+
+    .total-price {
+        font-size: 1.2rem;
+        color: #2ecc71;
+        text-shadow: 0 0 5px #2ecc71;
+    }
+
+    .button-group {
+        display: flex;
+        gap: 1rem;
+    }
+
+    .cart-button, .home-button {
+        background: #2ecc71;
+        color: #000;
+        border: none;
+        border-radius: 10px;
+        padding: 0.7rem 1.2rem;
+        cursor: pointer;
+        font-weight: bold;
+        font-size: 1rem;
+        box-shadow: 0 0 10px #2ecc71;
+        transition: transform 0.3s;
+    }
+
+    .cart-button:hover, .home-button:hover {
+        transform: scale(1.05);
+        opacity: 0.9;
+    }
+
+    .paypal-section {
+        text-align: center;
+        margin-top: 2rem;
+    }
+
+    .paypal-section p {
+        margin-bottom: 1rem;
+    }
+
+    #paypal-button-container {
+        margin: 0 auto;
     }
 
     @media (max-width: 600px) {
@@ -547,24 +597,6 @@
             gap: 1rem;
         }
     }
-
-    .timer {
-        font-size: 1.2rem;
-        font-weight: bold;
-        color: #e74c3c; /* Rote Farbe für Dringlichkeit */
-        text-align: center;
-        margin-bottom: 1rem;
-    }
-
-    .warning {
-        background-color: #ffcccc;
-        border: 1px solid #e74c3c;
-        padding: 10px;
-        margin-bottom: 1rem;
-        text-align: center;
-        border-radius: 4px;
-        color: #e74c3c;
-    }
 </style>
 
 <main class="booking-container">
@@ -573,16 +605,18 @@
     {:else if error}
         <p class="error-message">{error}</p>
     {:else}
-        <h1>Tickets für Vorstellung #{showtime_id}</h1>
+        <!-- Überschrift geändert -->
+        <h1 class="booking-title">Wähle deine Plätze für Vorstellung #{showtime_id}</h1>
 
+        <!-- Überschrift für Legende -->
         <div class="legend">
             <div class="legend-item">
                 <div class="legend-box selected"></div>
-                <span>Ausgewählt</span>
+                <span>Dein Platz</span>
             </div>
             <div class="legend-item">
                 <div class="legend-box unavailable"></div>
-                <span>Besetzt/Reserviert</span>
+                <span>Belegt</span>
             </div>
             {#each seatTypesList as seatType}
                 <div class="legend-item">
@@ -601,15 +635,10 @@
         </div>
 
         {#if timeLeft > 0}
-            <p class="timer">Ihre Reservierung läuft in: {formatTime(timeLeft)}</p>
+            <p class="reservation-time">Deine Reservierung läuft in <span class="time-highlight">{formatTime(timeLeft)}</span> ab.</p>
         {/if}
 
-        {#if warning}
-            <div class="warning">
-                Achtung: Ihre Reservierung läuft in weniger als einer Minute ab!
-            </div>
-        {/if}
-
+        <!-- Sitzplan soll GENAUSO bleiben -->
         <div class="seating-chart">
             {#each Object.keys(seatsByRow) as row}
                 <div class="seat-row">
@@ -640,9 +669,22 @@
             {/each}
         </div>
 
-        <p>Gesamtpreis: {totalPrice.toFixed(2)}€</p>
-        <button on:click={() => navigate('/warenkorb')}>Zum Warenkorb</button>
-        <div id="paypal-button-container" bind:this={paypalContainer}></div>
+        <!-- Neue Überschriften und Buttons unten -->
+        <div class="info-bar">
+            <p class="total-price">Gesamtpreis: {totalPrice.toFixed(2)}€</p>
+            <div class="button-group">
+                <button class="cart-button" on:click={() => navigate('/warenkorb')}>
+                    <i class="fas fa-shopping-cart"></i> Warenkorb ansehen
+                </button>
+                <button class="home-button" on:click={() => navigate('/')}>
+                    <i class="fas fa-home"></i> Zur Startseite
+                </button>
+            </div>
+        </div>
 
+        <div class="paypal-section">
+            <p>Sichere Zahlung mit PayPal</p>
+            <div id="paypal-button-container" bind:this={paypalContainer}></div>
+        </div>
     {/if}
 </main>
