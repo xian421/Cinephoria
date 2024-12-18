@@ -34,7 +34,11 @@
     async function handleAddReward() {
         const token = get(authStore).token;
 
-        if (!newRewardTitle.trim() || !newRewardPoints.trim()) {
+        // Umwandlung in Strings vor trim()
+        const titleStr = String(newRewardTitle);
+        const pointsStr = String(newRewardPoints);
+
+        if (!titleStr.trim() || !pointsStr.trim()) {
             Swal.fire({
                 title: 'Fehler',
                 text: 'Bitte geben Sie einen Titel und Punkte für die Belohnung ein.',
@@ -44,8 +48,19 @@
             return;
         }
 
+        const points = parseInt(pointsStr, 10);
+        if (isNaN(points)) {
+            Swal.fire({
+                title: 'Fehler',
+                text: 'Bitte geben Sie eine gültige Zahl für die Punkte ein.',
+                icon: 'error',
+                confirmButtonText: 'OK',
+            });
+            return;
+        }
+
         try {
-            await addReward(token, newRewardTitle, parseInt(newRewardPoints), newRewardDescription, newRewardImage);
+            await addReward(token, titleStr.trim(), points, newRewardDescription, newRewardImage);
             // Nach erfolgreicher Hinzufügung neu laden
             const fetchedRewards = await fetchRewards(token);
             rewards = fetchedRewards;
@@ -78,7 +93,10 @@
     async function handleUpdateReward(reward) {
         const token = get(authStore).token;
 
-        if (!reward.title.trim() || !reward.points) {
+        const titleStr = String(reward.title || '');
+        const pointsStr = String(reward.points || '');
+
+        if (!titleStr.trim() || !pointsStr.trim()) {
             Swal.fire({
                 title: 'Fehler',
                 text: 'Bitte geben Sie einen Titel und Punkte für die Belohnung ein.',
@@ -88,8 +106,19 @@
             return;
         }
 
+        const points = parseInt(pointsStr, 10);
+        if (isNaN(points)) {
+            Swal.fire({
+                title: 'Fehler',
+                text: 'Bitte geben Sie eine gültige Zahl für die Punkte ein.',
+                icon: 'error',
+                confirmButtonText: 'OK',
+            });
+            return;
+        }
+
         try {
-            await updateReward(token, reward.reward_id, reward.title, parseInt(reward.points), reward.description, reward.image);
+            await updateReward(token, reward.reward_id, titleStr.trim(), points, reward.description, reward.image);
             console.log('Updated Reward:', reward);
 
             Swal.fire({
