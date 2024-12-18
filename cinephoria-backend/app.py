@@ -1001,7 +1001,7 @@ def profile():
                     result = cursor.fetchone()
                     if not result:
                         return jsonify({'error': 'Benutzer nicht gefunden'}), 404
-                    vorname, nachname, email, role, profile_image = result
+                    vorname, nachname, email, role, profile_image, nickname = result
                     return jsonify({
                         'vorname': vorname,
                         'nachname': nachname,
