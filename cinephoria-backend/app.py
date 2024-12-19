@@ -1896,7 +1896,7 @@ def get_user_bookings():
                 cursor.execute("""
                     SELECT 
                         b.booking_id, 
-                        b.showtime_id, 
+                        bs.showtime_id, 
                         b.total_amount,
                         b.payment_status,
                         b.paypal_order_id,
