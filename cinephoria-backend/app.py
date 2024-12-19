@@ -671,8 +671,9 @@ def get_showtimes():
         with psycopg2.connect(DATABASE_URL) as conn:
             with conn.cursor() as cursor:
                 query = """
-                    SELECT showtime_id, movie_id, screen_id, start_time, end_time
-                    FROM showtimes
+                    SELECT s.showtime_id, s.movie_id, s.screen_id, s.start_time, s.end_time, sc.name as screen_name
+                    FROM showtimes s
+                    JOIN screens sc ON s.screen_id = sc.screen_id
                 """
                 params = []
                 conditions = []
@@ -693,7 +694,8 @@ def get_showtimes():
                     'movie_id': row[1],
                     'screen_id': row[2],
                     'start_time': row[3].isoformat(),
-                    'end_time': row[4].isoformat() if row[4] else None
+                    'end_time': row[4].isoformat() if row[4] else None,
+                    'screen_name': row[5]
                 } for row in showtimes]
         return jsonify({'showtimes': showtimes_list}), 200
     except Exception as e:
