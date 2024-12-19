@@ -773,7 +773,7 @@ def create_booking_route():
                 cursor.execute("""
                     SELECT bs.seat_id FROM booking_seats bs
                     JOIN bookings b ON bs.booking_id = b.booking_id
-                    WHERE b.showtime_id = %s AND b.payment_status = 'completed' AND bs.seat_id = ANY(%s)
+                    WHERE bs.showtime_id = %s AND b.payment_status = 'completed' AND bs.seat_id = ANY(%s)
                     FOR UPDATE
                 """, (showtime_id, seat_ids))
                 already_booked = {row[0] for row in cursor.fetchall()}
@@ -886,7 +886,6 @@ def get_seats_for_showtime(showtime_id):
                 cursor.execute("""
                     SELECT bs.seat_id 
                     FROM booking_seats bs
-                    JOIN bookings b ON bs.booking_id = b.booking_id
                     WHERE bs.showtime_id = %s 
                 """, (showtime_id,)) # AND b.payment_status = 'completed'
                 booked_seats = {row['seat_id'] for row in cursor.fetchall()}
@@ -1908,7 +1907,8 @@ def get_user_bookings():
                         s.end_time,
                         sc.name AS screen_name
                     FROM bookings b
-                    JOIN showtimes s ON b.showtime_id = s.showtime_id
+                    JOIN booking_seats bs ON b.booking_id = bs.booking_id
+                    JOIN showtimes s ON bs.showtime_id = s.showtime_id
                     JOIN screens sc ON s.screen_id = sc.screen_id
                     WHERE b.user_id = %s
                     ORDER BY b.created_at DESC
@@ -2214,7 +2214,8 @@ def get_leaderboard():
                     FROM users u
                     JOIN user_points up ON u.id = up.user_id
                     LEFT JOIN bookings b ON u.id = b.user_id
-                    JOIN showtimes s ON b.showtime_id = s.showtime_id
+                    JOIN booking_seats bs ON b.booking_id = bs.booking_id
+                    JOIN showtimes s ON bs.showtime_id = s.showtime_id
                     GROUP BY up.user_id, u.nickname, up.points, u.profile_image
                     ORDER BY  total_duration DESC
                     
