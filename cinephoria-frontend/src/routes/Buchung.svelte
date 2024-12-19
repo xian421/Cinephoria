@@ -12,7 +12,7 @@
     } from '../services/api.js';
     import { get } from 'svelte/store';
     import { authStore } from '../stores/authStore'; 
-    import { cart, cartError, addToCart, removeFromCart, clearCart, loadCart } from '../stores/cartStore.js';
+    import { cart, cartError, addToCart, removeFromCart, clearCart, loadCart, validUntil } from '../stores/cartStore.js';
 
     import "@fortawesome/fontawesome-free/css/all.min.css";
 
@@ -37,19 +37,18 @@
     $: totalPrice = $cart.reduce((sum, seat) => sum + seat.price, 0);
 
     $: {
-        if ($cart.length === 0) {
-            timeLeft = 0;
-            warning = false;
-        } else {
-            const now = new Date();
-            const reservationTimes = $cart.map(seat => new Date(seat.reserved_until));
-            const earliest = new Date(Math.min(...reservationTimes));
-            timeLeft = Math.max(0, Math.floor((earliest.getTime() - now.getTime()) / 1000));
-            warning = timeLeft <= 60;
-        }
-        console.log("Aktueller Warenkorb:", $cart);
-        console.log("timeLeft:", timeLeft);
+    if (!$validUntil || $cart.length === 0) {
+        timeLeft = 0;
+        warning = false;
+    } else {
+        const now = new Date();
+        const diff = $validUntil.getTime() - now.getTime();
+        timeLeft = Math.max(0, Math.floor(diff / 1000));
+        warning = timeLeft <= 60;
     }
+    console.log("timeLeft:", timeLeft);
+}
+
 
     $: {
         clearInterval(timer);
