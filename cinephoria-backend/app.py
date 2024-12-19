@@ -2225,6 +2225,64 @@ def get_leaderboard():
     except Exception as e:
         logger.error(f"Fehler beim Abrufen des Leaderboards: {e}")
         return jsonify({'error': 'Fehler beim Abrufen des Leaderboards'}), 500
+    
+
+@app.route('/bookings', methods=['POST'])
+def create_booking():
+    data = request.get_json()
+    vorname = data.get('vorname')
+    nachname = data.get('nachname')
+    email = data.get('email')
+    user_id = data.get('user_id')  # Kann null/None sein
+    total_amount = data.get('total_amount')
+    paypal_order_id = data.get('paypal_order_id', 111)
+    cart_items = data.get('cart_items', [])
+
+    # Grundlegende Validierung
+    if not vorname or not nachname or not email:
+        return jsonify({"error": "Vorname, Nachname und Email sind erforderlich"}), 400
+    if not cart_items:
+        return jsonify({"error": "cart_items darf nicht leer sein"}), 400
+    if total_amount is None:
+        return jsonify({"error": "total_amount ist erforderlich"}), 400
+
+    try:
+        with psycopg2.connect(DATABASE_URL) as conn:
+            with conn.cursor() as cursor:
+                # Erstelle einen Buchungseintrag
+                # payment_status immer 'completed'
+                # booking_time mit CURRENT_TIMESTAMP
+                # user_id kann NULL sein, daher verwenden wir bedingte Platzhalter
+                cursor.execute("""
+                    INSERT INTO bookings (user_id, booking_time, payment_status, total_amount, paypal_order_id, vorname, nachname, email)
+                    VALUES (%s, CURRENT_TIMESTAMP, 'completed', %s, %s, %s, %s, %s)
+                    RETURNING booking_id
+                """, (user_id, total_amount, paypal_order_id, vorname, nachname, email))
+                booking_id = cursor.fetchone()[0]
+
+                # Nun die booking_seats einfügen
+                # Für jeden Eintrag in cart_items einen Insert
+                # price lassen wir leer, also NULL
+                for item in cart_items:
+                    seat_id = item.get('seat_id')
+                    showtime_id = item.get('showtime_id')
+
+                    if not seat_id or not showtime_id:
+                        conn.rollback()
+                        return jsonify({"error": "Jedes cart_item braucht seat_id und showtime_id"}), 400
+
+                    # Füge den Sitz in booking_seats ein
+                    cursor.execute("""
+                        INSERT INTO booking_seats (booking_id, seat_id, showtime_id)
+                        VALUES (%s, %s, %s)
+                    """, (booking_id, seat_id, showtime_id))
+
+                conn.commit()
+
+        return jsonify({"message": "Buchung erfolgreich angelegt", "booking_id": booking_id}), 201
+    except Exception as e:
+        print(f"Fehler beim Erstellen der Buchung: {e}")
+        return jsonify({"error": "Fehler beim Erstellen der Buchung"}), 500
 
 
 if __name__ == '__main__':
