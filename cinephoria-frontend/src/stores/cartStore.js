@@ -22,6 +22,7 @@ const validUntil = writable(null);
 
 export { cart, cartError, validUntil };
 
+// Funktion zum Laden des Warenkorbs
 export async function loadCart() {
     const token = get(authStore).token;
     cartError.set(null);
@@ -36,7 +37,15 @@ export async function loadCart() {
 
         const { cart_items, valid_until: validUntilStr } = response;
 
-        validUntil.set(validUntilStr ? new Date(validUntilStr) : null);
+        if (cart_items.length > 0) {
+            // Setze validUntil nur, wenn der Warenkorb nicht leer ist
+            validUntil.set(validUntilStr ? new Date(validUntilStr) : null);
+            console.log('validUntil gesetzt:', validUntilStr ? new Date(validUntilStr) : null);
+        } else {
+            // Entferne validUntil, wenn der Warenkorb leer ist
+            validUntil.set(null);
+            console.log('validUntil entfernt, da der Warenkorb leer ist.');
+        }
 
         // 'reserved_until' wird noch ausgelesen, falls es künftig relevant ist.
         let items = cart_items.map(item => ({
@@ -51,7 +60,7 @@ export async function loadCart() {
                 const movieDetails = showtimeDetails 
                     ? await fetchMovieDetails(showtimeDetails.movie_id)
                     : null;
-                    console.log('showtimesdetail', showtimeDetails);
+                console.log('showtimesdetail', showtimeDetails);
                 return {
                     ...item,
                     ...seatDetails, 
@@ -76,15 +85,19 @@ export async function loadCart() {
     } catch (error) {
         console.error('Fehler beim Laden des Warenkorbs:', error);
         cartError.set(error.message || 'Fehler beim Laden des Warenkorbs.');
+        validUntil.set(null); // Sicherstellen, dass validUntil entfernt wird bei Fehler
     }
 }
 
+// Initiales Laden des Warenkorbs
 loadCart();
 
+// Laden des Warenkorbs bei Änderungen der Authentifizierung
 authStore.subscribe(() => {
     loadCart();
 });
 
+// Funktion zum Hinzufügen eines Sitzes zum Warenkorb
 export async function addToCart(seat, showtime_id) {
     const token = get(authStore).token;
     cartError.set(null);
@@ -106,6 +119,7 @@ export async function addToCart(seat, showtime_id) {
     }
 }
 
+// Funktion zum Entfernen eines Sitzes aus dem Warenkorb
 export async function removeFromCart(seat_id, showtime_id) {
     const token = get(authStore).token;
     cartError.set(null);
@@ -122,6 +136,7 @@ export async function removeFromCart(seat_id, showtime_id) {
     }
 }
 
+// Funktion zum Leeren des Warenkorbs
 export async function clearCart() {
     const token = get(authStore).token;
     cartError.set(null);

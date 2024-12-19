@@ -1,106 +1,104 @@
 <!-- src/components/Navbar.svelte -->
-<script>
-  import { navigate, useLocation } from "svelte-routing";
-  import { authStore } from '../stores/authStore';
-  import Swal from "sweetalert2";
-  import { profileStore } from "../stores/profileStore";
+<script lang="ts">
+    import { navigate, useLocation } from "svelte-routing";
+    import { authStore } from '../stores/authStore';
+    import Swal from "sweetalert2";
+    import { profileStore } from "../stores/profileStore";
+    import Timer from './Timer.svelte'; // Importiere die Timer-Komponente
 
-  export let toggleLoginDropdown;
-  export let toggleProfileMenu;
-  export let logout;
-  export let handleLogin;
-  
-  export let isLoginOpen = false;
-  export let isProfileDropdownOpen;
-  
-  let email = "";
-  let password = "";
-  let firstName = "";
-  let lastName = "";
-  
-  let currentView = 'login'; // 'login', 'register', 'forgotPassword'
+    export let toggleLoginDropdown;
+    export let toggleProfileMenu;
+    export let logout;
+    export let handleLogin;
+    
+    export let isLoginOpen = false;
+    export let isProfileDropdownOpen;
+    
+    let email = "";
+    let password = "";
+    let firstName = "";
+    let lastName = "";
+    
+    let currentView = 'login'; // 'login', 'register', 'forgotPassword'
 
-  const onLoginSubmit = async () => {
-      if (!email || !password) {
-          Swal.fire("Fehler", "Bitte gib E-Mail und Passwort ein.", "error");
-          return;
-      }
-      await handleLogin(email, password);
-      email = "";
-      password = "";
-      toggleLoginDropdown(false);
-  };
+    const onLoginSubmit = async () => {
+        if (!email || !password) {
+            Swal.fire("Fehler", "Bitte gib E-Mail und Passwort ein.", "error");
+            return;
+        }
+        await handleLogin(email, password);
+        email = "";
+        password = "";
+        toggleLoginDropdown(false);
+    };
 
-  const handleRegisterFn = async () => {
-      if (!firstName || !lastName || !email || !password) {
-          Swal.fire("Fehler", "Bitte fülle alle Felder aus.", "error");
-          return;
-      }
+    const handleRegisterFn = async () => {
+        if (!firstName || !lastName || !email || !password) {
+            Swal.fire("Fehler", "Bitte fülle alle Felder aus.", "error");
+            return;
+        }
 
-      try {
-          const response = await fetch("https://cinephoria-backend-c53f94f0a255.herokuapp.com/register", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ first_name: firstName, last_name: lastName, email, password }),
-          });
+        try {
+            const response = await fetch("https://cinephoria-backend-c53f94f0a255.herokuapp.com/register", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ first_name: firstName, last_name: lastName, email, password }),
+            });
 
-          const data = await response.json();
+            const data = await response.json();
 
-          if (response.ok) {
-              Swal.fire("Erfolgreich registriert!", "Du kannst dich jetzt einloggen.", "success");
-              currentView = 'login';
-              firstName = "";
-              lastName = "";
-              email = "";
-              password = "";
-          } else {
-              Swal.fire("Fehler", data.error || "Ein Fehler ist aufgetreten.", "error");
-          }
-      } catch (error) {
-          Swal.fire("Fehler", "Es konnte keine Verbindung zum Server hergestellt werden.", "error");
-      }
-  };
+            if (response.ok) {
+                Swal.fire("Erfolgreich registriert!", "Du kannst dich jetzt einloggen.", "success");
+                currentView = 'login';
+                firstName = "";
+                lastName = "";
+                email = "";
+                password = "";
+            } else {
+                Swal.fire("Fehler", data.error || "Ein Fehler ist aufgetreten.", "error");
+            }
+        } catch (error) {
+            Swal.fire("Fehler", "Es konnte keine Verbindung zum Server hergestellt werden.", "error");
+        }
+    };
 
-  
+    const handleForgotPasswordFn = async () => {
+        if (!email) {
+            Swal.fire("Fehler", "Bitte gib deine E-Mail-Adresse ein.", "error");
+            return;
+        }
 
-  const handleForgotPasswordFn = async () => {
-      if (!email) {
-          Swal.fire("Fehler", "Bitte gib deine E-Mail-Adresse ein.", "error");
-          return;
-      }
+        try {
+            const response = await fetch("https://cinephoria-backend-c53f94f0a255.herokuapp.com/forgot-password", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ email }),
+            });
 
-      try {
-          const response = await fetch("https://cinephoria-backend-c53f94f0a255.herokuapp.com/forgot-password", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ email }),
-          });
+            const data = await response.json();
 
-          const data = await response.json();
+            if (response.ok) {
+                Swal.fire(
+                    "E-Mail gesendet!",
+                    "Falls die E-Mail existiert, erhältst du in Kürze Anweisungen zum Zurücksetzen des Passworts.",
+                    "success"
+                );
+                email = "";
+                currentView = 'login';
+            } else {
+                Swal.fire("Fehler", data.error || "Ein Fehler ist aufgetreten.", "error");
+            }
+        } catch (error) {
+            Swal.fire("Fehler", "Es konnte keine Verbindung zum Server hergestellt werden.", "error");
+        }
+    };
 
-          if (response.ok) {
-              Swal.fire(
-                  "E-Mail gesendet!",
-                  "Falls die E-Mail existiert, erhältst du in Kürze Anweisungen zum Zurücksetzen des Passworts.",
-                  "success"
-              );
-              email = "";
-              currentView = 'login';
-          } else {
-              Swal.fire("Fehler", data.error || "Ein Fehler ist aufgetreten.", "error");
-          }
-      } catch (error) {
-          Swal.fire("Fehler", "Es konnte keine Verbindung zum Server hergestellt werden.", "error");
-      }
-  };
+    const location = useLocation();
 
-  const location = useLocation();
+    // Helper function to determine active class
+    const isActive = (path) => location.pathname === path;
 
-  // Helper function to determine active class
-  const isActive = (path) => location.pathname === path;
-
-  console.log($authStore.profile_image);
-
+    console.log($authStore.profile_image);
 </script>
 
 <div class="navbar-background">
@@ -112,7 +110,7 @@
       <button class="{isActive('/') ? 'active' : ''}" on:click={() => navigate('/')}>Alle Filme</button>
       <button class="{isActive('/nowplaying') ? 'active' : ''}" on:click={() => navigate('/nowplaying')}>Programm</button>
       <button class="{isActive('/upcoming') ? 'active' : ''}" on:click={() => navigate('/upcoming')}>Upcoming</button>
-      <button class="{isActive('/warenkorb') ? 'active' : ''}" on:click={() => navigate('/warenkorb')}>Warenkorb</button>
+      <button class="{isActive('/warenkorb') ? 'active' : ''}" on:click={() => navigate('/warenkorb')}>Warenkorb <Timer mode="navbar" /></button>
 
       {#if $authStore.isLoggedIn}
           <div class="profile-dropdown-container {isProfileDropdownOpen ? 'open' : ''}">
@@ -178,6 +176,9 @@
               </div>
           </div>
       {/if}
+      
+      <!-- Füge die Timer-Komponente in die Navbar ein
+      <Timer mode="navbar" />  -->
   </nav>
 </div>
 
@@ -500,3 +501,4 @@
       display: block;
   }
 </style>
+    

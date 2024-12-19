@@ -1,12 +1,13 @@
 <!-- src/routes/Buchung.svelte -->
 <script lang="ts">
-    import { onMount, onDestroy, tick } from 'svelte';
+    import { onMount, tick } from 'svelte';
     import { navigate } from 'svelte-routing';
     import Swal from 'sweetalert2';
     import { createBooking, createPayPalOrder, capturePayPalOrder, fetchSeatTypes, fetchSeatsWithReservation } from '../services/api.js';
     import { get } from 'svelte/store';
     import { authStore } from '../stores/authStore'; 
     import { cart, cartError, addToCart, removeFromCart, clearCart, loadCart, validUntil } from '../stores/cartStore.js';
+    import Timer from '../components/Timer.svelte'; // Importiere die Timer-Komponente
     import "@fortawesome/fontawesome-free/css/all.min.css";
 
     export let showtime_id: string;
@@ -19,47 +20,8 @@
     let payPalInitialized = false;
     let paypalContainer: HTMLElement;
 
-    let totalPrice = 0.0;
-    let timer: ReturnType<typeof setInterval> | null = null;
-    let timeLeft = 0; // in Sekunden
-    let warning = false;
-
-    const PAYPAL_CLIENT_ID = 'AXWfRwPPgPCoOBZzqI-r4gce1HuWZXDnFqUdES0bP8boKSv5KkkPvZrMFwcCDShXjC3aTdChUjOhwxhW';
-
     // Berechne Gesamtpreis
     $: totalPrice = $cart.reduce((sum, seat) => sum + seat.price, 0);
-
-    // Berechne timeLeft basierend auf validUntil
-    $: {
-        if (!$validUntil || $cart.length === 0) {
-            timeLeft = 0;
-            warning = false;
-        } else {
-            const now = new Date();
-            const diff = $validUntil.getTime() - now.getTime();
-            timeLeft = Math.max(0, Math.floor(diff / 1000));
-            warning = timeLeft <= 60;
-        }
-    }
-
-    // Timer-Intervall für Countdown
-    $: {
-        clearInterval(timer);
-        if (timeLeft > 0) {
-            timer = setInterval(() => {
-                if (timeLeft > 0) {
-                    timeLeft -= 1;
-                }
-                if (timeLeft === 60 && !warning) {
-                    showWarning();
-                }
-                if (timeLeft <= 0) {
-                    clearInterval(timer!);
-                    loadCart();
-                }
-            }, 1000);
-        }
-    }
 
     // Fehlerbehandlung für den Warenkorb
     $: if ($cartError) {
@@ -94,10 +56,6 @@
                 payPalInitialized = true;
             }
         }
-    });
-
-    onDestroy(() => {
-        clearInterval(timer!);
     });
 
     async function loadSeats() {
@@ -222,6 +180,8 @@
     }
 
     function initializePayPalButtons() {
+        const PAYPAL_CLIENT_ID = 'AXWfRwPPgPCoOBZzqI-r4gce1HuWZXDnFqUdES0bP8boKSv5KkkPvZrMFwcCDShXjC3aTdChUjOhwxhW'; // Stellen Sie sicher, dass diese Variable definiert ist
+
         if (!PAYPAL_CLIENT_ID) {
             Swal.fire({title: "Fehler", text: 'PayPal Client ID ist nicht gesetzt.', icon: "error"});
             return;
@@ -374,10 +334,9 @@
             {/each}
         </div>
 
-        {#if timeLeft > 0}
-            <p class="reservation-time">
-                Deine Reservierung läuft in <span class="time-highlight">{formatTime(timeLeft)}</span> ab.
-            </p>
+        <!-- Integriere die Timer-Komponente nur, wenn Sitze im Warenkorb sind -->
+        {#if $cart.length > 0}
+            <Timer mode="inline" />
         {/if}
 
         <div class="seating-chart">
@@ -428,7 +387,6 @@
         </div>
     {/if}
 </main>
-
 
 <style>
     .booking-container {

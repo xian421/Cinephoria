@@ -196,7 +196,7 @@
                 <!-- Anzeige der Film- und Vorstellungsdetails -->
                 <div class="showtime-details">
                     <h2>Film: {group.movie.title}</h2>
-                    <p>Startzeit: {new Date(group.showtime.start_time).toLocaleString('de-DE', { hour: '2-digit', minute: '2-digit' })}, Kinosaal: {group.showtime.screen_id}</p>
+                    <p>Startzeit: {new Date(group.showtime.start_time).toLocaleString('de-DE', { hour: '2-digit', minute: '2-digit' })}, {group.showtime.screen_name}</p>
                 </div>
 
                 <!-- Anzeige der Sitzplätze für diese Gruppe -->
