@@ -965,7 +965,8 @@ def get_seats_for_showtime(showtime_id):
                         'color': seat['color'] or '#678be0',
                         'icon': seat['icon'],
                         'status': status,
-                        'reserved_by_self': rbs
+                        'reserved_by_self': rbs,
+                        'screen_name': seat['screen_name']
                     })
                     
         return jsonify({'seats': seats_list}), 200
