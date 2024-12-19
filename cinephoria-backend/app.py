@@ -2204,6 +2204,24 @@ def delete_reward(reward_id):
         logger.error(f"Fehler beim Löschen der Belohnung: {e}")
         return jsonify({'error': 'Fehler beim Löschen der Belohnung'}), 500
 
+@app.route('/leaderboard', methods=['GET'])
+def get_leaderboard():
+    try:
+        with psycopg2.connect(DATABASE_URL) as conn:
+            with conn.cursor(cursor_factory=psycopg2.extras.DictCursor) as cursor:
+                cursor.execute("""
+                    SELECT u.user_id, u.username, up.points, u.profile_image
+                    FROM users u
+                    JOIN user_points up ON u.user_id = up.user_id
+                    ORDER BY up.points DESC
+                """)
+                users = cursor.fetchall()
+                users_list = [dict(u) for u in users]
+        return jsonify({'leaderboard': users_list}), 200
+    except Exception as e:
+        logger.error(f"Fehler beim Abrufen des Leaderboards: {e}")
+        return jsonify({'error': 'Fehler beim Abrufen des Leaderboards'}), 500
+
 
 if __name__ == '__main__':
     app.run(debug=True)
