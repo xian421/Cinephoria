@@ -9,7 +9,7 @@
     import { navigate } from 'svelte-routing';
     import ProfileImage from './ProfileImage.svelte';
     import ProfileModal from './ProfileModal.svelte';
-    import EditProfileModal from './EditProfileModal.svelte';
+    import EditProfileModal from './Editprofilemodal.svelte';
     
     let profile;
     let isLoading = true;
