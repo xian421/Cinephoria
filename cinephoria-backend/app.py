@@ -874,9 +874,10 @@ def get_seats_for_showtime(showtime_id):
 
                 # Alle Sitzplätze für diesen Kinosaal holen
                 cursor.execute("""
-                    SELECT s.seat_id, s.row, s.number, st.name AS seat_type_name, st.price, st.color, st.icon
+                    SELECT s.seat_id, s.row, s.number, st.name AS seat_type_name, st.price, st.color, st.icon, scr.name AS screen_name
                     FROM seats s
                     JOIN seat_types st ON s.seat_type_id = st.seat_type_id
+                    JOIN screens scr ON s.screen_id = scr.screen_id
                     WHERE s.screen_id = %s
                     ORDER BY s.row, s.number
                 """, (screen_id,))

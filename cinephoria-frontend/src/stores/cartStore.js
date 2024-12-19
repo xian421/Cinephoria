@@ -51,6 +51,7 @@ export async function loadCart() {
                 const movieDetails = showtimeDetails 
                     ? await fetchMovieDetails(showtimeDetails.movie_id)
                     : null;
+                    console.log('showtimesdetail', showtimeDetails);
                 return {
                     ...item,
                     ...seatDetails, 

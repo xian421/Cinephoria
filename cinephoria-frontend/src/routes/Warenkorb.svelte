@@ -56,6 +56,7 @@
                     movie: seat.movie,
                     seats: []
                 };
+                console.log(seat.showtime)
             }
             groups[key].seats.push(seat);
         });
