@@ -11,12 +11,12 @@
     // Abonniere die Stores
     const unsubscribeTimeLeft = timeLeft.subscribe(value => {
         currentTimeLeft = value;
-        console.log('Timer Komponente - timeLeft:', currentTimeLeft);
+       // console.log('Timer Komponente - timeLeft:', currentTimeLeft);
     });
 
     const unsubscribeWarning = warning.subscribe(value => {
         isWarning = value;
-        console.log('Timer Komponente - warning:', isWarning);
+      //  console.log('Timer Komponente - warning:', isWarning);
     });
 
     // Bereinige die Abonnements beim Zerstören der Komponente

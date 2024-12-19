@@ -21,7 +21,7 @@ validUntil.subscribe(currentValidUntil => {
     if (timer) {
         clearInterval(timer);
         timer = null;
-        console.log('Timer gestoppt.');
+     //   console.log('Timer gestoppt.');
     }
 
     if (currentValidUntil && get(validUntil) && get(validUntil).getTime() > new Date().getTime()) {
@@ -29,7 +29,7 @@ validUntil.subscribe(currentValidUntil => {
         const calculatedTimeLeft = calculateTimeLeft(currentValidUntil);
         timeLeft.set(calculatedTimeLeft);
         warning.set(false);
-        console.log('Timer gestartet mit timeLeft:', calculatedTimeLeft);
+  //      console.log('Timer gestartet mit timeLeft:', calculatedTimeLeft);
 
         // Starte den Timer
         timer = setInterval(() => {
@@ -38,19 +38,19 @@ validUntil.subscribe(currentValidUntil => {
                 timeLeft.set(current - 1);
                 if (current - 1 === 60) {
                     warning.set(true);
-                    console.log('Warnung: weniger als eine Minute übrig.');
+                 //   console.log('Warnung: weniger als eine Minute übrig.');
                 }
                 if (current - 1 <= 0) {
                     clearInterval(timer);
                     timer = null;
-                    console.log('Timer beendet.');
+              //      console.log('Timer beendet.');
                 }
             }
         }, 1000);
     } else {
         timeLeft.set(0);
         warning.set(false);
-        console.log('Timer nicht gestartet, timeLeft auf 0 gesetzt.');
+      //  console.log('Timer nicht gestartet, timeLeft auf 0 gesetzt.');
     }
 });
 
@@ -58,7 +58,7 @@ validUntil.subscribe(currentValidUntil => {
 if (timer) {
     clearInterval(timer);
     timer = null;
-    console.log('Initialer Timer gestoppt.');
+  //  console.log('Initialer Timer gestoppt.');
 }
 
 export { timeLeft, warning };

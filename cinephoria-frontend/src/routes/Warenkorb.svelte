@@ -5,20 +5,45 @@
     import { derived } from 'svelte/store';
     import { onMount } from 'svelte';
     import { cart, cartError, removeFromCart, clearCart, loadCart } from '../stores/cartStore.js';
-
+    import { fetchSeatTypesWithDiscounts } from '../services/api.js';
     // Neue Importe für das futuristische Design und Animationen
     import { tweened } from 'svelte/motion';
     import { cubicOut } from 'svelte/easing';
+    import { authStore} from '../stores/authStore.js';
+    import { get } from 'svelte/store';
+
 
     // Animationen für Headline und Tagline
     let headerOpacity = tweened(0, { duration: 1000, easing: cubicOut });
     let taglineOpacity = tweened(0, { duration: 1500, easing: cubicOut, delay: 500 });
+    let test = [];
 
-    onMount(() => {
+    onMount(async () => {
         loadCart(); // Lade den Warenkorb beim Neuladen der Seite
         headerOpacity.set(1);
         taglineOpacity.set(1);
+        loadSeats();
+
+
     });
+
+    async function loadSeats(token) {
+        try {
+            const token = get(authStore).token;
+
+            test = await fetchSeatTypesWithDiscounts();
+            console.log(test);
+        } catch (error) {
+            console.error('Fehler beim Laden der Sitzplatztypen:', error);
+            Swal.fire({
+                title: 'Fehler',
+                text: 'Beim Laden der Sitzplatztypen ist ein Fehler aufgetreten.',
+                icon: 'error',
+                confirmButtonText: 'OK'
+            });
+        }
+    }
+
 
     // Rabattoptionen
     const discountOptions = [
@@ -26,7 +51,7 @@
         { id: 'student', label: 'Student', amount: 5 },
         { id: 'senior', label: 'Senior', amount: 3 },
         { id: 'child', label: 'Kind', amount: 2 },
-        { id: 'member', label: 'Mitglied', amount: 4 },
+        { id: 'membersdsdsd', label: 'Mitglied', amount: 4 },
         { id: 'somethingElse', label: 'Sonstiges', amount: 6 }
     ];
 
@@ -56,7 +81,7 @@
                     movie: seat.movie,
                     seats: []
                 };
-                console.log(seat.showtime)
+                console.log('HIIIER:', seat)
             }
             groups[key].seats.push(seat);
         });

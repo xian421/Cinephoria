@@ -3,10 +3,25 @@
     import { onMount, tick } from 'svelte';
     import { navigate } from 'svelte-routing';
     import Swal from 'sweetalert2';
-    import { createBooking, createPayPalOrder, capturePayPalOrder, fetchSeatTypes, fetchSeatsWithReservation } from '../services/api.js';
+    import { 
+        createBooking, 
+        createPayPalOrder, 
+        capturePayPalOrder, 
+        fetchSeatTypes, 
+        fetchSeatsWithReservation, 
+        fetchSeatTypesWithDiscounts 
+    } from '../services/api.js';
     import { get } from 'svelte/store';
     import { authStore } from '../stores/authStore'; 
-    import { cart, cartError, addToCart, removeFromCart, clearCart, loadCart, validUntil } from '../stores/cartStore.js';
+    import { 
+        cart, 
+        cartError, 
+        addToCart, 
+        removeFromCart, 
+        clearCart, 
+        loadCart, 
+        validUntil 
+    } from '../stores/cartStore.js';
     import Timer from '../components/Timer.svelte'; // Importiere die Timer-Komponente
     import "@fortawesome/fontawesome-free/css/all.min.css";
 
@@ -19,6 +34,8 @@
     let seatsByRow = {};
     let payPalInitialized = false;
     let paypalContainer: HTMLElement;
+
+    let test = [];
 
     // Berechne Gesamtpreis
     $: totalPrice = $cart.reduce((sum, seat) => sum + seat.price, 0);
@@ -64,7 +81,50 @@
             let guest_id = localStorage.getItem('guest_id') || crypto.randomUUID();
             localStorage.setItem('guest_id', guest_id);
 
-            seatTypesList = await fetchSeatTypes(token);
+            // Laden der Sitzarten
+            test = await fetchSeatTypes(token);
+            seatTypesList = await fetchSeatTypesWithDiscounts(token);
+            console.log(seatTypesList);
+            console.log(test);
+
+            // Funktion zur Berechnung des niedrigsten Preises
+            function calculateLowestPrice(seatType) {
+                const basePrice = seatType.price;
+                let lowestPrice = basePrice;
+
+                if (seatType.discounts && seatType.discounts.length > 0) {
+                    seatType.discounts.forEach(discount => {
+                        let discountedPrice = basePrice;
+
+                        if (discount.discount_percentage) {
+                            // Berechne Preis nach prozentualer Ermäßigung
+                            discountedPrice = basePrice * (1 - discount.discount_percentage / 100);
+                        }
+
+                        if (discount.discount_amount) {
+                            // Berechne Preis nach fester Ermäßigung
+                            discountedPrice = basePrice - discount.discount_amount;
+                        }
+
+                        // Stelle sicher, dass der Preis nicht negativ wird
+                        discountedPrice = Math.max(discountedPrice, 0);
+
+                        // Aktualisiere den niedrigsten Preis, falls der berechnete Preis niedriger ist
+                        if (discountedPrice < lowestPrice) {
+                            lowestPrice = discountedPrice;
+                        }
+                    });
+                }
+
+                return lowestPrice;
+            }
+
+            // Erweiterung der seatTypesList mit lowestPrice
+            seatTypesList = seatTypesList.map(seatType => ({
+                ...seatType,
+                lowestPrice: calculateLowestPrice(seatType)
+            }));
+
             const seatData = await fetchSeatsWithReservation(showtime_id, token, guest_id);
             seats = seatData.seats;
             seatsByRow = groupSeatsByRowWithGaps(seats);
@@ -99,7 +159,14 @@
                 if (seatMap[key]) {
                     rowSeats.push(seatMap[key]);
                 } else {
-                    rowSeats.push({ row: rowLabel, number: num, status: 'missing', seat_id: null, type: null, price: 0.00 });
+                    rowSeats.push({ 
+                        row: rowLabel, 
+                        number: num, 
+                        status: 'missing', 
+                        seat_id: null, 
+                        type: null, 
+                        price: 0.00 
+                    });
                 }
             });
             rowsWithGaps[rowLabel] = rowSeats;
@@ -329,7 +396,7 @@
                             <i class={`fas ${seatType.icon}`} style="color: white;"></i>
                         {/if}
                     </div>
-                    <span>{`${seatType.name} ab ${seatType.price} €`}</span>
+                    <span>{`${seatType.name}  ${seatType.lowestPrice.toFixed(2)}€ - ${seatType.price.toFixed(2)}€`}</span>
                 </div>
             {/each}
         </div>
@@ -623,3 +690,4 @@
         }
     }
 </style>
+ 
