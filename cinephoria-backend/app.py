@@ -2210,10 +2210,14 @@ def get_leaderboard():
         with psycopg2.connect(DATABASE_URL) as conn:
             with conn.cursor(cursor_factory=psycopg2.extras.DictCursor) as cursor:
                 cursor.execute("""
-                    SELECT up.user_id, u.nickname, up.points, u.profile_image
+                    SELECT up.user_id, u.nickname, up.points, u.profile_image, COUNT(b.booking_id) AS bookings, MAX(s.start_time) AS last_booking, SUM(s.end_time - s.start_time) AS total_duration
                     FROM users u
                     JOIN user_points up ON u.id = up.user_id
-                    ORDER BY up.points DESC
+                    LEFT JOIN bookings b ON u.id = b.user_id
+                    JOIN showtimes s ON b.showtime_id = s.showtime_id
+                    GROUP BY up.user_id, u.nickname, up.points, u.profile_image
+                    ORDER BY  total_duration DESC
+                    
                 """)
                 users = cursor.fetchall()
                 users_list = [dict(u) for u in users]
