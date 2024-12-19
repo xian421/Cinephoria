@@ -887,7 +887,7 @@ def get_seats_for_showtime(showtime_id):
                     SELECT bs.seat_id 
                     FROM booking_seats bs
                     JOIN bookings b ON bs.booking_id = b.booking_id
-                    WHERE b.showtime_id = %s 
+                    WHERE bs.showtime_id = %s 
                 """, (showtime_id,)) # AND b.payment_status = 'completed'
                 booked_seats = {row['seat_id'] for row in cursor.fetchall()}
 
