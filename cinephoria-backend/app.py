@@ -2227,7 +2227,7 @@ def get_leaderboard():
         return jsonify({'error': 'Fehler beim Abrufen des Leaderboards'}), 500
     
 
-@app.route('/bookings', methods=['POST'])
+@app.route('/bookings/new', methods=['POST'])
 def create_booking():
     data = request.get_json()
     vorname = data.get('vorname')
