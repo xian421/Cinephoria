@@ -3,17 +3,10 @@
     import { onMount, onDestroy, tick } from 'svelte';
     import { navigate } from 'svelte-routing';
     import Swal from 'sweetalert2';
-    import { 
-        createBooking, 
-        createPayPalOrder, 
-        capturePayPalOrder, 
-        fetchSeatTypes,
-        fetchSeatsWithReservation
-    } from '../services/api.js';
+    import { createBooking, createPayPalOrder, capturePayPalOrder, fetchSeatTypes, fetchSeatsWithReservation } from '../services/api.js';
     import { get } from 'svelte/store';
     import { authStore } from '../stores/authStore'; 
     import { cart, cartError, addToCart, removeFromCart, clearCart, loadCart, validUntil } from '../stores/cartStore.js';
-
     import "@fortawesome/fontawesome-free/css/all.min.css";
 
     export let showtime_id: string;
@@ -25,7 +18,6 @@
     let seatsByRow = {};
     let payPalInitialized = false;
     let paypalContainer: HTMLElement;
-    
 
     let totalPrice = 0.0;
     let timer: ReturnType<typeof setInterval> | null = null;
@@ -34,22 +26,23 @@
 
     const PAYPAL_CLIENT_ID = 'AXWfRwPPgPCoOBZzqI-r4gce1HuWZXDnFqUdES0bP8boKSv5KkkPvZrMFwcCDShXjC3aTdChUjOhwxhW';
 
+    // Berechne Gesamtpreis
     $: totalPrice = $cart.reduce((sum, seat) => sum + seat.price, 0);
 
+    // Berechne timeLeft basierend auf validUntil
     $: {
-    if (!$validUntil || $cart.length === 0) {
-        timeLeft = 0;
-        warning = false;
-    } else {
-        const now = new Date();
-        const diff = $validUntil.getTime() - now.getTime();
-        timeLeft = Math.max(0, Math.floor(diff / 1000));
-        warning = timeLeft <= 60;
+        if (!$validUntil || $cart.length === 0) {
+            timeLeft = 0;
+            warning = false;
+        } else {
+            const now = new Date();
+            const diff = $validUntil.getTime() - now.getTime();
+            timeLeft = Math.max(0, Math.floor(diff / 1000));
+            warning = timeLeft <= 60;
+        }
     }
-    console.log("timeLeft:", timeLeft);
-}
 
-
+    // Timer-Intervall für Countdown
     $: {
         clearInterval(timer);
         if (timeLeft > 0) {
@@ -68,6 +61,7 @@
         }
     }
 
+    // Fehlerbehandlung für den Warenkorb
     $: if ($cartError) {
         Swal.fire({
             title: "Fehler",
@@ -100,7 +94,6 @@
                 payPalInitialized = true;
             }
         }
-        
     });
 
     onDestroy(() => {
@@ -126,6 +119,7 @@
     function groupSeatsByRowWithGaps(seats: any[]) {
         const rowsSet = new Set();
         const seatNumbersSet = new Set();
+
         seats.forEach(seat => {
             rowsSet.add(seat.row);
             seatNumbersSet.add(seat.number);
@@ -191,37 +185,25 @@
         return $cart.some(s => s.seat_id === seat.seat_id && s.showtime_id === showtime_id);
     }
 
-    let selectedSeat: {
-        row: string;
-        number: number;
-        type?: string;
-        price: number;
-    } | null = null;
+    let selectedSeat: { row: string; number: number; type?: string; price: number; } | null = null;
 
     async function toggleSeatSelection(seat: any) {
         if (seat.status !== 'available' && !isSelectedBySelf(seat)) {
             return;
         }
-        if (isSelectedBySelf(seat)) {
-            try {
-                console.log(`Entferne Sitzplatz ${seat.seat_id} von Showtime ${showtime_id} aus dem Warenkorb.`);
+
+        try {
+            if (isSelectedBySelf(seat)) {
                 await removeFromCart(seat.seat_id, showtime_id);
                 showToast(`Sitzplatz ${seat.row}${seat.number} wurde aus dem Warenkorb entfernt.`);
-            } catch (error) {
-                console.error('Fehler beim Entfernen aus dem Warenkorb:', error);
-            }
-        } else {
-            try {
-                console.log(`Füge Sitzplatz ${seat.seat_id} zu Showtime ${showtime_id} dem Warenkorb hinzu.`);
+            } else {
                 await addToCart(seat, showtime_id);
                 showToast(`Sitzplatz ${seat.row}${seat.number} wurde zum Warenkorb hinzugefügt.`);
                 selectedSeat = seat;
-            } catch (error) {
-                console.error('Fehler beim Hinzufügen zum Warenkorb:', error);
             }
+        } catch (error) {
+            console.error('Fehler beim Aktualisieren des Warenkorbs:', error);
         }
-
-        console.log('Selected Seats after toggle:', $cart);
     }
 
     function showToast(message: string) {
@@ -236,10 +218,7 @@
                 toast.onmouseleave = Swal.resumeTimer;
             }
         });
-        Toast.fire({
-            icon: "success",
-            title: message
-        });
+        Toast.fire({ icon: "success", title: message });
     }
 
     function initializePayPalButtons() {
@@ -276,19 +255,20 @@
         window.paypal.Buttons({
             style: {
                 layout: 'vertical',
-                color:  'blue',
-                shape:  'rect',
-                label:  'paypal'
+                color: 'blue',
+                shape: 'rect',
+                label: 'paypal'
             },
-            createOrder: async (data: any, actions: any) => {
+            createOrder: async () => {
                 if ($cart.length === 0) {
                     Swal.fire({title:"Keine Sitze",text:"Bitte wähle mindestens einen Sitzplatz aus.",icon:"warning"});
                     throw new Error('Keine Sitzplätze ausgewählt');
                 }
 
+                const token = get(authStore).token;
+                if (!token) throw new Error('Nicht authentifiziert');
+
                 try {
-                    const token = get(authStore).token;
-                    if (!token) throw new Error('Nicht authentifiziert');
                     const response = await createPayPalOrder(showtime_id, $cart, token);
                     return response.orderID;
                 } catch (err) {
@@ -297,10 +277,11 @@
                     throw err;
                 }
             },
-            onApprove: async (data: any, actions: any) => {
+            onApprove: async (data: any) => {
+                const token = get(authStore).token;
+                if (!token) throw new Error('Nicht authentifiziert');
+                
                 try {
-                    const token = get(authStore).token;
-                    if (!token) throw new Error('Nicht authentifiziert');
                     const captureResult = await capturePayPalOrder(data.orderID, token);
                     if (captureResult.status === 'COMPLETED') {
                         await confirmBooking(data.orderID);
@@ -331,7 +312,7 @@
         try {
             const token = get(authStore).token;
             const seatIds = $cart.map(seat => seat.seat_id);
-            const booking = await createBooking(showtime_id, seatIds, token, orderID);
+            await createBooking(showtime_id, seatIds, token, orderID);
             Swal.fire({title:"Buchung erfolgreich",text:"Tickets gebucht.",icon:"success"})
             .then(() => {
                 clearCart();
@@ -358,11 +339,96 @@
         const sec = seconds % 60;
         return `${min}:${sec < 10 ? '0' : ''}${sec}`;
     }
-
-    function closeModalHandler() {
-        selectedSeat = null;
-    }
 </script>
+
+<main class="booking-container">
+    {#if isLoading}
+        <p>Lade Sitzplätze...</p>
+    {:else if error}
+        <p class="error-message">{error}</p>
+    {:else}
+        <h1 class="booking-title">Wähle deine Plätze für Vorstellung #{showtime_id}</h1>
+
+        <div class="legend">
+            <div class="legend-item">
+                <div class="legend-box selected"></div>
+                <span>Dein Platz</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-box unavailable"></div>
+                <span>Belegt</span>
+            </div>
+            {#each seatTypesList as seatType}
+                <div class="legend-item">
+                    <div 
+                        class="legend-box type" 
+                        style="background-color: {seatType.color};"
+                        title={seatType.name}
+                    >
+                        {#if seatType.icon}
+                            <i class={`fas ${seatType.icon}`} style="color: white;"></i>
+                        {/if}
+                    </div>
+                    <span>{`${seatType.name} ab ${seatType.price} €`}</span>
+                </div>
+            {/each}
+        </div>
+
+        {#if timeLeft > 0}
+            <p class="reservation-time">
+                Deine Reservierung läuft in <span class="time-highlight">{formatTime(timeLeft)}</span> ab.
+            </p>
+        {/if}
+
+        <div class="seating-chart">
+            {#each Object.keys(seatsByRow) as row}
+                <div class="seat-row">
+                    <div class="row-label">{row}</div>
+                    {#each seatsByRow[row] as seat (row + '-' + seat.number)}
+                        {#if seat.status !== 'missing'}
+                            <div
+                                class="seat {seat.status} {seat.type} {isSelectedBySelf(seat) ? 'selected' : ''}"
+                                on:click={() => toggleSeatSelection(seat)}
+                                title={`Reihe ${seat.row}, Sitz ${seat.number}${seat.type ? `, Typ: ${seat.type}, Preis: ${seat.price.toFixed(2)}€` : ''}`}
+                                style={seat.type ? `background-color: ${getSeatTypeColor(seat.type)};` : ''}
+                            >
+                                {#if seat.status === 'unavailable' && !isSelectedBySelf(seat)}
+                                    <i class="fas fa-user"></i>
+                                {:else if isSelectedBySelf(seat)}
+                                    <i class="fas fa-check"></i>
+                                {:else if seat.type && getSeatTypeIcon(seat.type)}
+                                    <i class={`fas ${getSeatTypeIcon(seat.type)}`}></i>
+                                {:else}
+                                    {seat.number}
+                                {/if}
+                            </div>
+                        {:else}
+                            <div class="seat placeholder"></div>
+                        {/if}
+                    {/each}
+                </div>
+            {/each}
+        </div>
+
+        <div class="info-bar">
+            <p class="total-price">Gesamtpreis: {totalPrice.toFixed(2)}€</p>
+            <div class="button-group">
+                <button class="cart-button" on:click={() => navigate('/warenkorb')}>
+                    <i class="fas fa-shopping-cart"></i> Warenkorb ansehen
+                </button>
+                <button class="home-button" on:click={() => navigate('/')}>
+                    <i class="fas fa-home"></i> Zur Startseite
+                </button>
+            </div>
+        </div>
+
+        <div class="paypal-section">
+            <p>Sichere Zahlung mit PayPal</p>
+            <div id="paypal-button-container" bind:this={paypalContainer}></div>
+        </div>
+    {/if}
+</main>
+
 
 <style>
     .booking-container {
@@ -599,93 +665,3 @@
         }
     }
 </style>
-
-<main class="booking-container">
-    {#if isLoading}
-        <p>Lade Sitzplätze...</p>
-    {:else if error}
-        <p class="error-message">{error}</p>
-    {:else}
-        <!-- Überschrift geändert -->
-        <h1 class="booking-title">Wähle deine Plätze für Vorstellung #{showtime_id}</h1>
-
-        <!-- Überschrift für Legende -->
-        <div class="legend">
-            <div class="legend-item">
-                <div class="legend-box selected"></div>
-                <span>Dein Platz</span>
-            </div>
-            <div class="legend-item">
-                <div class="legend-box unavailable"></div>
-                <span>Belegt</span>
-            </div>
-            {#each seatTypesList as seatType}
-                <div class="legend-item">
-                    <div 
-                        class="legend-box type" 
-                        style="background-color: {seatType.color};"
-                        title={seatType.name}
-                    >
-                        {#if seatType.icon}
-                            <i class={`fas ${seatType.icon}`} style="color: white;"></i>
-                        {/if}
-                    </div>
-                    <span>{`${seatType.name} ab ${seatType.price} €`}</span>
-                </div>
-            {/each}
-        </div>
-
-        {#if timeLeft > 0}
-            <p class="reservation-time">Deine Reservierung läuft in <span class="time-highlight">{formatTime(timeLeft)}</span> ab.</p>
-        {/if}
-
-        <!-- Sitzplan soll GENAUSO bleiben -->
-        <div class="seating-chart">
-            {#each Object.keys(seatsByRow) as row}
-                <div class="seat-row">
-                    <div class="row-label">{row}</div>
-                    {#each seatsByRow[row] as seat (row + '-' + seat.number)}
-                        {#if seat.status !== 'missing'}
-                            <div
-                                class="seat {seat.status} {seat.type} {isSelectedBySelf(seat) ? 'selected' : ''}"
-                                on:click={() => toggleSeatSelection(seat)}
-                                title={`Reihe ${seat.row}, Sitz ${seat.number}${seat.type ? `, Typ: ${seat.type}, Preis: ${seat.price.toFixed(2)}€` : ''}`}
-                                style={seat.type ? `background-color: ${getSeatTypeColor(seat.type)};` : ''}
-                            >
-                                {#if seat.status === 'unavailable' && !isSelectedBySelf(seat)}
-                                    <i class="fas fa-user"></i>
-                                {:else if isSelectedBySelf(seat)}
-                                    <i class="fas fa-check"></i>
-                                {:else if seat.type && getSeatTypeIcon(seat.type)}
-                                    <i class={`fas ${getSeatTypeIcon(seat.type)}`}></i>
-                                {:else}
-                                    {seat.number}
-                                {/if}
-                            </div>
-                        {:else}
-                            <div class="seat placeholder"></div>
-                        {/if}
-                    {/each}
-                </div>
-            {/each}
-        </div>
-
-        <!-- Neue Überschriften und Buttons unten -->
-        <div class="info-bar">
-            <p class="total-price">Gesamtpreis: {totalPrice.toFixed(2)}€</p>
-            <div class="button-group">
-                <button class="cart-button" on:click={() => navigate('/warenkorb')}>
-                    <i class="fas fa-shopping-cart"></i> Warenkorb ansehen
-                </button>
-                <button class="home-button" on:click={() => navigate('/')}>
-                    <i class="fas fa-home"></i> Zur Startseite
-                </button>
-            </div>
-        </div>
-
-        <div class="paypal-section">
-            <p>Sichere Zahlung mit PayPal</p>
-            <div id="paypal-button-container" bind:this={paypalContainer}></div>
-        </div>
-    {/if}
-</main>

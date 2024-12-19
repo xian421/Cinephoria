@@ -18,38 +18,32 @@ import {
 
 const cart = writable([]);
 const cartError = writable(null);
-const validUntil = writable(null); // Neuer Store für valid_until
+const validUntil = writable(null);
 
 export { cart, cartError, validUntil };
 
 export async function loadCart() {
     const token = get(authStore).token;
     cartError.set(null);
+
     try {
-        let response = {};
+        let response;
         if (token) {
-            // Benutzer ist eingeloggt
             response = await fetchUserCart(token);
         } else {
-            // Gast
             response = await fetchGuestCart();
         }
 
         const { cart_items, valid_until: validUntilStr } = response;
 
-        if (validUntilStr) {
-            validUntil.set(new Date(validUntilStr));
-        } else {
-            validUntil.set(null);
-        }
+        validUntil.set(validUntilStr ? new Date(validUntilStr) : null);
 
-        // Konvertiere 'reserved_until' von ISO-Strings zu Date-Objekten
+        // 'reserved_until' wird noch ausgelesen, falls es künftig relevant ist.
         let items = cart_items.map(item => ({
             ...item,
             reserved_until: item.reserved_until ? new Date(item.reserved_until) : null
         }));
 
-        // Nachladen der Sitzdetails und Showtimes für jeden Sitz im Warenkorb
         const enrichedItems = await Promise.all(items.map(async (item) => {
             try {
                 const seatDetails = await fetchSeatById(item.seat_id);
@@ -57,18 +51,14 @@ export async function loadCart() {
                 const movieDetails = showtimeDetails 
                     ? await fetchMovieDetails(showtimeDetails.movie_id)
                     : null;
-                console.log('seatDetails:', seatDetails);
-                console.log('showtimeDetails:', showtimeDetails);
-                console.log('movieDetails:', movieDetails);
                 return {
                     ...item,
-                    ...seatDetails, // Fügt 'row', 'number', 'type' und 'price' hinzu
+                    ...seatDetails, 
                     showtime: showtimeDetails,
                     movie: movieDetails
                 };
             } catch (error) {
                 console.error(`Fehler beim Abrufen der Details für seat_id ${item.seat_id}:`, error);
-                // Rückgabe des ursprünglichen Items, falls Details fehlen
                 return {
                     ...item,
                     row: null,
@@ -106,13 +96,12 @@ export async function addToCart(seat, showtime_id) {
         await loadCart();
     } catch (error) {
         console.error('Fehler beim Hinzufügen zum Warenkorb:', error);
-        // Spezifische Fehlerbehandlung
         if (error.message === 'Der Sitzplatz ist bereits reserviert.') {
             cartError.set('Der gewählte Sitzplatz ist bereits reserviert.');
         } else {
             cartError.set(error.message || 'Fehler beim Hinzufügen zum Warenkorb.');
         }
-        throw error; // Fehler weiterwerfen
+        throw error;
     }
 }
 
