@@ -1249,7 +1249,6 @@ def delete_seat_type(seat_type_id):
         print(f"Fehler beim Löschen des Sitzes: {e}")
         return jsonify({'error': 'Fehler beim Löschen des Sitzes'}), 500
 
-
 @app.route('/user/cart', methods=['GET'])
 @token_required
 def get_user_cart():
@@ -1258,9 +1257,10 @@ def get_user_cart():
     try:
         with psycopg2.connect(DATABASE_URL) as conn:
             with conn.cursor(cursor_factory=psycopg2.extras.DictCursor) as cursor:
-                # Überprüfen, ob der Benutzer einen Warenkorb hat und valid_until abrufen
                 cursor.execute("SELECT user_id, valid_until FROM user_carts WHERE user_id = %s", (user_id,))
                 cart = cursor.fetchone()
+
+                # valid_until setzen falls nötig
                 if cart is None:
                     valid_until = datetime.now(timezone.utc) + timedelta(minutes=15)
                     cursor.execute("INSERT INTO user_carts (user_id, valid_until) VALUES (%s, %s)", (user_id, valid_until,))
@@ -1273,7 +1273,7 @@ def get_user_cart():
                         conn.commit()
                         cart['valid_until'] = valid_until
 
-                # Abrufen der Warenkorb-Elemente mit showtime_id
+                # Warenkorb-Elemente laden
                 cursor.execute("""
                     SELECT seat_id, price, reserved_until, showtime_id
                     FROM user_cart_items
@@ -1281,22 +1281,31 @@ def get_user_cart():
                 """, (user_id,))
                 items = cursor.fetchall()
                 cart_items = []
+
                 for item in items:
+                    reserved_until = item['reserved_until']
+                    # Sicherstellen, dass reserved_until UTC-aware ist
+                    if reserved_until and reserved_until.tzinfo is None:
+                        reserved_until = reserved_until.replace(tzinfo=timezone.utc)
+
                     cart_items.append({
                         'seat_id': item['seat_id'],
                         'price': float(item['price']),
-                        'reserved_until': item['reserved_until'].isoformat(),
+                        'reserved_until': reserved_until.isoformat() if reserved_until else None,
                         'showtime_id': item['showtime_id']
                     })
+
+                valid_until = cart['valid_until']
+                if valid_until and valid_until.tzinfo is None:
+                    valid_until = valid_until.replace(tzinfo=timezone.utc)
+
         return jsonify({
-            'valid_until': cart['valid_until'].astimezone(timezone.utc).isoformat() if cart['valid_until'] else None,
+            'valid_until': valid_until.isoformat() if valid_until else None,
             'cart_items': cart_items
         }), 200
     except Exception as e:
         print(f"Fehler beim Abrufen des Warenkorbs: {e}")
         return jsonify({'error': 'Fehler beim Abrufen des Warenkorbs'}), 500
-
-
 
 
 
