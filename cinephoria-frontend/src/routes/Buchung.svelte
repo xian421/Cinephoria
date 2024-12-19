@@ -47,6 +47,8 @@
             timeLeft = Math.max(0, Math.floor((earliest.getTime() - now.getTime()) / 1000));
             warning = timeLeft <= 60;
         }
+        console.log("Aktueller Warenkorb:", $cart);
+        console.log("timeLeft:", timeLeft);
     }
 
     $: {
@@ -99,6 +101,7 @@
                 payPalInitialized = true;
             }
         }
+        
     });
 
     onDestroy(() => {
@@ -197,7 +200,6 @@
     } | null = null;
 
     async function toggleSeatSelection(seat: any) {
-        console.log('Toggling seat:', seat);
         if (seat.status !== 'available' && !isSelectedBySelf(seat)) {
             return;
         }

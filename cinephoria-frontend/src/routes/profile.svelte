@@ -210,8 +210,8 @@
                         <p>{profile.email}</p>
                     </div>
                     <div>
-                        <h3>Rolle</h3>
-                        <p>{profile.role}</p>
+                        <h3>Nickname</h3>
+                        <p>{profile.nickname}</p>
                     </div>
                 </div>
 

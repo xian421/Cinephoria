@@ -1114,3 +1114,18 @@ export async function deleteReward(token, reward_id) {
     return data;
 }
 
+//Function to fetchLEaaderboard Infortmation
+
+export async function fetchLeaderboard(token) {
+    const response = await fetch(`${API_BASE_URL}/leaderboard`, {
+        headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${token}`,
+        },
+    });
+    const data = await response.json();
+    if (!response.ok) {
+        throw new Error(data.error || 'Fehler beim Laden der Leaderboard.');
+    }
+    return data;
+}
