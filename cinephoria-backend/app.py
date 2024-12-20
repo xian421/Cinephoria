@@ -724,7 +724,7 @@ def update_showtime(showtime_id):
         print(f"Fehler beim Aktualisieren des Showtimes: {e}")
         return jsonify({'error': 'Fehler beim Aktualisieren des Showtimes'}), 500
 
-@app.route('/bookings', methods=['POST'])
+@app.route('/bookings', methods=['POST']) #Dashierändern
 @token_required
 def create_booking_route():
     data = request.get_json()
@@ -1270,7 +1270,7 @@ def get_user_cart():
 
                 # Abrufen der Warenkorb-Elemente mit showtime_id
                 cursor.execute("""
-                    SELECT seat_id, price, reserved_until, showtime_id
+                    SELECT seat_id, price, reserved_until, showtime_id, seat_type_discount_id
                     FROM user_cart_items
                     WHERE user_id = %s
                 """, (user_id,))
@@ -1281,7 +1281,8 @@ def get_user_cart():
                         'seat_id': item['seat_id'],
                         'price': float(item['price']),
                         'reserved_until': item['reserved_until'].isoformat(),
-                        'showtime_id': item['showtime_id']
+                        'showtime_id': item['showtime_id'],
+                        'seat_type_discount_id': item['seat_type_discount_id']
                     })
         return jsonify({
             'valid_until': cart['valid_until'].astimezone(timezone.utc).isoformat() if cart['valid_until'] else None,
@@ -1388,6 +1389,7 @@ def add_to_user_cart():
     seat_id = data.get('seat_id')
     price = data.get('price')
     showtime_id = data.get('showtime_id')
+    seat_type_discount_id = data.get('seat_type_discount_id')
 
     if not user_id or not seat_id or price is None or not showtime_id:
         return jsonify({'error': 'seat_id, price und showtime_id sind erforderlich'}), 400
@@ -1415,11 +1417,11 @@ def add_to_user_cart():
 
                 # Versuch, den Sitzplatz hinzuzufügen
                 cursor.execute("""
-                    INSERT INTO user_cart_items (user_id, seat_id, price, reserved_until, showtime_id)
-                    VALUES (%s, %s, %s, %s, %s)
+                    INSERT INTO user_cart_items (user_id, seat_id, price, reserved_until, showtime_id, seat_type_discount_id)
+                    VALUES (%s, %s, %s, %s, %s, %s)
                     ON CONFLICT (seat_id, showtime_id) DO NOTHING
                     RETURNING seat_id
-                """, (user_id, seat_id, price, reserved_until, showtime_id))
+                """, (user_id, seat_id, price, reserved_until, showtime_id, seat_type_discount_id))
 
                 result = cursor.fetchone()
 
@@ -1471,7 +1473,7 @@ def get_guest_cart():
 
                 # Items abrufen
                 cursor.execute("""
-                    SELECT seat_id, price, reserved_until, showtime_id
+                    SELECT seat_id, price, reserved_until, showtime_id, seat_type_discount_id
                     FROM guest_cart_items
                     WHERE guest_id = %s
                 """, (guest_id,))
@@ -1482,7 +1484,8 @@ def get_guest_cart():
                         'seat_id': item['seat_id'],
                         'price': float(item['price']),
                         'reserved_until': item['reserved_until'].isoformat(),
-                        'showtime_id': item['showtime_id']
+                        'showtime_id': item['showtime_id'],
+                        'seat_type_discount_id': item['seat_type_discount_id']
                     })
         return jsonify({
             'valid_until': cart['valid_until'].astimezone(timezone.utc).isoformat() if cart['valid_until'] else None,
@@ -1501,7 +1504,8 @@ def add_to_guest_cart():
     seat_id = data.get('seat_id')
     price = data.get('price')
     showtime_id = data.get('showtime_id')
-    
+    seat_type_discount_id = data.get('seat_type_discount_id')
+
     if not guest_id or not seat_id or price is None or not showtime_id:
         return jsonify({'error': 'guest_id, seat_id und price sind erforderlich und showtime_id'}), 400
     
@@ -1531,11 +1535,11 @@ def add_to_guest_cart():
 
                 # Versuch, den Sitzplatz hinzuzufügen
                 cursor.execute("""
-                    INSERT INTO guest_cart_items (guest_id, seat_id, price, reserved_until, showtime_id)
-                    VALUES (%s, %s, %s, %s, %s)
+                    INSERT INTO guest_cart_items (guest_id, seat_id, price, reserved_until, showtime_id, seat_type_discount_id)
+                    VALUES (%s, %s, %s, %s, %s, %s)
                     ON CONFLICT (seat_id, showtime_id) DO NOTHING
                     RETURNING seat_id
-                """, (guest_id, seat_id, price, reserved_until, showtime_id))
+                """, (guest_id, seat_id, price, reserved_until, showtime_id, seat_type_discount_id))
 
                 result = cursor.fetchone()
 
@@ -1654,6 +1658,7 @@ def add_discount():
     except Exception as e:
         logger.error(f"Fehler beim Hinzufügen des Discounts: {e}")
         return jsonify({'error': 'Fehler beim Hinzufügen des Discounts'}), 500
+    
         
 @app.route('/discounts/<int:discount_id>', methods=['PUT'])
 @admin_required
@@ -1684,6 +1689,7 @@ def update_discount(discount_id):
     except Exception as e:
         logger.error(f"Fehler beim Aktualisieren des Discounts: {e}")
         return jsonify({'error': 'Fehler beim Aktualisieren des Discounts'}), 500
+    
 
 @app.route('/discounts/<int:discount_id>', methods=['DELETE'])
 @admin_required
@@ -1699,6 +1705,7 @@ def delete_discount(discount_id):
     except Exception as e:
         logger.error(f"Fehler beim Löschen des Discounts: {e}")
         return jsonify({'error': 'Fehler beim Löschen des Discounts'}), 500
+    
 
 @app.route('/seat_type_discounts', methods=['POST'])
 @admin_required
@@ -1822,7 +1829,7 @@ def get_seat_types_with_discounts():
 
 
 
-@app.route('/discount/<int:seat_type_id>', methods=['GET']) #SucheDis
+@app.route('/discount/<int:seat_type_id>', methods=['GET']) 
 def get_discount_for_seat_type(seat_type_id):
     try:
         with psycopg2.connect(DATABASE_URL) as conn:
@@ -1880,6 +1887,7 @@ def get_movie_trailer_url(movie_id):
             return jsonify({"error": "No Trailer found."}), 404
     else:
         return jsonify({"error": f"Unable to fetch Trailer for movie ID {movie_id}"}), response.status_code
+    
 
 @app.route('/bookings', methods=['GET'])
 @token_required
@@ -1888,7 +1896,7 @@ def get_user_bookings():
     try:
         with psycopg2.connect(DATABASE_URL) as conn:
             with conn.cursor(cursor_factory=psycopg2.extras.DictCursor) as cursor:
-                # Abrufen der Buchungen ohne den JOIN zur movies-Tabelle
+
                 cursor.execute("""
                     SELECT 
                         b.booking_id, 
@@ -1926,7 +1934,8 @@ def get_user_bookings():
                         bs.price,
                         s.row,
                         s.number,
-                        st.name AS seat_type      
+                        st.name AS seat_type,
+                        bs.seat_type_discount_id      
                     FROM booking_seats bs
                     JOIN seats s ON bs.seat_id = s.seat_id
                     JOIN seat_types st ON s.seat_type_id = st.seat_type_id
@@ -1943,7 +1952,8 @@ def get_user_bookings():
                         'price': float(bs['price']),
                         'row': bs['row'],
                         'number': bs['number'],
-                        'seat_type': bs['seat_type']
+                        'seat_type': bs['seat_type'],
+                        'seat_type_discount_id': bs['seat_type_discount_id']
                     }
                     seats_map.setdefault(booking_id, []).append(seat)
 
@@ -2234,6 +2244,7 @@ def create_booking():
     total_amount = data.get('total_amount')
     paypal_order_id = data.get('paypal_order_id', 111)
     cart_items = data.get('cart_items', [])
+    seat_type_discount = data.get('seat_type_discount')
 
     # Grundlegende Validierung
     if not vorname or not nachname or not email:
@@ -2270,9 +2281,9 @@ def create_booking():
 
                     # Füge den Sitz in booking_seats ein
                     cursor.execute("""
-                        INSERT INTO booking_seats (booking_id, seat_id, showtime_id)
-                        VALUES (%s, %s, %s)
-                    """, (booking_id, seat_id, showtime_id))
+                        INSERT INTO booking_seats (booking_id, seat_id, showtime_id, seat_type_discount_id)
+                        VALUES (%s, %s, %s, %s)
+                    """, (booking_id, seat_id, showtime_id, seat_type_discount))
 
                 conn.commit()
 
