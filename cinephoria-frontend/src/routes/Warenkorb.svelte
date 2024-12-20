@@ -9,9 +9,8 @@
     // Neue Importe für das futuristische Design und Animationen
     import { tweened } from 'svelte/motion';
     import { cubicOut } from 'svelte/easing';
-    import { authStore} from '../stores/authStore.js';
+    import { authStore } from '../stores/authStore.js';
     import { get } from 'svelte/store';
-
 
     // Animationen für Headline und Tagline
     let headerOpacity = tweened(0, { duration: 1000, easing: cubicOut });
@@ -23,8 +22,6 @@
         headerOpacity.set(1);
         taglineOpacity.set(1);
         loadSeats();
-
-
     });
 
     async function loadSeats(token) {
@@ -44,19 +41,19 @@
         }
     }
 
-
-    // Rabattoptionen
-    const discountOptions = [
-        { id: 'none', label: 'Kein Rabatt', amount: 0 },
-        { id: 'student', label: 'Student', amount: 5 },
-        { id: 'senior', label: 'Senior', amount: 3 },
-        { id: 'child', label: 'Kind', amount: 2 },
-        { id: 'membersdsdsd', label: 'Mitglied', amount: 4 },
-        { id: 'somethingElse', label: 'Sonstiges', amount: 6 }
-    ];
-
     // Reaktive Berechnung des Gesamtpreises unter Berücksichtigung der Rabatte
-    $: totalPrice = $cart.reduce((sum, seat) => sum + (seat.price - (seat.discount?.amount || 0)), 0);
+    $: totalPrice = $cart.reduce((sum, seat) => {
+        let seatPrice = seat.price;
+        if (seat.selectedDiscount) {
+            if (seat.selectedDiscount.discount_percentage) {
+                seatPrice -= seat.price * (seat.selectedDiscount.discount_percentage / 100);
+            }
+            if (seat.selectedDiscount.discount_amount) {
+                seatPrice -= seat.selectedDiscount.discount_amount;
+            }
+        }
+        return sum + Math.max(seatPrice, 0); // Stelle sicher, dass der Preis nicht negativ wird
+    }, 0);
 
     // Reaktive Fehlerbehandlung mit Zurücksetzen von cartError
     $: if ($cartError) {
@@ -81,7 +78,6 @@
                     movie: seat.movie,
                     seats: []
                 };
-                console.log('HIIIER:', seat)
             }
             groups[key].seats.push(seat);
         });
@@ -167,26 +163,38 @@
     }
 
     // Funktion zum Aktualisieren des Rabatts eines Sitzplatzes
-    function handleDiscountChange(seat, selectedId) {
-        const selectedDiscount = discountOptions.find(d => d.id === selectedId) || { id: 'none', label: 'Kein Rabatt', amount: 0 };
-
+    function handleDiscountChange(seat, selectedDiscount) {
         // Update des Sitzplatzes mit dem ausgewählten Rabatt
-        const updatedSeat = { ...seat, discount: selectedId !== 'none' ? selectedDiscount : null };
+        const updatedSeat = { 
+            ...seat, 
+            selectedDiscount: selectedDiscount.id !== 'none' ? selectedDiscount : null 
+        };
 
         // Aktualisieren des Stores immutabel
-        const updatedCart = $cart.map(s => s.seat_id === seat.seat_id && s.showtime_id === seat.showtime_id ? updatedSeat : s);
+        const updatedCart = $cart.map(s => 
+            s.seat_id === seat.seat_id && s.showtime_id === seat.showtime_id 
+                ? updatedSeat 
+                : s
+        );
         cart.set(updatedCart);
     }
 
-    function getDiscountIcon(discountId) {
-        switch (discountId) {
-            case 'none': return 'fas fa-times-circle';
-            case 'student': return 'fas fa-user-graduate';
-            case 'senior': return 'fas fa-user';
-            case 'child': return 'fas fa-child';
-            case 'member': return 'fas fa-id-card';
-            case 'somethingElse': return 'fas fa-gift';
-            default: return 'fas fa-tag';
+    // Funktion zur Ermittlung des passenden Icons basierend auf dem Discount
+    function getDiscountIcon(discount) {
+        if (!discount) return 'fas fa-times-circle'; // Kein Rabatt
+
+        switch (discount.name.toLowerCase()) {
+            case 'rentner':
+                return 'fas fa-user';
+            case 'student':
+                return 'fas fa-user-graduate';
+            case 'kind':
+                return 'fas fa-child';
+            case 'mitglied':
+                return 'fas fa-id-card';
+            // Füge weitere Fälle je nach Discount-Name hinzu
+            default:
+                return 'fas fa-tag'; // Standard-Icon
         }
     }
 
@@ -202,8 +210,6 @@
         }
     }
 </script>
-
-
 
 <div class="background">
     <header class="header-section">
@@ -256,32 +262,59 @@
                                     </div>
                                 </td>
                                 <td>{seat.type ? seat.type.charAt(0).toUpperCase() + seat.type.slice(1) : 'Standard'}</td>
-                                <td>{seat.price.toFixed(2)} € {seat.discount ? `(-${seat.discount.amount} €)` : ''}</td>
+                                <td>
+                                    {seat.price.toFixed(2)} €
+                                    {#if seat.selectedDiscount}
+                                        {#if seat.selectedDiscount.discount_amount}
+                                            (-{seat.selectedDiscount.discount_amount} €)
+                                        {:else if seat.selectedDiscount.discount_percentage}
+                                            (-{seat.selectedDiscount.discount_percentage} %)
+                                        {/if}
+                                    {/if}
+                                </td>
                                 <td>
                                     <!-- Aktuell ausgewählter Rabatt als Kärtchen -->
                                     <div class="discount-section">
                                         <div class="discount-selected" on:click={() => toggleDiscountSelection(seat)}>
-                                            <i class={getDiscountIcon(seat.discount?.id || 'none')}></i>
-                                            <span>{seat.discount?.label || 'Kein Rabatt'}</span>
-                                            {#if seat.discount?.amount > 0}
-                                                <small>(-{seat.discount.amount} €)</small>
+                                            <i class={getDiscountIcon(seat.selectedDiscount)}></i>
+                                            <span>{seat.selectedDiscount ? seat.selectedDiscount.name : 'Kein Rabatt'}</span>
+                                            {#if seat.selectedDiscount && seat.selectedDiscount.discount_amount}
+                                                <small>(-{seat.selectedDiscount.discount_amount} €)</small>
+                                            {/if}
+                                            {#if seat.selectedDiscount && seat.selectedDiscount.discount_percentage}
+                                                <small>(-{seat.selectedDiscount.discount_percentage} %)</small>
                                             {/if}
                                         </div>
 
                                         {#if visibleDiscountSeat && visibleDiscountSeat.seat_id === seat.seat_id && visibleDiscountSeat.showtime_id === seat.showtime_id}
                                             <div class="discount-options-wrapper">
-                                                {#each discountOptions as discount}
+                                                <!-- Option "Kein Rabatt" -->
+                                                <div 
+                                                    class="discount-option {!seat.selectedDiscount ? 'selected' : ''}"
+                                                    on:click={() => {
+                                                        handleDiscountChange(seat, { id: 'none', name: 'Kein Rabatt', discount_amount: 0, discount_percentage: 0 });
+                                                        toggleDiscountSelection(seat);
+                                                    }}
+                                                >
+                                                    <i class="fas fa-times-circle"></i>
+                                                    <span>Kein Rabatt</span>
+                                                </div>
+                                                <!-- Dynamische Discount-Optionen -->
+                                                {#each seat.discounts as discount}
                                                     <div 
-                                                        class="discount-option {seat.discount?.id === discount.id ? 'selected' : ''}"
+                                                        class="discount-option {seat.selectedDiscount?.discount_id === discount.discount_id ? 'selected' : ''}"
                                                         on:click={() => {
-                                                            handleDiscountChange(seat, discount.id);
+                                                            handleDiscountChange(seat, discount);
                                                             toggleDiscountSelection(seat);
                                                         }}
                                                     >
-                                                        <i class={getDiscountIcon(discount.id)}></i>
-                                                        <span>{discount.label}</span>
-                                                        {#if discount.amount > 0}
-                                                            <small>(-{discount.amount} €)</small>
+                                                        <i class={getDiscountIcon(discount)}></i>
+                                                        <span>{discount.name}</span>
+                                                        {#if discount.discount_amount}
+                                                            <small>(-{discount.discount_amount} €)</small>
+                                                        {/if}
+                                                        {#if discount.discount_percentage}
+                                                            <small>(-{discount.discount_percentage} %)</small>
                                                         {/if}
                                                     </div>
                                                 {/each}

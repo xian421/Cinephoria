@@ -848,6 +848,29 @@ export const deleteDiscount = async (token, discountId) => {
 };
 
 
+// src/services/api.js
+export const fetchDiscountsForSeatType = async (seatTypeId) => {
+    try {
+        const response = await fetch(`${API_BASE_URL}/discount/${seatTypeId}`, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        });
+        
+        const data = await response.json();
+        if (!response.ok) {
+            throw new Error(data.error || 'Fehler beim Abrufen der Discounts für Sitztyp');
+        }
+        return data.discounts; // Array von Discounts
+    } catch (error) {
+        console.error('Error fetching discounts for seat type:', error);
+        throw error;
+    }
+};
+
+
+
 // Funktion zum Zuweisen eines Discounts zu einem Sitztyp
 export const assignDiscountToSeatType = async (token, seatTypeId, discountId, discountAmount = null, discountPercentage = null) => {
     try {

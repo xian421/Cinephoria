@@ -13,7 +13,8 @@ import {
     clearGuestCart,
     fetchSeatById,
     fetchShowtimeDetails,
-    fetchMovieDetails
+    fetchMovieDetails,
+    fetchDiscountsForSeatType
 } from '../services/api.js';
 
 const cart = writable([]);
@@ -22,7 +23,9 @@ const validUntil = writable(null);
 
 export { cart, cartError, validUntil };
 
-// Funktion zum Laden des Warenkorbs
+// Cache für Discounts pro seat_type_id
+const discountsCache = {};
+
 export async function loadCart() {
     const token = get(authStore).token;
     cartError.set(null);
@@ -60,12 +63,28 @@ export async function loadCart() {
                 const movieDetails = showtimeDetails 
                     ? await fetchMovieDetails(showtimeDetails.movie_id)
                     : null;
-                console.log('showtimesdetail', showtimeDetails);
+                
+                const seatTypeId = seatDetails.seat_type_id;
+                console.log(`Abrufen der Discounts für seat_type_id: ${seatTypeId}`);
+
+                let discounts;
+                if (discountsCache[seatTypeId]) {
+                    // Verwenden des gecachten Discounts
+                    discounts = discountsCache[seatTypeId];
+                    console.log(`Verwenden des gecachten Discounts für seat_type_id ${seatTypeId}:`, discounts);
+                } else {
+                    // Abrufen der Discounts und Cachen
+                    discounts = await fetchDiscountsForSeatType(seatTypeId);
+                    discountsCache[seatTypeId] = discounts;
+                    console.log(`Discounts für seat_type_id1111111111111 ${seatTypeId}:`, discounts);
+                }
+
                 return {
                     ...item,
                     ...seatDetails, 
                     showtime: showtimeDetails,
-                    movie: movieDetails
+                    movie: movieDetails,
+                    discounts // Hinzufügen der Discounts zum Cart-Item
                 };
             } catch (error) {
                 console.error(`Fehler beim Abrufen der Details für seat_id ${item.seat_id}:`, error);
@@ -76,18 +95,21 @@ export async function loadCart() {
                     type: null,
                     price: item.price || 0.00,
                     showtime: null,
-                    movie: null
+                    movie: null,
+                    discounts: [] // Sicherstellen, dass Discounts auch bei Fehlern vorhanden sind
                 };
             }
         }));
 
         cart.set(enrichedItems);
+        console.log('Warenkorb erfolgreich geladen:', enrichedItems);
     } catch (error) {
         console.error('Fehler beim Laden des Warenkorbs:', error);
         cartError.set(error.message || 'Fehler beim Laden des Warenkorbs.');
         validUntil.set(null); // Sicherstellen, dass validUntil entfernt wird bei Fehler
     }
 }
+
 
 // Initiales Laden des Warenkorbs
 loadCart();
