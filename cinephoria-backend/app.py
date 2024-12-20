@@ -2312,7 +2312,7 @@ def update_user_cart():
             with conn.cursor() as cursor:
                 # Überprüfen, ob der Sitz im Warenkorb des Benutzers existiert
                 cursor.execute("""
-                    SELECT user_cart_item_id, seat_type_discount_id
+                    SELECT cart_item_id, seat_type_discount_id
                     FROM user_cart_items
                     WHERE user_id = %s AND seat_id = %s AND showtime_id = %s
                 """, (user_id, seat_id, showtime_id))
@@ -2321,7 +2321,7 @@ def update_user_cart():
                 if not cart_item:
                     return jsonify({'error': 'Der Sitzplatz ist nicht im Warenkorb des Benutzers'}), 404
 
-                user_cart_item_id, current_discount_id = cart_item
+                cart_item_id, current_discount_id = cart_item
 
                 if seat_type_discount_id:
                     # Validierung des seat_type_discount_id
@@ -2340,8 +2340,8 @@ def update_user_cart():
                 cursor.execute("""
                     UPDATE user_cart_items
                     SET seat_type_discount_id = %s
-                    WHERE user_cart_item_id = %s
-                """, (seat_type_discount_id, user_cart_item_id))
+                    WHERE cart_item_id = %s
+                """, (seat_type_discount_id, cart_item_id))
 
                 conn.commit()
 
@@ -2370,7 +2370,7 @@ def update_guest_cart():
             with conn.cursor() as cursor:
                 # Überprüfen, ob der Sitz im Warenkorb des Gastes existiert
                 cursor.execute("""
-                    SELECT guest_cart_item_id, seat_type_discount_id
+                    SELECT cart_item_id, seat_type_discount_id
                     FROM guest_cart_items
                     WHERE guest_id = %s AND seat_id = %s AND showtime_id = %s
                 """, (guest_id, seat_id, showtime_id))
@@ -2379,7 +2379,7 @@ def update_guest_cart():
                 if not cart_item:
                     return jsonify({'error': 'Der Sitzplatz ist nicht im Gast-Warenkorb'}), 404
 
-                guest_cart_item_id, current_discount_id = cart_item
+                cart_item_id, current_discount_id = cart_item
 
                 if seat_type_discount_id:
                     # Validierung des seat_type_discount_id
@@ -2398,8 +2398,8 @@ def update_guest_cart():
                 cursor.execute("""
                     UPDATE guest_cart_items
                     SET seat_type_discount_id = %s
-                    WHERE guest_cart_item_id = %s
-                """, (seat_type_discount_id, guest_cart_item_id))
+                    WHERE cart_item_id = %s
+                """, (seat_type_discount_id, cart_item_id))
 
                 conn.commit()
 
