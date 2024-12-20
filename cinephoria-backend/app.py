@@ -563,7 +563,7 @@ def get_seats():
         return jsonify({'error': 'Fehler beim Abrufen der Sitze'}), 500
 
 
-# Neuer Endpunkt zum Abrufen eines spezifischen Sitzes anhand der seat_id
+# Neuer Endpunkt zum Abrufen eines spezifischen Sitzes anhand der seat_id SucheDis
 @app.route('/seats/<seat_id>', methods=['GET'])
 def get_seat(seat_id):
     try:
@@ -580,6 +580,7 @@ def get_seat(seat_id):
                      , d.name AS discount_name
                      , std.discount_amount
                      , std.discount_percentage
+                     , st.seat_type_id
                 FROM seats s
                 JOIN seat_types st ON s.seat_type_id = st.seat_type_id
                 LEFT JOIN seat_type_discounts std On std.seat_type_id = st.seat_type_id
@@ -599,7 +600,8 @@ def get_seat(seat_id):
                         'discount_id': seat[6],
                         'discount_name': seat[7],
                         'discount_amount': float(seat[8]) if seat[8] else None,
-                        'discount_percentage': float(seat[9]) if seat[9] else None
+                        'discount_percentage': float(seat[9]) if seat[9] else None,
+                        'seat_type_id': seat[10]
                     }
                     return jsonify({'seat': seat_details}), 200
                 else:
@@ -1776,7 +1778,7 @@ def remove_discount_from_seat_type():
         logger.error(f"Fehler beim Entfernen des Discounts vom Sitztyp: {e}")
         return jsonify({'error': 'Fehler beim Entfernen des Discounts vom Sitztyp'}), 500
 
-@app.route('/seat_types_with_discounts', methods=['GET'])
+@app.route('/seat_types_with_discounts', methods=['GET'])  #SucheDis
 def get_seat_types_with_discounts():
     try:
         with psycopg2.connect(DATABASE_URL) as conn:
@@ -1830,7 +1832,7 @@ def get_seat_types_with_discounts():
 
 
 
-@app.route('/discount/<int:seat_type_id>', methods=['GET'])
+@app.route('/discount/<int:seat_type_id>', methods=['GET']) #SucheDis
 def get_discount_for_seat_type(seat_type_id):
     try:
         with psycopg2.connect(DATABASE_URL) as conn:
