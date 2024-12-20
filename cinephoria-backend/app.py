@@ -576,11 +576,9 @@ def get_seat(seat_id):
                      , s.number
                      , st.name AS seat_type_name
                      , st.price
-                     , std.discount_id
                      , st.seat_type_id
                 FROM seats s
                 JOIN seat_types st ON s.seat_type_id = st.seat_type_id
-                LEFT JOIN seat_type_discounts std On std.seat_type_id = st.seat_type_id
                 WHERE s.seat_id = %s
                 """, (seat_id,))
                 seat = cursor.fetchone()
@@ -593,11 +591,7 @@ def get_seat(seat_id):
                         'number': seat[3],
                         'type': seat[4],  # seat_type_name
                         'price': float(seat[5]),
-                        'discount_id': seat[6],
-                        'discount_name': seat[7],
-                        'discount_amount': float(seat[8]) if seat[8] else None,
-                        'discount_percentage': float(seat[9]) if seat[9] else None,
-                        'seat_type_id': seat[10]
+                        'seat_type_id': seat[6]
                     }
                     return jsonify({'seat': seat_details}), 200
                 else:
