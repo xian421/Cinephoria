@@ -577,14 +577,10 @@ def get_seat(seat_id):
                      , st.name AS seat_type_name
                      , st.price
                      , std.discount_id
-                     , d.name AS discount_name
-                     , std.discount_amount
-                     , std.discount_percentage
                      , st.seat_type_id
                 FROM seats s
                 JOIN seat_types st ON s.seat_type_id = st.seat_type_id
                 LEFT JOIN seat_type_discounts std On std.seat_type_id = st.seat_type_id
-                LEFT JOIN discounts d ON std.discount_id = d.discount_id
                 WHERE s.seat_id = %s
                 """, (seat_id,))
                 seat = cursor.fetchone()
