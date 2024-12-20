@@ -2293,5 +2293,124 @@ def create_booking():
         return jsonify({"error": "Fehler beim Erstellen der Buchung"}), 500
 
 
+#-->Um den Sitzen im Warenkorb einen Discount (ermäßigung) zu geben
+@app.route('/user/cart/update', methods=['POST'])
+@token_required
+def update_user_cart():
+    data = request.get_json()
+    user_id = request.user.get('user_id')
+    seat_id = data.get('seat_id')
+    showtime_id = data.get('showtime_id')
+    seat_type_discount_id = data.get('seat_type_discount_id')  # Kann null/None sein, um Rabatt zu entfernen
+
+    # Grundlegende Validierung
+    if not user_id or not seat_id or not showtime_id:
+        return jsonify({'error': 'user_id, seat_id und showtime_id sind erforderlich'}), 400
+
+    try:
+        with psycopg2.connect(DATABASE_URL) as conn:
+            with conn.cursor() as cursor:
+                # Überprüfen, ob der Sitz im Warenkorb des Benutzers existiert
+                cursor.execute("""
+                    SELECT user_cart_item_id, seat_type_discount_id
+                    FROM user_cart_items
+                    WHERE user_id = %s AND seat_id = %s AND showtime_id = %s
+                """, (user_id, seat_id, showtime_id))
+                cart_item = cursor.fetchone()
+
+                if not cart_item:
+                    return jsonify({'error': 'Der Sitzplatz ist nicht im Warenkorb des Benutzers'}), 404
+
+                user_cart_item_id, current_discount_id = cart_item
+
+                if seat_type_discount_id:
+                    # Validierung des seat_type_discount_id
+                    cursor.execute("""
+                        SELECT 1 
+                        FROM seat_type_discounts 
+                        WHERE seat_type_discount_id = %s 
+                        AND seat_type_id = (
+                            SELECT seat_type_id FROM seats WHERE seat_id = %s
+                        )
+                    """, (seat_type_discount_id, seat_id))
+                    if not cursor.fetchone():
+                        return jsonify({'error': 'Ungültiger seat_type_discount_id für den angegebenen Sitzplatz'}), 400
+
+                # Aktualisieren des seat_type_discount_id (kann auch NULL sein)
+                cursor.execute("""
+                    UPDATE user_cart_items
+                    SET seat_type_discount_id = %s
+                    WHERE user_cart_item_id = %s
+                """, (seat_type_discount_id, user_cart_item_id))
+
+                conn.commit()
+
+        return jsonify({'message': 'Warenkorb erfolgreich aktualisiert'}), 200
+
+    except Exception as e:
+        print(f"Fehler beim Aktualisieren des Warenkorbs: {e}")
+        return jsonify({'error': 'Fehler beim Aktualisieren des Warenkorbs'}), 500
+    
+
+
+@app.route('/guest/cart/update', methods=['POST'])
+def update_guest_cart():
+    data = request.get_json()
+    guest_id = data.get('guest_id')  # Stelle sicher, dass guest_id übermittelt wird
+    seat_id = data.get('seat_id')
+    showtime_id = data.get('showtime_id')
+    seat_type_discount_id = data.get('seat_type_discount_id')  # Kann null/None sein, um Rabatt zu entfernen
+
+    # Grundlegende Validierung
+    if not guest_id or not seat_id or not showtime_id:
+        return jsonify({'error': 'guest_id, seat_id und showtime_id sind erforderlich'}), 400
+
+    try:
+        with psycopg2.connect(DATABASE_URL) as conn:
+            with conn.cursor() as cursor:
+                # Überprüfen, ob der Sitz im Warenkorb des Gastes existiert
+                cursor.execute("""
+                    SELECT guest_cart_item_id, seat_type_discount_id
+                    FROM guest_cart_items
+                    WHERE guest_id = %s AND seat_id = %s AND showtime_id = %s
+                """, (guest_id, seat_id, showtime_id))
+                cart_item = cursor.fetchone()
+
+                if not cart_item:
+                    return jsonify({'error': 'Der Sitzplatz ist nicht im Gast-Warenkorb'}), 404
+
+                guest_cart_item_id, current_discount_id = cart_item
+
+                if seat_type_discount_id:
+                    # Validierung des seat_type_discount_id
+                    cursor.execute("""
+                        SELECT 1 
+                        FROM seat_type_discounts 
+                        WHERE seat_type_discount_id = %s 
+                        AND seat_type_id = (
+                            SELECT seat_type_id FROM seats WHERE seat_id = %s
+                        )
+                    """, (seat_type_discount_id, seat_id))
+                    if not cursor.fetchone():
+                        return jsonify({'error': 'Ungültiger seat_type_discount_id für den angegebenen Sitzplatz'}), 400
+
+                # Aktualisieren des seat_type_discount_id (kann auch NULL sein)
+                cursor.execute("""
+                    UPDATE guest_cart_items
+                    SET seat_type_discount_id = %s
+                    WHERE guest_cart_item_id = %s
+                """, (seat_type_discount_id, guest_cart_item_id))
+
+                conn.commit()
+
+        return jsonify({'message': 'Gast-Warenkorb erfolgreich aktualisiert'}), 200
+
+    except Exception as e:
+        print(f"Fehler beim Aktualisieren des Gast-Warenkorbs: {e}")
+        return jsonify({'error': 'Fehler beim Aktualisieren des Gast-Warenkorbs'}), 500
+
+#Um den Sitzen im Warenkorb einen Discount (ermäßigung) zu geben<--
+
+
 if __name__ == '__main__':
     app.run(debug=True)
