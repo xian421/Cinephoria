@@ -1839,6 +1839,7 @@ def get_discount_for_seat_type(seat_type_id):
                 cursor.execute("""
                     SELECT 
                         std.discount_id,
+                        std.seat_type_discount_id,
                         d.name AS discount_name,
                         d.description,
                         std.discount_amount,
@@ -1853,6 +1854,7 @@ def get_discount_for_seat_type(seat_type_id):
                 for row in results:
                     discounts.append({
                         'discount_id': row['discount_id'],
+                        'seat_type_discount_id': row['seat_type_discount_id'],
                         'name': row['discount_name'],
                         'description': row['description'],
                         'discount_amount': float(row['discount_amount']) if row['discount_amount'] else None,
