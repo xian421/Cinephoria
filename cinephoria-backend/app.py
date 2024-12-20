@@ -1791,7 +1791,8 @@ def get_seat_types_with_discounts():
                         d.name AS discount_name,
                         d.description,
                         std.discount_amount,
-                        std.discount_percentage
+                        std.discount_percentage,
+                        std.seat_type_discount_id
                     FROM seat_types st
                     LEFT JOIN seat_type_discounts std ON st.seat_type_id = std.seat_type_id
                     LEFT JOIN discounts d ON std.discount_id = d.discount_id
@@ -1817,7 +1818,8 @@ def get_seat_types_with_discounts():
                             'name': row['discount_name'],
                             'description': row['description'],
                             'discount_amount': float(row['discount_amount']) if row['discount_amount'] else None,
-                            'discount_percentage': float(row['discount_percentage']) if row['discount_percentage'] else None
+                            'discount_percentage': float(row['discount_percentage']) if row['discount_percentage'] else None,
+                            'seat_type_discount_id': row['seat_type_discount_id']
                         })
 
                 seat_types_list = list(seat_types.values())
