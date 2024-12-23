@@ -68,19 +68,19 @@ export async function loadCart() {
                     : null;
                 
                 const seatTypeId = seatDetails.seat_type_id;
-                console.log(`Abrufen der Discounts für seat_type_id: ${seatTypeId}`);
+             //   console.log(`Abrufen der Discounts für seat_type_id: ${seatTypeId}`);
 
                 let discounts;
                 if (discountsCache[seatTypeId]) {
                     // Verwenden des gecachten Discounts
                     discounts = discountsCache[seatTypeId];
-                    console.log(`Verwenden des gecachten Discounts für seat_type_id ${seatTypeId}:`, discounts);
+                //    console.log(`Verwenden des gecachten Discounts für seat_type_id ${seatTypeId}:`, discounts);
                 } else {
                     // Abrufen der Discounts und Cachen
                     discounts = await fetchDiscountsForSeatType(seatTypeId);
-                    console.log(`Abrufen der Discounts für seat_type_ireqwqwqwqwqwqwqwqwqwqwqwqwqwqwqwqwqwqwqwqwqwqwqwqwqwqwqwqwqwqwd ${seatTypeId}:`, discounts);
+                  //  console.log(`Abrufen der Discounts für seat_type_ireqwqwqwqwqwqwqwqwqwqwqwqwqwqwqwqwqwqwqwqwqwqwqwqwqwqwqwqwqwqwd ${seatTypeId}:`, discounts);
                     discountsCache[seatTypeId] = discounts;
-                    console.log(`Discounts für seat_type_id ${seatTypeId}:`, discounts);
+                   // console.log(`Discounts für seat_type_id ${seatTypeId}:`, discounts);
                 }
 
                 // Finden des ausgewählten Discounts basierend auf seat_type_discount_id
@@ -89,7 +89,7 @@ export async function loadCart() {
                 : null;
             
 
-                console.log(`Selected Discount für seat_id ${item.seat_id}:`, selectedDiscount);
+              //  console.log(`Selected Discount für seat_id ${item.seat_id}:`, selectedDiscount);
 
                 return {
                     ...item,
@@ -126,7 +126,7 @@ export async function loadCart() {
         });
 
         cart.set(enrichedItems);
-        console.log('Warenkorb erfolgreich geladen:', enrichedItems);
+    //    console.log('Warenkorb erfolgreich geladen:', enrichedItems);
     } catch (error) {
         console.error('Fehler beim Laden des Warenkorbs:', error);
         cartError.set(error.message || 'Fehler beim Laden des Warenkorbs.');
