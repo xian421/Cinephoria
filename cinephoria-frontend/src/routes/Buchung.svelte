@@ -2,7 +2,6 @@
 <script lang="ts">
     import { onMount, tick } from 'svelte';
     import { navigate } from 'svelte-routing';
-    import Swal from 'sweetalert2';
     import { 
         createBooking, 
         createPayPalOrder, 
@@ -15,15 +14,15 @@
     import { authStore } from '../stores/authStore'; 
     import { 
         cart, 
-        cartError, 
         addToCart, 
         removeFromCart, 
         clearCart, 
-        loadCart, 
-        validUntil 
+        loadCart
     } from '../stores/cartStore.js';
     import Timer from '../components/Timer.svelte'; // Importiere die Timer-Komponente
     import "@fortawesome/fontawesome-free/css/all.min.css";
+
+    import { showSuccessToast, showErrorAlert, showSuccessAlert, showConfirmationDialog, showCustomAlert } from '../utils/notifications.js'; // Importiere die Benachrichtigungsfunktionen
 
     export let showtime_id: string;
 
@@ -40,23 +39,6 @@
     // Berechne Gesamtpreis
     $: totalPrice = $cart.reduce((sum, seat) => sum + seat.price, 0);
 
-    // Fehlerbehandlung für den Warenkorb
-    $: if ($cartError) {
-        Swal.fire({
-            title: "Fehler",
-            text: $cartError,
-            icon: "error",
-            confirmButtonText: "Neu Laden",
-            allowOutsideClick: false,
-        }).then(async (result) => {
-            if (result.isConfirmed) {
-                await loadCart();
-                await loadSeats();
-            }
-            cartError.set(null);
-        });
-    }
-
     onMount(async () => {
         isLoading = true;
         try {
@@ -65,6 +47,7 @@
         } catch (err: any) {
             console.error('Fehler beim Laden der Sitze oder Sitztypen:', err);
             error = err.message || 'Fehler beim Laden.';
+            showErrorAlert(error);
         } finally {
             isLoading = false;
             await tick();
@@ -131,6 +114,7 @@
         } catch (err: any) {
             console.error('Fehler beim Laden der Sitze oder Sitztypen:', err);
             error = err.message || 'Fehler beim Laden.';
+            showErrorAlert(error);
         }
     }
 
@@ -214,16 +198,17 @@
 
     async function toggleSeatSelection(seat: any) {
         if (seat.status !== 'available' && !isSelectedBySelf(seat)) {
+        //    console.log('Sitzplatz ist bereits reserviert:', seat);
             return;
         }
 
         try {
             if (isSelectedBySelf(seat)) {
                 await removeFromCart(seat.seat_id, showtime_id);
-                showToast(`Sitzplatz ${seat.row}${seat.number} wurde aus dem Warenkorb entfernt.`);
+                showSuccessToast(`Sitzplatz ${seat.row}${seat.number} wurde aus dem Warenkorb entfernt.`);
             } else {
                 await addToCart(seat, showtime_id);
-                showToast(`Sitzplatz ${seat.row}${seat.number} wurde zum Warenkorb hinzugefügt.`);
+                showSuccessToast(`Sitzplatz ${seat.row}${seat.number} wurde zum Warenkorb hinzugefügt.`);
                 selectedSeat = seat;
             }
         } catch (error) {
@@ -231,26 +216,11 @@
         }
     }
 
-    function showToast(message: string) {
-        const Toast = Swal.mixin({
-            toast: true,
-            position: "top-end",
-            showConfirmButton: false,
-            timer: 3000,
-            timerProgressBar: true,
-            didOpen: (toast) => {
-                toast.onmouseenter = Swal.stopTimer;
-                toast.onmouseleave = Swal.resumeTimer;
-            }
-        });
-        Toast.fire({ icon: "success", title: message });
-    }
-
     function initializePayPalButtons() {
-        const PAYPAL_CLIENT_ID = 'AXWfRwPPgPCoOBZzqI-r4gce1HuWZXDnFqUdES0bP8boKSv5KkkPvZrMFwcCDShXjC3aTdChUjOhwxhW'; // Stellen Sie sicher, dass diese Variable definiert ist
+        const PAYPAL_CLIENT_ID = 'AXWfRwPPgPCoOBZzqI-r4gce1HuWZXDnFqUdES0bP8boKSv5KkkPvZrMFwcCDShXjC3aTdChUjOhwxhW'; // Stelle sicher, dass diese Variable definiert ist
 
         if (!PAYPAL_CLIENT_ID) {
-            Swal.fire({title: "Fehler", text: 'PayPal Client ID ist nicht gesetzt.', icon: "error"});
+            showErrorAlert('PayPal Client ID ist nicht gesetzt.');
             return;
         }
 
@@ -261,13 +231,13 @@
             script.src = `https://www.paypal.com/sdk/js?client-id=${PAYPAL_CLIENT_ID}&currency=EUR`;
             script.addEventListener('load', () => {
                 if (!window.paypal) {
-                    Swal.fire({title:"Fehler", text:'PayPal SDK konnte nicht geladen werden.', icon:"error"});
+                    showErrorAlert('PayPal SDK konnte nicht geladen werden.');
                     return;
                 }
                 renderPayPalButtons();
             });
             script.addEventListener('error', () => {
-                Swal.fire({title:"Fehler", text:'PayPal SDK Fehler.', icon:"error"});
+                showErrorAlert('PayPal SDK Fehler.');
             });
             document.body.appendChild(script);
         }
@@ -275,7 +245,7 @@
 
     function renderPayPalButtons() {
         if (!paypalContainer) {
-            Swal.fire({title:"Zahlungsfehler",text:'PayPal Container nicht gefunden.',icon:"error"});
+            showErrorAlert('PayPal Container nicht gefunden.');
             return;
         }
 
@@ -288,7 +258,7 @@
             },
             createOrder: async () => {
                 if ($cart.length === 0) {
-                    Swal.fire({title:"Keine Sitze",text:"Bitte wähle mindestens einen Sitzplatz aus.",icon:"warning"});
+                    showErrorAlert('Bitte wähle mindestens einen Sitzplatz aus.');
                     throw new Error('Keine Sitzplätze ausgewählt');
                 }
 
@@ -300,7 +270,7 @@
                     return response.orderID;
                 } catch (err) {
                     console.error('Fehler beim Erstellen der PayPal-Order:', err);
-                    Swal.fire({title:"Fehler",text:'Problem beim Erstellen der Zahlung.',icon:"error"});
+                    showErrorAlert('Problem beim Erstellen der Zahlung.');
                     throw err;
                 }
             },
@@ -317,22 +287,22 @@
                     }
                 } catch (err) {
                     console.error('Fehler beim Abschließen der Zahlung:', err);
-                    Swal.fire({title:"Zahlungsfehler",text:'Problem beim Abschließen der Zahlung.',icon:"error"});
+                    showErrorAlert('Problem beim Abschließen der Zahlung.');
                 }
             },
             onCancel: () => {
-                Swal.fire({title:"Abgebrochen",text:'Zahlung abgebrochen.',icon:"info"});
+                showSuccessAlert('Zahlung abgebrochen.');
             },
             onError: (err: any) => {
                 console.error('PayPal Fehler:', err);
-                Swal.fire({title:"Zahlungsfehler",text:'Problem mit der Zahlung.',icon:"error"});
+                showErrorAlert('Problem mit der Zahlung.');
             }
         }).render(paypalContainer);
     }
 
     async function confirmBooking(orderID: string) {
         if ($cart.length === 0) {
-            Swal.fire({title:"Keine Sitzplätze",text:"Bitte füge mindestens einen Sitzplatz zum Warenkorb hinzu.",icon:"warning"});
+            showErrorAlert('Bitte füge mindestens einen Sitzplatz zum Warenkorb hinzu.');
             return;
         }
 
@@ -340,25 +310,18 @@
             const token = get(authStore).token;
             const seatIds = $cart.map(seat => seat.seat_id);
             await createBooking(showtime_id, seatIds, token, orderID);
-            Swal.fire({title:"Buchung erfolgreich",text:"Tickets gebucht.",icon:"success"})
-            .then(() => {
+            showSuccessAlert('Tickets gebucht.').then(() => {
                 clearCart();
                 navigate('/');
             });
         } catch (err: any) {
             console.error('Fehler bei der Buchung:', err);
-            Swal.fire({title:"Fehler",text:'Problem bei der Buchung.',icon:"error"});
+            showErrorAlert('Problem bei der Buchung.');
         }
     }
 
     function showWarning() {
-        Swal.fire({
-            title: 'Achtung!',
-            text: 'Ihre Reservierung läuft in weniger als einer Minute ab.',
-            icon: 'warning',
-            timer: 3000,
-            showConfirmButton: false
-        });
+        showWarningAlert('Achtung!', 'Ihre Reservierung läuft in weniger als einer Minute ab.', 3000);
     }
 
     function formatTime(seconds: number) {
@@ -690,4 +653,3 @@
         }
     }
 </style>
- 

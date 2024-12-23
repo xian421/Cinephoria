@@ -21,6 +21,8 @@ import {
     getGuestId
 } from '../services/api.js';
 
+import { showErrorAlert, showSuccessToast, showCustomAlert } from '../utils/notifications.js'; // Importiere die Benachrichtigungsfunktionen
+
 const cart = writable([]);
 const cartError = writable(null);
 const validUntil = writable(null);
@@ -68,28 +70,21 @@ export async function loadCart() {
                     : null;
                 
                 const seatTypeId = seatDetails.seat_type_id;
-             //   console.log(`Abrufen der Discounts für seat_type_id: ${seatTypeId}`);
 
                 let discounts;
                 if (discountsCache[seatTypeId]) {
                     // Verwenden des gecachten Discounts
                     discounts = discountsCache[seatTypeId];
-                //    console.log(`Verwenden des gecachten Discounts für seat_type_id ${seatTypeId}:`, discounts);
                 } else {
                     // Abrufen der Discounts und Cachen
                     discounts = await fetchDiscountsForSeatType(seatTypeId);
-                  //  console.log(`Abrufen der Discounts für seat_type_ireqwqwqwqwqwqwqwqwqwqwqwqwqwqwqwqwqwqwqwqwqwqwqwqwqwqwqwqwqwqwd ${seatTypeId}:`, discounts);
                     discountsCache[seatTypeId] = discounts;
-                   // console.log(`Discounts für seat_type_id ${seatTypeId}:`, discounts);
                 }
 
                 // Finden des ausgewählten Discounts basierend auf seat_type_discount_id
                 const selectedDiscount = item.seat_type_discount_id 
-                ? discounts.find(d => d.seat_type_discount_id === item.seat_type_discount_id) 
-                : null;
-            
-
-              //  console.log(`Selected Discount für seat_id ${item.seat_id}:`, selectedDiscount);
+                    ? discounts.find(d => d.seat_type_discount_id === item.seat_type_discount_id) 
+                    : null;
 
                 return {
                     ...item,
@@ -101,6 +96,7 @@ export async function loadCart() {
                 };
             } catch (error) {
                 console.error(`Fehler beim Abrufen der Details für seat_id ${item.seat_id}:`, error);
+                showErrorAlert(`Fehler beim Abrufen der Details für Sitzplatz ${item.seat_id}.`);
                 return {
                     ...item,
                     row: null,
@@ -126,10 +122,10 @@ export async function loadCart() {
         });
 
         cart.set(enrichedItems);
-    //    console.log('Warenkorb erfolgreich geladen:', enrichedItems);
     } catch (error) {
         console.error('Fehler beim Laden des Warenkorbs:', error);
         cartError.set(error.message || 'Fehler beim Laden des Warenkorbs.');
+        showErrorAlert(error.message || 'Fehler beim Laden des Warenkorbs.');
         validUntil.set(null); // Sicherstellen, dass validUntil entfernt wird bei Fehler
     }
 }
@@ -153,12 +149,24 @@ export async function addToCart(seat, showtime_id) {
             await addToGuestCart(seat.seat_id, seat.price, showtime_id);
         }
         await loadCart();
+        showSuccessToast(`Sitzplatz ${seat.row}${seat.number} wurde zum Warenkorb hinzugefügt.`);
     } catch (error) {
-        console.error('Fehler beim Hinzufügen zum Warenkorb:', error);
-        if (error.message === 'Der Sitzplatz ist bereits reserviert.') {
-            cartError.set('Der gewählte Sitzplatz ist bereits reserviert.');
+       // console.error('Fehler beim Hinzufügen zum Warenkorb:', error);
+       console.log('HIIIIIER: ', error.message);
+        if (error.message === 'Der Sitzplatz ist bereits reserviert') {
+            console.log('Der Sitzplatz ist beredsadsadsadits reserviert.');
+            showCustomAlert(
+                'Sitzplatz bereits reserviert',
+                'Der Sitzplatz ist bereits reserviert. Bitte wähle einen anderen Sitzplatz.',
+                'warning',
+                'Neu laden',
+                {},
+                () => {
+                    window.location.reload();
+                }
+            );
         } else {
-            cartError.set(error.message || 'Fehler beim Hinzufügen zum Warenkorb.');
+            showErrorAlert(error.message || 'Fehler beim Hinzufügen zum Warenkorb.');
         }
         throw error;
     }
@@ -175,9 +183,10 @@ export async function removeFromCart(seat_id, showtime_id) {
             await removeFromGuestCart(showtime_id, seat_id);
         }
         await loadCart();
+        showSuccessToast(`Sitzplatz wurde aus dem Warenkorb entfernt.`);
     } catch (error) {
         console.error('Fehler beim Entfernen aus dem Warenkorb:', error);
-        cartError.set(error.message || 'Fehler beim Entfernen aus dem Warenkorb.');
+        showErrorAlert(error.message || 'Fehler beim Entfernen aus dem Warenkorb.');
     }
 }
 
@@ -192,9 +201,10 @@ export async function clearCart() {
             await clearGuestCart();
         }
         await loadCart();
+        showSuccessToast('Warenkorb wurde geleert.');
     } catch (error) {
         console.error('Fehler beim Leeren des Warenkorbs:', error);
-        cartError.set(error.message || 'Fehler beim Leeren des Warenkorbs.');
+        showErrorAlert(error.message || 'Fehler beim Leeren des Warenkorbs.');
     }
 }
 
@@ -213,10 +223,11 @@ export async function updateCartDiscount(seat, discount_id = null) {
             await apiUpdateGuestCart(guestId, seat.seat_id, seat.showtime_id, discount_id);
         }
         await loadCart();
+        showSuccessToast(`Rabatt für Sitzplatz ${seat.row}${seat.number} wurde aktualisiert.`);
         console.log('updateCartDiscount abgeschlossen für seat_id:', seat.seat_id);
     } catch (error) {
         console.error('Fehler beim Aktualisieren des Rabatts:', error);
-        cartError.set(error.message || 'Fehler beim Aktualisieren des Rabatts.');
+        showErrorAlert(error.message || 'Fehler beim Aktualisieren des Rabatts.');
         throw error;
     }
 }

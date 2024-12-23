@@ -1,0 +1,49 @@
+/* src/global.css */
+
+/* SweetAlert2 Dark Mode Anpassungen */
+.custom-swal2-popup {
+    background: #2c2c2c !important;
+    color: #ffffff !important;
+    border: none !important;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.5) !important;
+}
+
+.custom-swal2-title {
+    color: #ffffff !important;
+}
+
+.custom-swal2-text {
+    color: #dddddd !important;
+}
+
+.custom-swal2-confirm {
+    background-color: #4caf50 !important; /* Grüner Bestätigungsbutton */
+    color: #ffffff !important;
+    border: none !important;
+    padding: 0.5rem 1rem !important;
+    border-radius: 5px !important;
+    margin: 0 3px 0 0 !important;
+    cursor: pointer !important;
+    font-weight: bold !important;
+    box-shadow: 0 0 5px rgba(76, 175, 80, 0.5) !important;
+}
+
+.custom-swal2-cancel {
+    background-color: #f44336 !important; /* Roter Abbrechen-Button */
+    color: #ffffff !important;
+    border: none !important;
+    padding: 0.5rem 1rem !important;
+    border-radius: 5px !important;
+    margin: 0 0 0 3px !important;
+    cursor: pointer !important;
+    font-weight: bold !important;
+    box-shadow: 0 0 5px rgba(244, 67, 54, 0.5) !important;
+}
+
+.custom-swal2-confirm:hover {
+    background-color: #45a049 !important;
+}
+
+.custom-swal2-cancel:hover {
+    background-color: #e53935 !important;
+}

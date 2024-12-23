@@ -28,6 +28,7 @@
     import Leaderboard from './routes/leaderboard.svelte';
     import Bestelluebersicht from './routes/Bestelluebersicht.svelte';
     import Adminrewards from './routes/Adminrewards.svelte';
+    import './global.css';
 
     import { loadProfile } from './stores/profileStore.js';
     import { authStore, setAuth, updateAuth } from './stores/authStore.js';
@@ -130,7 +131,7 @@
         isLoading = false;
     });
 </script>
-
+<slot></slot>
 {#if isLoading}
   <p>Loading...</p>
 {:else}

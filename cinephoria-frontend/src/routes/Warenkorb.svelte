@@ -1,7 +1,7 @@
+<!-- src/components/Warenkorb.svelte -->
 <script>
     import { navigate } from 'svelte-routing';
-    import Swal from 'sweetalert2';
-    
+    import { showErrorAlert, showSuccessAlert, showConfirmationDialog } from '../utils/notifications.js'; // Importiere die Benachrichtigungsfunktionen
     import "@fortawesome/fontawesome-free/css/all.min.css";
     import { derived } from 'svelte/store';
     import { onMount } from 'svelte';
@@ -38,12 +38,7 @@
 
     // Reaktive Fehlerbehandlung mit Zurücksetzen von cartError
     $: if ($cartError) {
-        Swal.fire({
-            title: "Fehler",
-            text: $cartError,
-            icon: "error",
-            confirmButtonText: "OK"
-        }).then(() => {
+        showErrorAlert($cartError).then(() => {
             cartError.set(null);
         });
     }
@@ -67,31 +62,15 @@
 
     // Funktion zum Entfernen eines Sitzplatzes aus dem Warenkorb
     async function handleRemove(seat_id, showtime_id) {
-        const result = await Swal.fire({
-            title: 'Sitzplatz entfernen',
-            text: 'Möchtest du diesen Sitzplatz wirklich aus dem Warenkorb entfernen?',
-            icon: 'warning',
-            showCancelButton: true,
-            confirmButtonText: 'Ja, entfernen',
-            cancelButtonText: 'Abbrechen'
-        });
+        const result = await showConfirmationDialog('Sitzplatz entfernen', 'Möchtest du diesen Sitzplatz wirklich aus dem Warenkorb entfernen?');
 
         if (result.isConfirmed) {
             try {
                 await removeFromCart(seat_id, showtime_id);
-                await Swal.fire(
-                    'Entfernt!',
-                    'Der Sitzplatz wurde aus dem Warenkorb entfernt.',
-                    'success'
-                );
+                showSuccessAlert("Der Sitzplatz wurde aus dem Warenkorb entfernt.");
             } catch (error) {
                 console.error('Fehler beim Entfernen des Sitzplatzes:', error);
-                Swal.fire({
-                    title: 'Fehler',
-                    text: 'Beim Entfernen des Sitzplatzes ist ein Fehler aufgetreten.',
-                    icon: 'error',
-                    confirmButtonText: 'OK'
-                });
+                showErrorAlert("Beim Entfernen des Sitzplatzes ist ein Fehler aufgetreten.");
             }
         }
     }
@@ -100,31 +79,15 @@
     async function handleClearCart() {
         if ($cart.length === 0) return;
 
-        const result = await Swal.fire({
-            title: 'Warenkorb leeren',
-            text: 'Möchtest du alle Sitzplätze aus dem Warenkorb entfernen?',
-            icon: 'warning',
-            showCancelButton: true,
-            confirmButtonText: 'Ja, leeren',
-            cancelButtonText: 'Abbrechen'
-        });
+        const result = await showConfirmationDialog('Warenkorb leeren', 'Möchtest du alle Sitzplätze aus dem Warenkorb entfernen?');
 
         if (result.isConfirmed) {
             try {
                 await clearCart();
-                await Swal.fire(
-                    'Gelöscht!',
-                    'Der Warenkorb wurde geleert.',
-                    'success'
-                );
+                showSuccessAlert("Der Warenkorb wurde geleert.");
             } catch (error) {
                 console.error('Fehler beim Leeren des Warenkorbs:', error);
-                Swal.fire({
-                    title: 'Fehler',
-                    text: 'Beim Leeren des Warenkorbs ist ein Fehler aufgetreten.',
-                    icon: 'error',
-                    confirmButtonText: 'OK'
-                });
+                showErrorAlert("Beim Leeren des Warenkorbs ist ein Fehler aufgetreten.");
             }
         }
     }
@@ -132,12 +95,7 @@
     // Funktion zum Fortsetzen des Buchungsprozesses
     function proceedToCheckout() {
         if ($cart.length === 0) {
-            Swal.fire({
-                title: "Warenkorb leer",
-                text: "Bitte füge mindestens einen Sitzplatz zum Warenkorb hinzu.",
-                icon: "warning",
-                confirmButtonText: "OK",
-            });
+            showErrorAlert("Bitte füge mindestens einen Sitzplatz zum Warenkorb hinzu.");
             return;
         }
         navigate('/checkout'); // Passe den Pfad entsprechend an
@@ -154,8 +112,8 @@
                 currentSelectedDiscount: seat.selectedDiscount
             }, 'selectedDiscount:', selectedDiscount);
             
-        // Ermitteln der richtigen seat_type_discount_id oder null
-        const seat_type_discount_id = selectedDiscount && selectedDiscount.seat_type_discount_id !== 'none' ? selectedDiscount.seat_type_discount_id : null;
+            // Ermitteln der richtigen seat_type_discount_id oder null
+            const seat_type_discount_id = selectedDiscount && selectedDiscount.seat_type_discount_id !== 'none' ? selectedDiscount.seat_type_discount_id : null;
             console.log('Ermittelte seat_type_discount_id:', seat_type_discount_id);
             
             await updateCartDiscount(seat, seat_type_discount_id);
@@ -163,20 +121,10 @@
 
             console.log('Rabatt erfolgreich aktualisiert für seat_id:', seat.seat_id, 'mit seat_type_discount_id:', seat_type_discount_id);
 
-            Swal.fire({
-                title: 'Erfolgreich',
-                text: 'Der Rabatt wurde aktualisiert.',
-                icon: 'success',
-                confirmButtonText: 'OK'
-            });
+            showSuccessAlert("Der Rabatt wurde aktualisiert.");
         } catch (error) {
             console.error('Fehler beim Aktualisieren des Rabatts:', error);
-            Swal.fire({
-                title: 'Fehler',
-                text: 'Beim Aktualisieren des Rabatts ist ein Fehler aufgetreten.',
-                icon: 'error',
-                confirmButtonText: 'OK'
-            });
+            showErrorAlert("Beim Aktualisieren des Rabatts ist ein Fehler aufgetreten.");
         } finally {
             loading = false; // Ladezustand deaktivieren
         }
@@ -394,7 +342,6 @@
         100% { transform: rotate(360deg); }
     }
 
-    /* Dein bestehendes CSS bleibt unverändert */
     @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap');
     @import url('https://use.fontawesome.com/releases/v5.15.4/css/all.css');
     
@@ -440,6 +387,8 @@
       padding: 2rem;
       max-width: 1200px;
       position: relative;
+      background: #1a1a1a; /* Dunkler Hintergrund für den Warenkorb */
+      box-shadow: 0 0 20px rgba(0, 0, 0, 0.7);
     }
     
     .cart-container h1, .cart-container h2 {
@@ -449,7 +398,7 @@
     }
     
     .showtime-details {
-      background: rgba(0,0,0,0.4);
+      background: rgba(0,0,0,0.6); /* Angepasst für besseren Kontrast im Dark Mode */
       border: 1px solid #2ecc71;
       border-radius: 16px;
       padding: 1.5rem;
@@ -474,19 +423,19 @@
     }
     
     .cart-table th {
-        background-color: rgba(0,0,0,0.5);
+        background-color: rgba(0,0,0,0.7); /* Angepasst für besseren Kontrast */
         color: #fff;
       font-weight: bold;
       text-shadow: none;
     }
     
     .cart-table td {
-      background-color: rgba(0,0,0,0.5);
+      background-color: rgba(0,0,0,0.7); /* Angepasst für besseren Kontrast */
       color: #fff;
     }
     
     .cart-table tr:hover {
-      background-color: rgba(0,0,0,0.7);
+      background-color: rgba(0,0,0,0.9);
     }
     
     .remove-btn, .clear-btn, .proceed-btn {
