@@ -1,4 +1,5 @@
 // src/stores/cartStore.js
+
 import { writable } from 'svelte/store';
 import { authStore } from './authStore';
 import { get } from 'svelte/store';
@@ -14,7 +15,10 @@ import {
     fetchSeatById,
     fetchShowtimeDetails,
     fetchMovieDetails,
-    fetchDiscountsForSeatType
+    fetchDiscountsForSeatType,
+    updateUserCart as apiUpdateUserCart, 
+    updateGuestCart as apiUpdateGuestCart,
+    getGuestId
 } from '../services/api.js';
 
 const cart = writable([]);
@@ -26,6 +30,7 @@ export { cart, cartError, validUntil };
 // Cache für Discounts pro seat_type_id
 const discountsCache = {};
 
+// Funktion zum Laden des Warenkorbs
 export async function loadCart() {
     const token = get(authStore).token;
     cartError.set(null);
@@ -43,11 +48,9 @@ export async function loadCart() {
         if (cart_items.length > 0) {
             // Setze validUntil nur, wenn der Warenkorb nicht leer ist
             validUntil.set(validUntilStr ? new Date(validUntilStr) : null);
-            console.log('validUntil gesetzt:', validUntilStr ? new Date(validUntilStr) : null);
         } else {
             // Entferne validUntil, wenn der Warenkorb leer ist
             validUntil.set(null);
-            console.log('validUntil entfernt, da der Warenkorb leer ist.');
         }
 
         // 'reserved_until' wird noch ausgelesen, falls es künftig relevant ist.
@@ -75,16 +78,26 @@ export async function loadCart() {
                 } else {
                     // Abrufen der Discounts und Cachen
                     discounts = await fetchDiscountsForSeatType(seatTypeId);
+                    console.log(`Abrufen der Discounts für seat_type_ireqwqwqwqwqwqwqwqwqwqwqwqwqwqwqwqwqwqwqwqwqwqwqwqwqwqwqwqwqwqwd ${seatTypeId}:`, discounts);
                     discountsCache[seatTypeId] = discounts;
-                    console.log(`Discounts für seat_type_id1111111111111 ${seatTypeId}:`, discounts);
+                    console.log(`Discounts für seat_type_id ${seatTypeId}:`, discounts);
                 }
+
+                // Finden des ausgewählten Discounts basierend auf seat_type_discount_id
+                const selectedDiscount = item.seat_type_discount_id 
+                ? discounts.find(d => d.seat_type_discount_id === item.seat_type_discount_id) 
+                : null;
+            
+
+                console.log(`Selected Discount für seat_id ${item.seat_id}:`, selectedDiscount);
 
                 return {
                     ...item,
                     ...seatDetails, 
                     showtime: showtimeDetails,
                     movie: movieDetails,
-                    discounts // Hinzufügen der Discounts zum Cart-Item
+                    discounts, // Hinzufügen der Discounts zum Cart-Item
+                    selectedDiscount, // Vollständiges Discount-Objekt
                 };
             } catch (error) {
                 console.error(`Fehler beim Abrufen der Details für seat_id ${item.seat_id}:`, error);
@@ -96,10 +109,21 @@ export async function loadCart() {
                     price: item.price || 0.00,
                     showtime: null,
                     movie: null,
-                    discounts: [] // Sicherstellen, dass Discounts auch bei Fehlern vorhanden sind
+                    discounts: [], // Sicherstellen, dass Discounts auch bei Fehlern vorhanden sind
+                    selectedDiscount: null,
                 };
             }
         }));
+
+        // Überprüfen der enrichedItems
+        enrichedItems.forEach(item => {
+            if (!item.seat_id) {
+                console.warn('Ein Cart-Item hat keine seat_id:', item);
+            }
+            if (!item.showtime_id) {
+                console.warn('Ein Cart-Item hat keine showtime_id:', item);
+            }
+        });
 
         cart.set(enrichedItems);
         console.log('Warenkorb erfolgreich geladen:', enrichedItems);
@@ -109,7 +133,6 @@ export async function loadCart() {
         validUntil.set(null); // Sicherstellen, dass validUntil entfernt wird bei Fehler
     }
 }
-
 
 // Initiales Laden des Warenkorbs
 loadCart();
@@ -172,5 +195,28 @@ export async function clearCart() {
     } catch (error) {
         console.error('Fehler beim Leeren des Warenkorbs:', error);
         cartError.set(error.message || 'Fehler beim Leeren des Warenkorbs.');
+    }
+}
+
+// Funktion zum Aktualisieren des Rabatts eines Sitzplatzes im Warenkorb
+export async function updateCartDiscount(seat, discount_id = null) {
+    const token = get(authStore).token;
+    cartError.set(null);
+    const guestId = getGuestId(); // Stelle sicher, dass du eine Methode hast, um die guest_id zu erhalten
+    console.log('Hier startet updateCartDiscount in der CartStore Komponente mit discount_id:', discount_id);
+    try {
+        if (token) {
+            console.log('Aktualisieren des Rabatts für seat_id:', seat.seat_id, 'mit discount_id:', discount_id, 'für showtime_id:', seat.showtime_id);
+            await apiUpdateUserCart(token, seat.seat_id, seat.showtime_id, discount_id);
+        } else {
+            console.log('Aktualisieren des Rabatts für seat_id:', seat.seat_id, 'mit discount_id:', discount_id, 'für showtime_id:', seat.showtime_id);
+            await apiUpdateGuestCart(guestId, seat.seat_id, seat.showtime_id, discount_id);
+        }
+        await loadCart();
+        console.log('updateCartDiscount abgeschlossen für seat_id:', seat.seat_id);
+    } catch (error) {
+        console.error('Fehler beim Aktualisieren des Rabatts:', error);
+        cartError.set(error.message || 'Fehler beim Aktualisieren des Rabatts.');
+        throw error;
     }
 }

@@ -4,9 +4,7 @@
     import "@fortawesome/fontawesome-free/css/all.min.css";
     import { derived } from 'svelte/store';
     import { onMount } from 'svelte';
-    import { cart, cartError, removeFromCart, clearCart, loadCart } from '../stores/cartStore.js';
-    import { fetchSeatTypesWithDiscounts } from '../services/api.js';
-    // Neue Importe für das futuristische Design und Animationen
+    import { cart, cartError, removeFromCart, clearCart, loadCart, updateCartDiscount } from '../stores/cartStore.js';
     import { tweened } from 'svelte/motion';
     import { cubicOut } from 'svelte/easing';
     import { authStore } from '../stores/authStore.js';
@@ -15,31 +13,12 @@
     // Animationen für Headline und Tagline
     let headerOpacity = tweened(0, { duration: 1000, easing: cubicOut });
     let taglineOpacity = tweened(0, { duration: 1500, easing: cubicOut, delay: 500 });
-    let test = [];
 
     onMount(async () => {
-        loadCart(); // Lade den Warenkorb beim Neuladen der Seite
+        await loadCart(); // Lade den Warenkorb beim Neuladen der Seite
         headerOpacity.set(1);
         taglineOpacity.set(1);
-        loadSeats();
     });
-
-    async function loadSeats(token) {
-        try {
-            const token = get(authStore).token;
-
-            test = await fetchSeatTypesWithDiscounts();
-            console.log(test);
-        } catch (error) {
-            console.error('Fehler beim Laden der Sitzplatztypen:', error);
-            Swal.fire({
-                title: 'Fehler',
-                text: 'Beim Laden der Sitzplatztypen ist ein Fehler aufgetreten.',
-                icon: 'error',
-                confirmButtonText: 'OK'
-            });
-        }
-    }
 
     // Reaktive Berechnung des Gesamtpreises unter Berücksichtigung der Rabatte
     $: totalPrice = $cart.reduce((sum, seat) => {
@@ -163,24 +142,47 @@
     }
 
     // Funktion zum Aktualisieren des Rabatts eines Sitzplatzes
-    function handleDiscountChange(seat, selectedDiscount) {
-        // Update des Sitzplatzes mit dem ausgewählten Rabatt
-        const updatedSeat = { 
-            ...seat, 
-            selectedDiscount: selectedDiscount.id !== 'none' ? selectedDiscount : null 
-        };
+    async function handleDiscountChange(seat, selectedDiscount) {
+    try {
+        // Log: Eingehende Daten überprüfen
+        console.log('handleDiscountChange aufgerufen mit seat:', {
+            seat_id: seat.seat_id,
+            showtime_id: seat.showtime_id,
+            currentSelectedDiscount: seat.selectedDiscount
+        }, 'selectedDiscount:', selectedDiscount);
+        
+        // Ermitteln der richtigen seat_type_discount_id oder null
+        const seat_type_discount_id = selectedDiscount && selectedDiscount.seat_type_discount_id !== 'none' ? selectedDiscount.seat_type_discount_id : null;
+        console.log('Ermittelte seat_type_discount_id:', seat_type_discount_id);
+        
+        // Aktualisiere den Rabatt im Warenkorb
+        await updateCartDiscount(seat, seat_type_discount_id);
+        await loadCart(); // Lade den aktualisierten Warenkorb neu
 
-        // Aktualisieren des Stores immutabel
-        const updatedCart = $cart.map(s => 
-            s.seat_id === seat.seat_id && s.showtime_id === seat.showtime_id 
-                ? updatedSeat 
-                : s
-        );
-        cart.set(updatedCart);
+        // Log: Nach dem Aktualisieren des Rabatts
+        console.log('Rabatt erfolgreich aktualisiert für seat_id:', seat.seat_id, 'mit seat_type_discount_id:', seat_type_discount_id);
+
+        Swal.fire({
+            title: 'Erfolgreich',
+            text: 'Der Rabatt wurde aktualisiert.',
+            icon: 'success',
+            confirmButtonText: 'OK'
+        });
+    } catch (error) {
+        console.error('Fehler beim Aktualisieren des Rabatts:', error);
+        Swal.fire({
+            title: 'Fehler',
+            text: 'Beim Aktualisieren des Rabatts ist ein Fehler aufgetreten.',
+            icon: 'error',
+            confirmButtonText: 'OK'
+        });
     }
+}
+
 
     // Funktion zur Ermittlung des passenden Icons basierend auf dem Discount
     function getDiscountIcon(discount) {
+        console.log('getDiscountIcon aufgerufen mit discount:', discount);
         if (!discount) return 'fas fa-times-circle'; // Kein Rabatt
 
         switch (discount.name.toLowerCase()) {
@@ -192,6 +194,8 @@
                 return 'fas fa-child';
             case 'mitglied':
                 return 'fas fa-id-card';
+            case 'mitarbeiter':
+                return 'fas fa-briefcase';
             // Füge weitere Fälle je nach Discount-Name hinzu
             default:
                 return 'fas fa-tag'; // Standard-Icon
@@ -208,6 +212,8 @@
         } else {
             visibleDiscountSeat = seat;
         }
+        // Log: Zustand des sichtbaren Rabatts
+        console.log('visibleDiscountSeat geändert:', visibleDiscountSeat ? { seat_id: visibleDiscountSeat.seat_id, showtime_id: visibleDiscountSeat.showtime_id } : null);
     }
 </script>
 
@@ -227,7 +233,10 @@
                 <!-- Anzeige der Film- und Vorstellungsdetails -->
                 <div class="showtime-details">
                     <h2>Film: {group.movie.title}</h2>
-                    <p>Startzeit: {new Date(group.showtime.start_time).toLocaleString('de-DE', { hour: '2-digit', minute: '2-digit' })}, {group.showtime.screen_name}</p>
+                    <p>
+                        Startzeit: {new Date(group.showtime.start_time).toLocaleString('de-DE', { hour: '2-digit', minute: '2-digit' })}, 
+                        {group.showtime.screen_name}
+                    </p>
                 </div>
 
                 <!-- Anzeige der Sitzplätze für diese Gruppe -->
@@ -290,7 +299,7 @@
                                             <div class="discount-options-wrapper">
                                                 <!-- Option "Kein Rabatt" -->
                                                 <div 
-                                                    class="discount-option {!seat.selectedDiscount ? 'selected' : ''}"
+                                                    class="discount-option { !seat.selectedDiscount ? 'selected' : '' }"
                                                     on:click={() => {
                                                         handleDiscountChange(seat, { id: 'none', name: 'Kein Rabatt', discount_amount: 0, discount_percentage: 0 });
                                                         toggleDiscountSelection(seat);
@@ -302,7 +311,7 @@
                                                 <!-- Dynamische Discount-Optionen -->
                                                 {#each seat.discounts as discount}
                                                     <div 
-                                                        class="discount-option {seat.selectedDiscount?.discount_id === discount.discount_id ? 'selected' : ''}"
+                                                        class="discount-option { seat.selectedDiscount?.discount_id === discount.discount_id ? 'selected' : '' }"
                                                         on:click={() => {
                                                             handleDiscountChange(seat, discount);
                                                             toggleDiscountSelection(seat);
@@ -351,6 +360,7 @@
 </div>
 
 <style>
+/* Dein bestehendes CSS bleibt unverändert */
 @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap');
 @import url('https://use.fontawesome.com/releases/v5.15.4/css/all.css');
 
@@ -359,7 +369,6 @@
   min-height: 100vh;
   padding: 2rem;
   overflow: hidden;
-
 }
 
 .header-section {
@@ -392,9 +401,7 @@
 }
 
 .cart-container {
-  
   border-radius: 20px;
- 
   margin: 2rem auto;
   padding: 2rem;
   max-width: 1200px;
@@ -430,7 +437,6 @@
   text-align: center;
   border-bottom: 1px solid #2ecc71;
   font-size: 1rem;
-  
 }
 
 .cart-table th {

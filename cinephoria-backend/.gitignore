@@ -1,0 +1,5 @@
+# Python venv-Verzeichnis ignorieren
+venv/
+
+# Requirements-Datei ignorieren (falls gewünscht)
+requirements.txt

@@ -20,6 +20,7 @@ export const login = async (email, password) => {
 };
 
 export const validateToken = async (token) => {
+    console.log('hierlöschenspäter', token); //HIER löschen
     const response = await fetch(`${API_BASE_URL}/validate-token`, {
         method: "POST",
         headers: {
@@ -578,7 +579,7 @@ export const updateSeatType = async (token, seatTypeId, updates) => {
 
 
 // Hilfsfunktion, um guest_id zu holen
-function getGuestId() {
+export function getGuestId() {
     let guest_id = localStorage.getItem('guest_id');
     if (!guest_id) {
         guest_id = crypto.randomUUID();
@@ -1232,4 +1233,59 @@ export async function createBookingNew(vorname, nachname, email, user_id, total_
     }
     return data;
 }
+
+
+// Funktion zum Aktualisieren des Benutzer-Warenkorbs
+export const updateUserCart = async (token, seatId, showtimeId, seatTypeDiscountId = null) => {
+    try {
+        const response = await fetch(`${API_BASE_URL}/user/cart/update`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`,
+            },
+            body: JSON.stringify({
+                seat_id: seatId,
+                showtime_id: showtimeId,
+                seat_type_discount_id: seatTypeDiscountId,
+            }),
+        });
+
+        const data = await response.json();
+        if (!response.ok) {
+            throw new Error(data.error || 'Fehler beim Aktualisieren des Benutzer-Warenkorbs');
+        }
+        return data;
+    } catch (error) {
+        console.error('Error updating user cart:', error);
+        throw error;
+    }
+};
+
+// Funktion zum Aktualisieren des Gast-Warenkorbs
+export const updateGuestCart = async (guestId, seatId, showtimeId, seatTypeDiscountId = null) => {
+    try {
+        const response = await fetch(`${API_BASE_URL}/guest/cart/update`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                guest_id: guestId,
+                seat_id: seatId,
+                showtime_id: showtimeId,
+                seat_type_discount_id: seatTypeDiscountId,
+            }),
+        });
+
+        const data = await response.json();
+        if (!response.ok) {
+            throw new Error(data.error || 'Fehler beim Aktualisieren des Gast-Warenkorbs');
+        }
+        return data;
+    } catch (error) {
+        console.error('Error updating guest cart:', error);
+        throw error;
+    }
+};
 
