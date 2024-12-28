@@ -166,13 +166,14 @@
                   on:click={() => navigateToDescription(movie)}
                   aria-label="Details zu {movie.title} anzeigen"
                 >
-                  <div class="movie-image-container">
-                    <img src="{IMAGE_BASE_URL}{movie.poster_path}" alt={movie.title} />
-                    <div class="image-overlay"></div>
-                    <div class="cta-overlay">
-                      <span class="cta-text">Tickets</span>
-                    </div>
+                <div class="movie-image-container">
+                  <img class="movie-image" src="{IMAGE_BASE_URL}{movie.poster_path}" alt={movie.title} />
+                  <div class="image-overlay"></div>
+                  <div class="cta-overlay">
+                    <span class="cta-text">Tickets</span>
                   </div>
+                </div>
+                
                 </button>
                 <div class="movie-info">
                   <h2 class="movie-title">{movie.title}</h2>
@@ -375,6 +376,7 @@
     position: relative;
   }
 
+  
   .movie-image-container {
     position: relative;
     overflow: hidden;

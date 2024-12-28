@@ -219,7 +219,7 @@ main {
     align-items: center;
     padding: 40px;
     max-width: 1200px;
-    margin: 0 auto;
+    margin-top: 50px;
 }
 
 h1, h2 {
