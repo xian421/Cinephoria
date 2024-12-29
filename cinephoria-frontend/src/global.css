@@ -1,4 +1,50 @@
-/* src/global.css */
+/* src/global.css 
+
+- Vielleicht h1 um den Abstand besser zu machen
+
+
+*/
+html, body {
+    font-family: 'Roboto', sans-serif;
+    background: linear-gradient(135deg, #000428, #004e92);
+    color: #fff;
+    overflow-x: hidden;
+    position: relative;
+}
+
+
+h1 {
+    margin-top: 100px;
+    margin-bottom: 40px;
+    font-size: 3rem;
+    color: #2ecc71;
+    text-shadow: 0 0 20px #2ecc71, 0 0 40px #2ecc71;
+    animation: glow 2s infinite alternate;
+}
+
+
+
+/* Back Button (Adminbereich) */
+.back-button {
+    margin-top: 20px;
+    background-color: #2ecc71;
+    font-size: 1rem;
+    padding: 10px 20px;
+    border-radius: 8px;
+    color: #000;
+    cursor: pointer;
+    box-shadow: 0 0 10px #2ecc71;
+    transition: background-color 0.3s, transform 0.3s;
+    font-weight: bold;
+    text-shadow: 0 0 10px #000;
+}
+
+.back-button:hover {
+    background-color: #27ae60;
+    transform: translateY(-3px) scale(1.05);
+}
+
+
 
 /* SweetAlert2 Dark Mode Anpassungen */
 .custom-swal2-popup {

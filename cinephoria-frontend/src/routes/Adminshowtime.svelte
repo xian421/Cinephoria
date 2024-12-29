@@ -197,19 +197,12 @@
     }
 
     function goBack() {
-        navigate('/adminkinosaal'); // Passe den Pfad entsprechend an
+        navigate('/admin'); // Passe den Pfad entsprechend an
     }
 </script>
 
 <style>
-    body {
-    margin: 0;
-    font-family: 'Roboto', sans-serif;
-    background: linear-gradient(135deg, #000428, #004e92);
-    color: #fff;
-    overflow-x: hidden;
-    max-width: 100%;
-}
+
 
 main {
     display: flex;
@@ -510,6 +503,6 @@ tbody tr:hover {
             </tbody>
         </table>
 
-        <button class="back-button" on:click={goBack}>Zurück zu Überblick der Kinosäle</button>
+        <button class="back-button" on:click={goBack}>Zurück zum Adminbereich</button>
     {/if}
 </main>

@@ -13,7 +13,7 @@
     let newRewardTitle = '';
     let newRewardPoints = '';
     let newRewardDescription = '';
-    let newRewardImage = '';
+    // Entfernt: let newRewardImage = '';
 
     onMount(async () => {
         isLoading = true;
@@ -60,7 +60,7 @@
         }
 
         try {
-            await addReward(token, titleStr.trim(), points, newRewardDescription, newRewardImage);
+            await addReward(token, titleStr.trim(), points, newRewardDescription /*, newRewardImage */);
             // Nach erfolgreicher Hinzufügung neu laden
             const fetchedRewards = await fetchRewards(token);
             rewards = fetchedRewards;
@@ -70,7 +70,7 @@
             newRewardTitle = '';
             newRewardPoints = '';
             newRewardDescription = '';
-            newRewardImage = '';
+            // Entfernt: newRewardImage = '';
 
             Swal.fire({
                 title: 'Erfolgreich',
@@ -118,7 +118,7 @@
         }
 
         try {
-            await updateReward(token, reward.reward_id, titleStr.trim(), points, reward.description, reward.image);
+            await updateReward(token, reward.reward_id, titleStr.trim(), points, reward.description /*, reward.image */);
             console.log('Updated Reward:', reward);
 
             Swal.fire({
@@ -177,101 +177,142 @@
 </script>
 
 <style>
-/*  @import "@fortawesome/fontawesome-free/css/all.min.css"; */
+    /* Gemeinsame CSS-Variablen für Konsistenz */
+    :root {
+        --primary-color: #2ecc71;
+        --primary-color-dark: #27ae60;
+        --table-background: rgba(0, 0, 0, 0.4);
+        --input-background: rgba(0, 0, 0, 0.5);
+        --text-color: #fff;
+        --error-color: #e74c3c;
+    }
 
+    /* Basis-Layout */
     main {
         display: flex;
         flex-direction: column;
         align-items: center;
+        padding: 40px;
+        max-width: 1200px;
+        margin: 0 auto;
+        background: var(--background-color);
+        color: var(--text-color);
         font-family: 'Roboto', sans-serif;
-        padding: 30px;
-        background: linear-gradient(120deg, #f0f9ff, #cfefff);
-        border-radius: 10px;
-        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
     }
 
-    h1, h2 {
-        text-align: center;
-        margin-bottom: 20px;
-    }
-
+    /* Überschriften */
     h1 {
-        font-size: 2.8rem;
-        color: #34495e;
-        margin-bottom: 15px;
-        border-bottom: 4px solid #3498db;
-        display: inline-block;
-        padding-bottom: 10px;
+        color: var(--primary-color);
+        text-shadow: 0 0 20px var(--primary-color), 0 0 40px var(--primary-color);
+        margin-bottom: 40px;
+        font-size: 2.5rem;
+        animation: glow 2s infinite alternate;
     }
 
     h2 {
+        color: var(--primary-color);
+        text-shadow: 0 0 20px var(--primary-color), 0 0 40px var(--primary-color);
+        margin-bottom: 40px;
         font-size: 2rem;
-        color: #2c3e50;
+        animation: glow 2s infinite alternate;
     }
 
+    @keyframes glow {
+        from {
+            text-shadow: 0 0 10px var(--primary-color), 0 0 20px var(--primary-color);
+        }
+        to {
+            text-shadow: 0 0 20px var(--primary-color), 0 0 40px var(--primary-color);
+        }
+    }
+
+    /* Tabellen */
     table {
         width: 100%;
         max-width: 900px;
         border-collapse: collapse;
         margin: 20px 0;
-        border-radius: 8px;
-        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        background: var(--table-background);
+        border-radius: 12px;
         overflow: hidden;
+        box-shadow: 0 0 20px rgba(0,0,0,0.5);
+        color: var(--text-color);
         text-align: center;
     }
 
     th, td {
         padding: 20px;
         text-align: center;
-        border-bottom: 1px solid #ddd;
+        border-bottom: 1px solid var(--primary-color);
         font-size: 1rem;
         vertical-align: middle;
+        text-shadow: 0 0 5px var(--primary-color);
     }
 
     th {
-        background-color: #2c3e50;
-        color: #ffffff;
+        background-color: #000;
+        font-size: 1.1rem;
+        color: var(--primary-color);
+        border-bottom: 2px solid var(--primary-color);
         text-transform: uppercase;
-        font-weight: bold;
     }
 
     td {
-        color: #555;
-        background-color: #ffffff;
+        background-color: rgba(42, 42, 42, 0.7);
     }
 
+    td:last-child {
+        text-align: center;
+    }
+
+    /* Spezielle Klasse für Beschreibungstextfelder */
+    .description-textarea {
+        min-height: 60px; /* Vergrößert die Höhe des Textbereichs */
+    }
+
+    /* Eingabefelder */
     input, select, textarea {
         width: 100%;
         padding: 12px;
-        border: 1px solid #ddd;
-        border-radius: 6px;
+        border: 1px solid var(--primary-color);
+        border-radius: 8px;
         font-size: 1rem;
-        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
-        transition: border-color 0.3s ease, box-shadow 0.3s ease;
+        background: var(--input-background);
+        color: var(--primary-color);
+        margin-top: 5px;
+        box-shadow: inset 0 0 10px var(--primary-color);
+        transition: box-shadow 0.3s, border-color 0.3s;
     }
 
     input:focus, select:focus, textarea:focus {
-        border-color: #3498db;
-        box-shadow: 0 2px 10px rgba(52, 152, 219, 0.3);
+        border-color: var(--primary-color-dark);
+        box-shadow: 0 0 15px var(--primary-color-dark);
         outline: none;
     }
 
+    /* Buttons */
     button {
-        background: #3498db;
-        color: white;
+        background: var(--primary-color);
+        color: #000;
         padding: 12px 20px;
         font-size: 1rem;
+        margin-bottom: 10px;
         border: none;
-        border-radius: 25px;
+        border-radius: 25px;                                                                                
         cursor: pointer;
         transition: all 0.3s ease;
         box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        font-weight: bold;
+        text-shadow: 0 0 10px #000;
     }
 
     button:hover {
-        transform: translateY(-3px);
+        background: var(--primary-color-dark);
+        transform: translateY(-3px) scale(1.05);
+        box-shadow: 0 0 15px var(--primary-color-dark);
     }
 
+    /* Delete Button */
     .delete-button {
         padding: 10px 20px;
         font-size: 1rem;
@@ -289,6 +330,12 @@
         transform: translateY(-3px) !important;
     }
 
+    /* Icons */
+    .fas {
+        margin-right: 5px;
+    }
+
+    /* Responsive Design */
     @media (max-width: 768px) {
         h1 {
             font-size: 2rem;
@@ -306,6 +353,18 @@
             font-size: 0.9rem;
             padding: 10px 15px;
         }
+
+        .reward-list {
+            max-width: 100%;
+        }
+    }
+
+    /* Nachrichten */
+    .error {
+        color: var(--error-color);
+        font-weight: bold;
+        margin-bottom: 20px;
+        text-shadow: 0 0 10px var(--error-color);
     }
 </style>
 
@@ -323,9 +382,9 @@
                 <thead>
                     <tr>
                         <th>Title</th>
-                        <th>Points</th>
-                        <th>Description</th>
-                        <th>Image</th>
+                        <th>Punkte</th>
+                        <th>Beschreibung</th>
+                        <!-- Entfernt die Bild-URL-Spalte -->
                         <th>Aktionen</th>
                     </tr>
                 </thead>
@@ -347,15 +406,10 @@
                             <td>
                                 <textarea
                                     bind:value={reward.description}
+                                    class="description-textarea"
                                 ></textarea>
                             </td>
-                            <td>
-                                <input
-                                    type="text"
-                                    placeholder="Bild-URL"
-                                    bind:value={reward.image}
-                                />
-                            </td>
+                            <!-- Entfernt die Bild-URL-Eingabe -->
                             <td>
                                 <button on:click={() => handleUpdateReward(reward)}>
                                     <i class="fas fa-save"></i> Speichern
@@ -386,15 +440,10 @@
                             <textarea
                                 placeholder="Neue Beschreibung"
                                 bind:value={newRewardDescription}
+                                class="description-textarea"
                             ></textarea>
                         </td>
-                        <td>
-                            <input
-                                type="text"
-                                placeholder="Bild-URL"
-                                bind:value={newRewardImage}
-                            />
-                        </td>
+                        <!-- Entfernt die Bild-URL-Eingabe -->
                         <td>
                             <button on:click={handleAddReward}>
                                 <i class="fas fa-plus-circle"></i> Hinzufügen

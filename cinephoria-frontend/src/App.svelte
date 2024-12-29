@@ -208,13 +208,3 @@
       <Footer firstCinema={firstCinema} />
   </Router>
 {/if}
-
-<style>
-  :global(html, body) {
-      font-family: 'Roboto', sans-serif;
-      background: linear-gradient(135deg, #000428, #004e92);
-      color: #fff;
-      overflow-x: hidden;
-      position: relative;
-  }
-</style>

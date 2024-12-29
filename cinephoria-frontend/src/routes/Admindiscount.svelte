@@ -12,6 +12,7 @@
     } from '../services/api.js';
     import { get } from 'svelte/store';
     import { authStore } from '../stores/authStore.js';
+    import { navigate } from 'svelte-routing';
 
     let discounts = [];
     let seatTypes = [];
@@ -337,247 +338,185 @@
             }
         });
     }
+
+
+    function goBack() {
+        navigate('/admin'); // Passe den Pfad entsprechend an
+    }
 </script>
 
 <style>
- /*  @import "@fortawesome/fontawesome-free/css/all.min.css"; */
+    /* Basis-Layout */
+    main {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 40px;
+        max-width: 1200px;
+        margin: 0 auto;
+        color: #fff;
+        font-family: 'Roboto', sans-serif;
+    }
 
-/* Basis-Layout */
-main {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    font-family: 'Roboto', sans-serif;
-    padding: 30px;
-    background: linear-gradient(120deg, #f0f9ff, #cfefff);
-    border-radius: 10px;
-    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
-}
-
-/* Überschriften */
-h1, h2 {
-    text-align: center;
-    margin-bottom: 20px;
-}
-
-h1 {
-    font-size: 2.8rem;
-    color: #34495e;
-    margin-bottom: 15px;
-    border-bottom: 4px solid #3498db;
-    display: inline-block;
-    padding-bottom: 10px;
-}
-
-h2 {
-    font-size: 2rem;
-    color: #2c3e50;
-}
-
-/* Tabellen */
-table {
-    width: 100%;
-    max-width: 900px;
-    border-collapse: collapse;
-    margin: 20px 0;
-    border-radius: 8px;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-    overflow: hidden;
-    text-align: center;
-}
-
-th, td {
-    padding: 20px;
-    text-align: center;
-    border-bottom: 1px solid #ddd;
-    font-size: 1rem;
-    vertical-align: middle;
-}
-
-th {
-    background-color: #2c3e50;
-    color: #ffffff;
-    text-transform: uppercase;
-    font-weight: bold;
-}
-
-td {
-    color: #555;
-    background-color: #ffffff;
-}
-
-td:last-child {
-    text-align: center;
-}
-
-/* Eingabefelder */
-input, select, textarea {
-    width: 100%;
-    padding: 12px;
-    border: 1px solid #ddd;
-    border-radius: 6px;
-    font-size: 1rem;
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
-    transition: border-color 0.3s ease, box-shadow 0.3s ease;
-}
-
-input:focus, select:focus, textarea:focus {
-    border-color: #3498db;
-    box-shadow: 0 2px 10px rgba(52, 152, 219, 0.3);
-    outline: none;
-}
-
-/* Buttons */
-button {
-    background: #3498db;
-    color: white;
-    padding: 12px 20px;
-    font-size: 1rem;
-    border: none;
-    border-radius: 25px;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-}
-
-button:hover {
-    transform: translateY(-3px);
-}
-
-/* Sektionen */
-.form-section {
-    display: flex;
-    flex-direction: column;
-    gap: 20px;
-    width: 100%;
-    max-width: 800px;
-    background-color: #ffffff;
-    padding: 30px;
-    border-radius: 10px;
-    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
-    margin-bottom: 30px;
-    animation: fadeIn 0.5s ease-out;
-}
-
-.form-section h2 {
-    font-size: 1.8rem;
-    color: #34495e;
-}
-
-/* Icon-Auswahl */
-.icon-container {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-}
-
-.icon-background {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 50px;
-    height: 50px;
-    border-radius: 50%;
-    background-color: var(--bg-color, #3498db);
-    position: relative;
-    cursor: pointer;
-    transition: transform 0.3s ease, background-color 0.3s ease;
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
-}
-
-.icon-background input[type="color"] {
-    opacity: 0;
-    position: absolute;
-    width: 100%;
-    height: 100%;
-    cursor: pointer;
-}
-
-.icon-background:hover {
-    transform: scale(1.2);
-    background-color: #1abc9c;
-}
-
-.icon-background i {
-    color: white;
-    font-size: 1.5rem;
-}
-
-/* Nachrichten */
-.success-message, .error-message {
-    font-size: 1rem;
-    padding: 10px 15px;
-    border-radius: 8px;
-    margin: 20px 0;
-    text-align: center;
-    font-weight: bold;
-}
-
-.success-message {
-    color: #27ae60;
-    background-color: #dff0d8;
-}
-
-.error-message {
-    color: #c0392b;
-    background-color: #f8d7da;
-}
-
-/* Responsive Design */
-@media (max-width: 768px) {
-    h1 {
+    /* Überschriften */
+     h2 {
+        color: #2ecc71;
+        text-shadow: 0 0 20px #2ecc71, 0 0 40px #2ecc71;
+        margin-bottom: 40px;
         font-size: 2rem;
+        animation: glow 2s infinite alternate;
     }
 
-    h2 {
-        font-size: 1.5rem;
+    @keyframes glow {
+      from {
+        text-shadow: 0 0 10px #2ecc71, 0 0 20px #2ecc71;
+      }
+      to {
+        text-shadow: 0 0 20px #2ecc71, 0 0 40px #2ecc71;
+      }
     }
 
+    /* Tabellen */
     table {
-        font-size: 0.9rem;
+        width: 100%;
+        max-width: 900px;
+        border-collapse: collapse;
+        margin: 20px 0;
+        background: rgba(0,0,0,0.4);
+        border-radius: 12px;
+        overflow: hidden;
+        box-shadow: 0 0 20px rgba(0,0,0,0.5);
+        color: #fff;
+        text-align: center;
     }
 
-    button {
-        font-size: 0.9rem;
-        padding: 10px 15px;
-    }
-
-    .form-section {
+    th, td {
         padding: 20px;
+        text-align: center;
+        border-bottom: 1px solid #2ecc71;
+        font-size: 1rem;
+        vertical-align: middle;
+        text-shadow: 0 0 5px #2ecc71;
     }
-}
 
-/* Animationen */
-@keyframes fadeIn {
-    from {
-        opacity: 0;
-        transform: translateY(20px);
+    th {
+        background-color: #000;
+        font-size: 1.1rem;
+        color: #2ecc71;
+        border-bottom: 2px solid #2ecc71;
+        text-transform: uppercase;
     }
-    to {
-        opacity: 1;
-        transform: translateY(0);
+
+    td {
+        background-color: rgba(42, 42, 42, 0.7);
     }
-}
 
-.delete-button {
-    padding: 10px 20px;
-    font-size: 1rem;
-    cursor: pointer;
-    border: none;
-    background-color: #e74c3c;
-    color: white;
-    border-radius: 10px;
-    transition: background-color 0.3s ease, transform 0.3s ease;
-    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
-}
+    td:last-child {
+        text-align: center;
+    }
 
-.delete-button:hover {
-    background-color: #c0392b !important;
-    transform: translateY(-3px) !important;
-}
+    /* Eingabefelder */
+    input, select, textarea {
+        width: 100%;
+        padding: 12px;
+        border: 1px solid #2ecc71;
+        border-radius: 8px;
+        font-size: 1rem;
+        background: rgba(0,0,0,0.5);
+        color: #2ecc71;
+        margin-top: 5px;
+        box-shadow: inset 0 0 10px #2ecc71;
+        transition: box-shadow 0.3s, border-color 0.3s;
+    }
 
+    input:focus, select:focus, textarea:focus {
+        border-color: #27ae60;
+        box-shadow: 0 0 15px #27ae60;
+        outline: none;
+    }
 
+    /* Buttons */
+    button {
+        background: #2ecc71;
+        color: #000;
+        padding: 12px 20px;
+        font-size: 1rem;
+        border: none;
+        border-radius: 25px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        font-weight: bold;
+        text-shadow: 0 0 10px #000;
+    }
 
+    button:hover {
+        background: #27ae60;
+        transform: translateY(-3px) scale(1.05);
+        box-shadow: 0 0 15px #27ae60;
+    }
+
+    /* Sektionen */
+    .discount-list, .assign-section {
+        width: 100%;
+        max-width: 1200px;
+        margin-bottom: 40px;
+    }
+
+    /* Delete Button */
+    .delete-button {
+        padding: 10px 20px;
+        font-size: 1rem;
+        cursor: pointer;
+        border: none;
+        background-color: #e74c3c;
+        color: white;
+        border-radius: 10px;
+        transition: background-color 0.3s ease, transform 0.3s ease;
+        box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
+    }
+
+    .delete-button:hover {
+        background-color: #c0392b !important;
+        transform: translateY(-3px) !important;
+    }
+
+    /* Icons */
+    .fas {
+        margin-right: 5px;
+    }
+
+    /* Responsive Design */
+    @media (max-width: 768px) {
+        h1 {
+            font-size: 2rem;
+        }
+
+        h2 {
+            font-size: 1.5rem;
+        }
+
+        table {
+            font-size: 0.9rem;
+        }
+
+        button {
+            font-size: 0.9rem;
+            padding: 10px 15px;
+        }
+
+        .discount-list, .assign-section {
+            max-width: 100%;
+        }
+    }
+
+    /* Nachrichten */
+    .error {
+        color: #e74c3c;
+        font-weight: bold;
+        margin-bottom: 20px;
+        text-shadow: 0 0 10px #e74c3c;
+    }
 </style>
 
 <main>
@@ -589,124 +528,120 @@ button:hover {
         <p class="error">{error}</p>
     {:else}
         <!-- Liste der bestehenden Discounts -->
-        <!-- Liste der bestehenden Discounts -->
-<div class="discount-list">
-    <h2>Bestehende Discounts</h2>
-    <table>
-        <thead>
-            <tr>
-                <th>Name</th>
-                <th>Beschreibung</th>
-                <th>Aktionen</th>
-            </tr>
-        </thead>
-        <tbody>
-            {#each discounts as discount}
-                <tr>
-                    <td>
-                        <input
-                            type="text"
-                            bind:value={discount.name}
-                        />
-                    </td>
-                    <td>
-                        <textarea
-                            bind:value={discount.description}
-                        ></textarea>
-                    </td>
-                    <td>
-                        <button on:click={() => handleUpdateDiscount(discount)}>
-                            <i class="fas fa-save"></i> Speichern
-                        </button>
-                        <button class="delete-button" on:click={() => handleDeleteDiscount(discount.discount_id)}>
-                            <i class="fas fa-trash-alt"></i> Löschen
-                        </button>
-                    </td>
-                </tr>
-            {/each}
-            <!-- Extra Zeile zum Hinzufügen eines neuen Discounts -->
-            <tr>
-                <td>
-                    <input
-                        type="text"
-                        placeholder="Neuer Discount-Name"
-                        bind:value={newDiscountName}
-                    />
-                </td>
-                <td>
-                    <textarea
-                        placeholder="Neue Beschreibung"
-                        bind:value={newDiscountDescription}
-                    ></textarea>
-                </td>
-                <td>
-                    <button on:click={handleAddDiscount}>
-                        <i class="fas fa-plus-circle"></i> Hinzufügen
-                    </button>
-                </td>
-            </tr>
-        </tbody>
-    </table>
-</div>
-
-
-        
-
-        <!-- Zuweisung von Discounts zu Sitztypen -->
-       <!-- Zuweisung von Discounts zu Sitztypen -->
-<div class="assign-section">
-    <h2>Discounts zu Sitztypen zuweisen</h2>
-
-    {#each seatTypes as seatType}
-        <div class="seat-type-table">
-            <h3>Sitztyp: {seatType.name}</h3>
+        <div class="discount-list">
+            <h2>Bestehende Discounts</h2>
             <table>
                 <thead>
                     <tr>
-                        <th>Discount</th>
-                        <th>Wert</th>
+                        <th>Name</th>
+                        <th>Beschreibung</th>
                         <th>Aktionen</th>
                     </tr>
                 </thead>
                 <tbody>
-                    {#if seatType.discounts.length > 0}
-                        {#each seatType.discounts as seatDiscount}
-                            <tr>
-                                <td>{seatDiscount.name}</td>
-                                <td>
-                                    {#if seatDiscount.discount_amount}
-                                        <strong>{seatDiscount.discount_amount.toFixed(2)} €</strong>
-                                    {:else if seatDiscount.discount_percentage}
-                                        <strong>{seatDiscount.discount_percentage.toFixed(2)} %</strong>
-                                    {:else}
-                                        -
-                                    {/if}
-                                </td>
-                                <td>
-                                    <button class="delete-button" on:click={() => handleRemoveDiscount(seatType, seatDiscount)}>
-                                        <i class="fas fa-minus-circle"></i> Entfernen
-                                    </button>
-                                </td>
-                            </tr>
-                        {/each}
-                    {:else}
+                    {#each discounts as discount}
                         <tr>
-                            <td colspan="3" class="no-discounts">Keine Discounts zugewiesen</td>
+                            <td>
+                                <input
+                                    type="text"
+                                    bind:value={discount.name}
+                                />
+                            </td>
+                            <td>
+                                <textarea
+                                    bind:value={discount.description}
+                                ></textarea>
+                            </td>
+                            <td>
+                                <button on:click={() => handleUpdateDiscount(discount)}>
+                                    <i class="fas fa-save"></i> Speichern
+                                </button>
+                                <button class="delete-button" on:click={() => handleDeleteDiscount(discount.discount_id)}>
+                                    <i class="fas fa-trash-alt"></i> Löschen
+                                </button>
+                            </td>
                         </tr>
-                    {/if}
-                    <!-- Zuweisungsbutton -->
+                    {/each}
+                    <!-- Extra Zeile zum Hinzufügen eines neuen Discounts -->
                     <tr>
-                        <td colspan="3">
-                            <button class="assign-button" on:click={() => handleAssignDiscount(seatType, null)}>
-                                <i class="fas fa-plus"></i> Discount zuweisen
+                        <td>
+                            <input
+                                type="text"
+                                placeholder="Neuer Discount-Name"
+                                bind:value={newDiscountName}
+                            />
+                        </td>
+                        <td>
+                            <textarea
+                                placeholder="Neue Beschreibung"
+                                bind:value={newDiscountDescription}
+                            ></textarea>
+                        </td>
+                        <td>
+                            <button on:click={handleAddDiscount}>
+                                <i class="fas fa-plus-circle"></i> Hinzufügen
                             </button>
                         </td>
                     </tr>
                 </tbody>
             </table>
         </div>
-    {/each}
-</div>
 
+        <!-- Zuweisung von Discounts zu Sitztypen -->
+        <div class="assign-section">
+            <h2>Discounts zu Sitztypen zuweisen</h2>
+
+            {#each seatTypes as seatType}
+                <div class="seat-type-table">
+                    <h3>Sitztyp: {seatType.name}</h3>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Discount</th>
+                                <th>Wert</th>
+                                <th>Aktionen</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {#if seatType.discounts.length > 0}
+                                {#each seatType.discounts as seatDiscount}
+                                    <tr>
+                                        <td>{seatDiscount.name}</td>
+                                        <td>
+                                            {#if seatDiscount.discount_amount}
+                                                <strong>{seatDiscount.discount_amount.toFixed(2)} €</strong>
+                                            {:else if seatDiscount.discount_percentage}
+                                                <strong>{seatDiscount.discount_percentage.toFixed(2)} %</strong>
+                                            {:else}
+                                                -
+                                            {/if}
+                                        </td>
+                                        <td>
+                                            <button class="delete-button" on:click={() => handleRemoveDiscount(seatType, seatDiscount)}>
+                                                <i class="fas fa-minus-circle"></i> Entfernen
+                                            </button>
+                                        </td>
+                                    </tr>
+                                {/each}
+                            {:else}
+                                <tr>
+                                    <td colspan="3" class="no-discounts">Keine Discounts zugewiesen</td>
+                                </tr>
+                            {/if}
+                            <!-- Zuweisungsbutton -->
+                            <tr>
+                                <td colspan="3">
+                                    <button on:click={() => handleAssignDiscount(seatType, null)}>
+                                        <i class="fas fa-plus"></i> Discount zuweisen
+                                    </button>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            {/each}
+        </div>
     {/if}
+    <button class="back-button" on:click={goBack}>Zurück zum Adminbereich</button>
+
 </main>

@@ -3,14 +3,6 @@
 </script>
 
 <style>
-    body {
-    margin: 0;
-    font-family: 'Roboto', sans-serif;
-    background: linear-gradient(135deg, #000428, #004e92);
-    color: #fff;
-    overflow-x: hidden;
-    max-width: 100%;
-}
 
 main {
     display: flex;
@@ -22,6 +14,7 @@ main {
 }
 
 h1 {
+    margin-top: 100px;
     margin-bottom: 40px;
     font-size: 3rem;
     color: #2ecc71;

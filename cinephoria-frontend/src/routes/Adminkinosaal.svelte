@@ -6,6 +6,8 @@
     import Swal from 'sweetalert2';
     import { authStore } from '../stores/authStore.js';
     import { get } from 'svelte/store';
+    import { navigate } from 'svelte-routing';
+
 
     let screens = [];
 
@@ -20,7 +22,7 @@
                 icon: "error",
                 confirmButtonText: "OK",
             });
-            navigate('/login'); // Oder den entsprechenden Login-Pfad
+            navigate('/'); // Oder den entsprechenden Login-Pfad
             return;
         }
 
@@ -50,8 +52,13 @@
             navigate('/unauthorized'); // Oder einen anderen geeigneten Pfad
         }
     });
+    function goBack() {
+        navigate('/admin'); // Passe den Pfad entsprechend an
+    }
 </script>
 
+
+<h1>Alle Kinosäle</h1>
 <div class="admin-page">
     {#if screens.length > 0}
         {#each screens as screen}
@@ -75,22 +82,16 @@
         <p>Keine Kinosäle gefunden.</p>
     {/if}
 </div>
+<button class="back-button" on:click={goBack}>Zurück zum Adminbereich</button>
+
 
 <style>
-body {
-    margin: 0;
-    font-family: 'Roboto', sans-serif;
-    background: linear-gradient(135deg, #000428, #004e92);
-    color: #fff;
-    overflow-x: hidden;
-    max-width: 100%;
-}
 
 .admin-page {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
     gap: 20px;
-    padding: 40px;
+    padding: 4px;
     max-width: 1200px;
     margin: 0 auto;
     margin-top: 6rem;
@@ -98,6 +99,7 @@ body {
 
 .card {
     position: relative;
+    margin-top: 0;
     background: rgba(0,0,0,0.4);
     border-radius: 12px;
     overflow: hidden;
