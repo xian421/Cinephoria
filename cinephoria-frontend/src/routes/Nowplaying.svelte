@@ -3,7 +3,7 @@
   import { onMount } from 'svelte';
   import { navigate } from 'svelte-routing';
   import Swal from 'sweetalert2';
-  import { fetchNowPlayingMovies, fetchShowtimesPublic } from '../services/api.js';
+  import { fetchNowPlayingMovies, fetchShowtimesaktuell } from '../services/api.js';
   import { tweened } from 'svelte/motion';
   import { cubicOut } from 'svelte/easing';
 
@@ -85,14 +85,14 @@
   // Daten beim Mounten der Komponente laden
   onMount(async () => {
     try {
-      // Lade jetzt laufende Filme und Showtimes gleichzeitig
+      // Lade jetzt laufende Filme und aktuelle Showtimes gleichzeitig
       const [moviesData, showtimesData] = await Promise.all([
         fetchNowPlayingMovies(),
-        fetchShowtimesPublic()
+        fetchShowtimesaktuell()
       ]);
 
       nowPlayingMovies = moviesData.results;
-      showtimes = showtimesData.showtimes;
+      showtimes = showtimesData; // Direkt zuweisen, da fetchShowtimesaktuell das Array zurückgibt
 
       // Gruppiere Filme mit ihren Showtimes
       const moviesWithShowtimes = groupMoviesWithShowtimes(nowPlayingMovies, showtimes);
@@ -133,6 +133,8 @@
     selectedMovie = null;
   }
 </script>
+
+
 
 <!-- Container mit einem futuristischen, animierten Hintergrund -->
 <div class="background">

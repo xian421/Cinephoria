@@ -1289,3 +1289,33 @@ export const updateGuestCart = async (guestId, seatId, showtimeId, seatTypeDisco
     }
 };
 
+//Funktion zum Abrufen der aktuellen SHowtimes
+
+export async function fetchShowtimesaktuell() {
+    const response = await fetch(`${API_BASE_URL}/showtimes/aktuell`, {
+        headers: {
+            "Content-Type": "application/json",
+        },
+    });
+    const data = await response.json();
+    if (!response.ok) {
+        throw new Error(data.error || 'Fehler beim Laden der Showtimes.');
+    }
+    return data.showtimes;
+}
+
+
+// src/services/api.js
+
+export async function fetchCurrentShowtimesByMovie(movieId) {
+    const response = await fetch(`${API_BASE_URL}/showtimes/aktuell?movie_id=${movieId}`, {
+        headers: {
+            "Content-Type": "application/json",
+        },
+    });
+    const data = await response.json();
+    if (!response.ok) {
+        throw new Error(data.error || 'Fehler beim Laden der Showtimes.');
+    }
+    return data.showtimes;
+}
