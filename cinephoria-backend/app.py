@@ -694,17 +694,25 @@ def get_showtimes():
         print(f"Fehler beim Abrufen der Showtimes: {e}")
         return jsonify({'error': 'Fehler beim Abrufen der Showtimes'}), 500
     
+  
 @app.route('/showtimes/aktuell', methods=['GET'])
 def get_showtimes_today():
+    movie_id = request.args.get('movie_id')  # Optionaler Parameter
     try:
         with psycopg2.connect(DATABASE_URL) as conn:
             with conn.cursor() as cursor:
-                cursor.execute("""
+                query = """
                     SELECT s.showtime_id, s.movie_id, s.screen_id, s.start_time, s.end_time, sc.name as screen_name
                     FROM showtimes s
                     JOIN screens sc ON s.screen_id = sc.screen_id
-                    WHERE s.start_time >= DATE_TRUNC('day', NOW());
-                """)
+                    WHERE s.start_time >= DATE_TRUNC('day', NOW())
+                """
+                params = []
+                if movie_id:
+                    query += " AND s.movie_id = %s"
+                    params.append(movie_id)
+                query += " ORDER BY s.start_time"
+                cursor.execute(query, tuple(params))
                 showtimes = cursor.fetchall()
                 # Strukturieren der Daten als Liste von Dictionaries
                 showtimes_list = [{
@@ -719,12 +727,9 @@ def get_showtimes_today():
     except Exception as e:
         print(f"Fehler beim Abrufen der Showtimes: {e}")
         return jsonify({'error': 'Fehler beim Abrufen der Showtimes'}), 500
+
     
-#SELECT s.showtime_id, s.movie_id, s.screen_id, s.start_time, s.end_time, sc.name as screen_name
-#FROM showtimes s
-#JOIN screens sc ON s.screen_id = sc.screen_id
-#WHERE
-#s.start_time >= DATE_TRUNC('day', NOW()); 
+
 
 @app.route('/showtimes/<int:showtime_id>', methods=['PUT'])
 @admin_required
