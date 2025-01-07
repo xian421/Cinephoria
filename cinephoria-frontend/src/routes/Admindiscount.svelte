@@ -14,6 +14,7 @@
     import { authStore } from '../stores/authStore.js';
     import { navigate } from 'svelte-routing';
 
+    
     let discounts = [];
     let seatTypes = [];
     let isLoading = true;

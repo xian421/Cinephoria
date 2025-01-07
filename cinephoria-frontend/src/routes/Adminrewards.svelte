@@ -4,6 +4,8 @@
     import { get } from 'svelte/store';
     import { authStore } from '../stores/authStore.js';
     import { fetchRewards, addReward, updateReward, deleteReward } from '../services/api.js';
+    import { navigate } from 'svelte-routing';
+
 
     let rewards = [];
     let isLoading = true;
@@ -174,6 +176,11 @@
             }
         });
     }
+
+
+function goBack() {
+    navigate('/admin'); // Passe den Pfad entsprechend an
+}
 </script>
 
 <style>
@@ -195,7 +202,7 @@
         padding: 40px;
         max-width: 1200px;
         margin: 0 auto;
-        background: var(--background-color);
+        background: var(--background-color);-+
         color: var(--text-color);
         font-family: 'Roboto', sans-serif;
     }
@@ -454,4 +461,5 @@
             </table>
         </div>
     {/if}
+    <button class="back-button" on:click={goBack}>Zurück zum Adminbereich</button>
 </main>
