@@ -4,8 +4,6 @@
     import { navigate } from 'svelte-routing';
     import { 
         createBooking, 
-        createPayPalOrder, 
-        capturePayPalOrder, 
         fetchSeatTypes, 
         fetchSeatsWithReservation, 
         fetchSeatTypesWithDiscounts 
@@ -31,9 +29,6 @@
     let error: string | null = null;
     let seatTypesList = [];
     let seatsByRow = {};
-    let payPalInitialized = false;
-    let paypalContainer: HTMLElement;
-
     let test = [];
 
     // Berechne Gesamtpreis
@@ -51,10 +46,6 @@
         } finally {
             isLoading = false;
             await tick();
-            if (!payPalInitialized) {
-                initializePayPalButtons();
-                payPalInitialized = true;
-            }
         }
     });
 
@@ -67,8 +58,6 @@
             // Laden der Sitzarten
             test = await fetchSeatTypes(token);
             seatTypesList = await fetchSeatTypesWithDiscounts(token);
-            console.log(seatTypesList);
-            console.log(test);
 
             // Funktion zur Berechnung des niedrigsten Preises
             function calculateLowestPrice(seatType) {
@@ -80,19 +69,15 @@
                         let discountedPrice = basePrice;
 
                         if (discount.discount_percentage) {
-                            // Berechne Preis nach prozentualer Ermäßigung
                             discountedPrice = basePrice * (1 - discount.discount_percentage / 100);
                         }
 
                         if (discount.discount_amount) {
-                            // Berechne Preis nach fester Ermäßigung
                             discountedPrice = basePrice - discount.discount_amount;
                         }
 
-                        // Stelle sicher, dass der Preis nicht negativ wird
                         discountedPrice = Math.max(discountedPrice, 0);
 
-                        // Aktualisiere den niedrigsten Preis, falls der berechnete Preis niedriger ist
                         if (discountedPrice < lowestPrice) {
                             lowestPrice = discountedPrice;
                         }
@@ -198,7 +183,6 @@
 
     async function toggleSeatSelection(seat: any) {
         if (seat.status !== 'available' && !isSelectedBySelf(seat)) {
-        //    console.log('Sitzplatz ist bereits reserviert:', seat);
             return;
         }
 
@@ -214,120 +198,6 @@
         } catch (error) {
             console.error('Fehler beim Aktualisieren des Warenkorbs:', error);
         }
-    }
-
-    function initializePayPalButtons() {
-        const PAYPAL_CLIENT_ID = 'AXWfRwPPgPCoOBZzqI-r4gce1HuWZXDnFqUdES0bP8boKSv5KkkPvZrMFwcCDShXjC3aTdChUjOhwxhW'; // Stelle sicher, dass diese Variable definiert ist
-
-        if (!PAYPAL_CLIENT_ID) {
-            showErrorAlert('PayPal Client ID ist nicht gesetzt.');
-            return;
-        }
-
-        if (window.paypal) {
-            renderPayPalButtons();
-        } else {
-            const script = document.createElement('script');
-            script.src = `https://www.paypal.com/sdk/js?client-id=${PAYPAL_CLIENT_ID}&currency=EUR`;
-            script.addEventListener('load', () => {
-                if (!window.paypal) {
-                    showErrorAlert('PayPal SDK konnte nicht geladen werden.');
-                    return;
-                }
-                renderPayPalButtons();
-            });
-            script.addEventListener('error', () => {
-                showErrorAlert('PayPal SDK Fehler.');
-            });
-            document.body.appendChild(script);
-        }
-    }
-
-    function renderPayPalButtons() {
-        if (!paypalContainer) {
-            showErrorAlert('PayPal Container nicht gefunden.');
-            return;
-        }
-
-        window.paypal.Buttons({
-            style: {
-                layout: 'vertical',
-                color: 'blue',
-                shape: 'rect',
-                label: 'paypal'
-            },
-            createOrder: async () => {
-                if ($cart.length === 0) {
-                    showErrorAlert('Bitte wähle mindestens einen Sitzplatz aus.');
-                    throw new Error('Keine Sitzplätze ausgewählt');
-                }
-
-                const token = get(authStore).token;
-                if (!token) throw new Error('Nicht authentifiziert');
-
-                try {
-                    const response = await createPayPalOrder(showtime_id, $cart, token);
-                    return response.orderID;
-                } catch (err) {
-                    console.error('Fehler beim Erstellen der PayPal-Order:', err);
-                    showErrorAlert('Problem beim Erstellen der Zahlung.');
-                    throw err;
-                }
-            },
-            onApprove: async (data: any) => {
-                const token = get(authStore).token;
-                if (!token) throw new Error('Nicht authentifiziert');
-                
-                try {
-                    const captureResult = await capturePayPalOrder(data.orderID, token);
-                    if (captureResult.status === 'COMPLETED') {
-                        await confirmBooking(data.orderID);
-                    } else {
-                        throw new Error('Zahlung nicht abgeschlossen');
-                    }
-                } catch (err) {
-                    console.error('Fehler beim Abschließen der Zahlung:', err);
-                    showErrorAlert('Problem beim Abschließen der Zahlung.');
-                }
-            },
-            onCancel: () => {
-                showSuccessAlert('Zahlung abgebrochen.');
-            },
-            onError: (err: any) => {
-                console.error('PayPal Fehler:', err);
-                showErrorAlert('Problem mit der Zahlung.');
-            }
-        }).render(paypalContainer);
-    }
-
-    async function confirmBooking(orderID: string) {
-        if ($cart.length === 0) {
-            showErrorAlert('Bitte füge mindestens einen Sitzplatz zum Warenkorb hinzu.');
-            return;
-        }
-
-        try {
-            const token = get(authStore).token;
-            const seatIds = $cart.map(seat => seat.seat_id);
-            await createBooking(showtime_id, seatIds, token, orderID);
-            showSuccessAlert('Tickets gebucht.').then(() => {
-                clearCart();
-                navigate('/');
-            });
-        } catch (err: any) {
-            console.error('Fehler bei der Buchung:', err);
-            showErrorAlert('Problem bei der Buchung.');
-        }
-    }
-
-    function showWarning() {
-        showWarningAlert('Achtung!', 'Ihre Reservierung läuft in weniger als einer Minute ab.', 3000);
-    }
-
-    function formatTime(seconds: number) {
-        const min = Math.floor(seconds / 60);
-        const sec = seconds % 60;
-        return `${min}:${sec < 10 ? '0' : ''}${sec}`;
     }
 </script>
 
@@ -410,11 +280,6 @@
                 </button>
             </div>
         </div>
-
-        <div class="paypal-section">
-            <p>Sichere Zahlung mit PayPal</p>
-            <div id="paypal-button-container" bind:this={paypalContainer}></div>
-        </div>
     {/if}
 </main>
 
@@ -424,9 +289,7 @@
         font-family: Arial, sans-serif;
         max-width: 800px;
         margin: 0 auto;
-     
         border-radius: 20px;
-       
         position: relative;
         color: #fff;
         margin-top: 4rem;
@@ -503,7 +366,6 @@
     }
 
     .seating-chart {
-        /* Nicht ändern! */
         display: flex;
         flex-direction: column;
         gap: 10px;
@@ -512,7 +374,6 @@
     }
 
     .seat-row {
-        /* Nicht ändern! */
         display: flex;
         justify-content: center;
         gap: 5px;
@@ -520,7 +381,6 @@
     }
 
     .seat {
-        /* Nicht ändern! */
         width: 40px;
         height: 40px;
         background-color: rgb(103, 139, 224);
@@ -536,29 +396,24 @@
     }
 
     .seat.selected {
-        /* Nicht ändern! */
         background-color: #2ecc71 !important;
     }
 
     .seat.selected::before {
-        /* Nicht ändern! */
         content: "\f007";
         font-family: "Font Awesome 5 Free";
         font-weight: 900;
     }
 
     .seat.vip {
-        /* Nicht ändern! */
         background-color: rgb(140, 76, 140);
     }
 
     .seat.wheelchair {
-        /* Nicht ändern! */
         font-size: 24px;
     }
 
     .seat.placeholder {
-        /* Nicht ändern! */
         background-color: transparent;
         pointer-events: none;
         width: 40px;
@@ -566,12 +421,10 @@
     }
 
     .seat:hover.available {
-        /* Nicht ändern! */
         transform: scale(1.1);
     }
 
     .row-label {
-        /* Nicht ändern! */
         width: 20px;
         text-align: right;
         margin-right: 5px;
@@ -580,7 +433,6 @@
     }
 
     .seat.unavailable {
-        /* Nicht ändern! */
         background-color: #7f8c8d !important;
         cursor: not-allowed;
     }
@@ -626,19 +478,6 @@
     .cart-button:hover, .home-button:hover {
         transform: scale(1.05);
         opacity: 0.9;
-    }
-
-    .paypal-section {
-        text-align: center;
-        margin-top: 2rem;
-    }
-
-    .paypal-section p {
-        margin-bottom: 1rem;
-    }
-
-    #paypal-button-container {
-        margin: 0 auto;
     }
 
     @media (max-width: 600px) {
