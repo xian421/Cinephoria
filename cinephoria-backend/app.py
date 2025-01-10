@@ -98,122 +98,47 @@ def get_paypal_access_token():
         print(response.json())
         raise Exception('Failed to obtain PayPal access token')
 
-
-@app.route('/paypal/order/create', methods=['POST'])
-@token_required
-def create_paypal_order():
-    data = request.get_json()
-    showtime_id = data.get('showtime_id')
-    selected_seats = data.get('selected_seats')  # Erwartet eine Liste von Sitzplatz-Dictionaries
-
-    if not showtime_id or not selected_seats:
-        return jsonify({'error': 'showtime_id und selected_seats sind erforderlich'}), 400
-
-    try:
-        token = get_paypal_access_token()
-
-        seat_ids = [seat['seat_id'] for seat in selected_seats]
-
-        with psycopg2.connect(DATABASE_URL) as conn:
-            with conn.cursor() as cursor:
-                # Preise und Details für die ausgewählten Sitzplätze abrufen
-                cursor.execute("""
-                    SELECT s.seat_id, s.row, s.number, st.name AS seat_type_name, st.price
-                    FROM seats s
-                    JOIN seat_types st ON s.seat_type_id = st.seat_type_id
-                    WHERE s.seat_id = ANY(%s)
-                """, (seat_ids,))
-                seats_data = cursor.fetchall()
-                if not seats_data:
-                    return jsonify({'error': 'Keine gültigen Sitzplätze gefunden'}), 400
-
-                items = []
-                total_amount = 0.0
-                for seat in seats_data:
-                    seat_id, row, number, seat_type_name, price = seat
-                    total_amount += float(price)
-                    items.append({
-                        "name": f"Reihe {row} Sitz {number} ({seat_type_name})",
-                        "quantity": "1",
-                        "unit_amount": {
-                            "currency_code": "EUR",
-                            "value": f"{float(price):.2f}"
-                        }
-                    })
-
-        order_payload = {
+def create_paypal_order(amount, currency='EUR'):
+    access_token = get_paypal_access_token()
+    response = requests.post(
+        f"{PAYPAL_API_BASE}/v2/checkout/orders",
+        headers={
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {access_token}"
+        },
+        json={
             "intent": "CAPTURE",
-            "purchase_units": [{
-                "amount": {
-                    "currency_code": "EUR",
-                    "value": f"{total_amount:.2f}",
-                    "breakdown": {
-                        "item_total": {
-                            "currency_code": "EUR",
-                            "value": f"{total_amount:.2f}"
-                        }
+            "purchase_units": [
+                {
+                    "amount": {
+                        "currency_code": currency,
+                        "value": f"{amount:.2f}"
                     }
-                },
-                "items": items
-            }],
-            "application_context": {
-                "return_url": "https://cinephoria-theta.vercel.app/upcoming",
-                "cancel_url": "https://cinephoria-theta.vercel.app/nowplaying"
-            }
+                }
+            ]
         }
+    )
+    if response.status_code == 201:
+        return response.json()
+    else:
+        print(response.json())
+        raise Exception('Failed to create PayPal order')
+    
+def capture_paypal_order(order_id):
+    access_token = get_paypal_access_token()
+    response = requests.post(
+        f"{PAYPAL_API_BASE}/v2/checkout/orders/{order_id}/capture",
+        headers={
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {access_token}"
+        }
+    )
+    if response.status_code == 201:
+        return response.json()
+    else:
+        print(response.json())
+        raise Exception('Failed to capture PayPal order')
 
-        response = requests.post(
-            f"{PAYPAL_API_BASE}/v2/checkout/orders",
-            headers={
-                "Content-Type": "application/json",
-                "Authorization": f"Bearer {token}"
-            },
-            json=order_payload
-        )
-
-        if response.status_code == 201:
-            order = response.json()
-            return jsonify({'orderID': order['id']}), 201
-        else:
-            print(f"PayPal Order Creation Failed: {response.status_code}")
-            print(response.json())
-            return jsonify({'error': 'Fehler beim Erstellen der PayPal-Order', 'details': response.json()}), 500
-
-    except Exception as e:
-        print(f"Fehler beim Erstellen der PayPal-Order: {e}")
-        return jsonify({'error': 'Fehler beim Erstellen der PayPal-Order'}), 500
-
-
-@app.route('/paypal/order/capture', methods=['POST'])
-@token_required  # Optional: Nur authentifizierte Benutzer können Orders erfassen
-def capture_paypal_order():
-    data = request.get_json()
-    order_id = data.get('orderID')
-
-    if not order_id:
-        return jsonify({'error': 'orderID ist erforderlich'}), 400
-
-    try:
-        token = get_paypal_access_token()
-
-        response = requests.post(
-            f"{PAYPAL_API_BASE}/v2/checkout/orders/{order_id}/capture",
-            headers={
-                "Content-Type": "application/json",
-                "Authorization": f"Bearer {token}"
-            }
-        )
-
-        if response.status_code == 201:
-            capture = response.json()
-            return jsonify({'status': capture['status']}), 201
-        else:
-            print(response.json())
-            return jsonify({'error': 'Fehler beim Erfassen der PayPal-Order'}), 500
-
-    except Exception as e:
-        print(f"Fehler beim Erfassen der PayPal-Order: {e}")
-        return jsonify({'error': 'Fehler beim Erfassen der PayPal-Order'}), 500
 
 # PayPal Ende
 
@@ -2315,7 +2240,7 @@ def create_booking():
                 for item in cart_items:
                     seat_id = item.get('seat_id')
                     showtime_id = item.get('showtime_id')
-
+                    seat_type_discount_id = item.get('seat_type_discount_id')  
                     if not seat_id or not showtime_id:
                         conn.rollback()
                         return jsonify({"error": "Jedes cart_item braucht seat_id und showtime_id"}), 400
@@ -2324,7 +2249,7 @@ def create_booking():
                     cursor.execute("""
                         INSERT INTO booking_seats (booking_id, seat_id, showtime_id, seat_type_discount_id)
                         VALUES (%s, %s, %s, %s)
-                    """, (booking_id, seat_id, showtime_id, seat_type_discount))
+                    """, (booking_id, seat_id, showtime_id, seat_type_discount_id))
 
                 conn.commit()
 
