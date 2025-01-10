@@ -28,6 +28,10 @@
     import Leaderboard from './routes/leaderboard.svelte';
     import Bestelluebersicht from './routes/Bestelluebersicht.svelte';
     import Adminrewards from './routes/Adminrewards.svelte';
+
+    /* WICHTIG: Snacksanddrinks-Komponente importieren */
+    import Snacksanddrinks from './routes/snacksanddrinks.svelte';
+
     import './global.css';
 
     import { loadProfile } from './stores/profileStore.js';
@@ -101,7 +105,6 @@
                 firstCinema = cinemas[0];
             }
         } catch (error) {
-            // Falls Kinos nicht geladen werden können, hier nur in der Konsole protokollieren
             console.error('Fehler beim Laden der Kinos:', error);
         }
 
@@ -131,7 +134,9 @@
         isLoading = false;
     });
 </script>
+
 <slot></slot>
+
 {#if isLoading}
   <p>Loading...</p>
 {:else}
@@ -166,6 +171,9 @@
       <Route path="/belohnung" component={Belohnung} />
       <Route path="/leaderboard" component={Leaderboard} />
       <Route path="/bestelluebersicht" component={Bestelluebersicht} />
+
+      <!-- WICHTIG: Neue Route für Snacks & Drinks -->
+      <Route path="/snacksanddrinks" component={Snacksanddrinks} />
 
       <!-- Geschützte Admin-Routen -->
       <Route path="/adminkinosaal" let:params>
@@ -202,6 +210,7 @@
       <Route path="/beschreibung/:id" let:params>
           <Beschreibung id={params.id} />
       </Route>
+
       <Route path="/unauthorized" component={Unauthorized} />
       <Route path="*" component={NotFound} />
 
