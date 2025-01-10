@@ -318,72 +318,92 @@ export const fetchSeatsForShowtime = async (showtimeId, token) => {
 
 
 // Funktion zum Erstellen einer Buchung
-export const createBooking = async (showtime_id, seatIds, token, orderID) => {
-    const response = await fetch(`${API_BASE_URL}/bookings`, {
+// export const createBooking = async (showtime_id, seatIds, token, orderID) => {
+//     const response = await fetch(`${API_BASE_URL}/bookings`, {
+//         method: 'POST',
+//         headers: {
+//             'Content-Type': 'application/json',
+//             'Authorization': `Bearer ${token}`,
+//         },
+//         body: JSON.stringify({
+//             showtime_id,
+//             seat_ids: seatIds,
+//             order_id: orderID // Neue Feld für PayPal Order ID
+//         }),
+//     });
+
+//     if (!response.ok) {
+//         const errorData = await response.json();
+//         throw new Error(errorData.error || 'Fehler beim Erstellen der Buchung.');
+//     }
+//     return await response.json();
+// };
+
+
+
+// 1) PayPal-Order erstellen (Nur den Betrag übergeben, 
+//    oder bei Bedarf auch den Warenkorb, Name usw.)
+export const createPayPalOrder = async (total_amount) => {
+    // Du kannst hier beliebig viele Felder schicken,
+    // je nachdem, wie dein '/paypal/create-order' Endpoint aufgebaut ist.
+    const response = await fetch(`${API_BASE_URL}/paypal/create-order`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`,
         },
         body: JSON.stringify({
-            showtime_id,
-            seat_ids: seatIds,
-            order_id: orderID // Neue Feld für PayPal Order ID
-        }),
+            total_amount: total_amount
+            // Optional: cart_items, user_id, etc. falls du das im 
+            // create-order-Endpoint schon brauchst
+        })
     });
-
-    if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Fehler beim Erstellen der Buchung.');
-    }
-    return await response.json();
-};
-
-
-// Funktion zum Erstellen einer PayPal-Order
-export const createPayPalOrder = async (showtime_id, selectedSeats, token) => {
-    const response = await fetch(`${API_BASE_URL}/paypal/order/create`, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({
-            showtime_id,
-            selected_seats: selectedSeats
-        }),
-    });
-
-    if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Fehler beim Erstellen der PayPal-Order');
-    }
 
     const data = await response.json();
-    return data; // { orderID: '...' }
+    if (!response.ok) {
+        throw new Error(data.error || 'Fehler beim Erstellen der PayPal-Order');
+    }
+    // Erwartet: { orderID: 'XYZ123...' }
+    return data; 
 };
 
-// Funktion zum Erfassen einer PayPal-Order
-export const capturePayPalOrder = async (orderID, token) => {
-    const response = await fetch(`${API_BASE_URL}/paypal/order/capture`, {
+// 2) PayPal-Order capturen + Buchung anlegen
+export const capturePayPalOrder = async (
+    orderID,
+    vorname,
+    nachname,
+    email,
+    user_id,
+    total_amount,
+    cart_items
+) => {
+    const response = await fetch(`${API_BASE_URL}/paypal/capture-order`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify({
-            orderID
+            orderID,
+            vorname,
+            nachname,
+            email,
+            user_id,
+            total_amount,
+            cart_items
         }),
     });
 
+    const data = await response.json();
     if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Fehler beim Erfassen der PayPal-Order');
+        throw new Error(data.error || 'Fehler beim Erfassen der PayPal-Order');
     }
 
-    const data = await response.json();
-    return data; // { status: 'COMPLETED' }
+    // Wenn alles klappt, bekommst du z. B. { message: "...", booking_id: 123 }
+    return data;
 };
+
+
+
+
 export const fetchProfile = async (token) => {
     try {
         const response = await fetch(`${API_BASE_URL}/profile`, {
@@ -950,28 +970,6 @@ export const fetchSeatTypesWithDiscounts = async () => {
 };
 
 
-// // Funktion zum Abrufen von Discounts für einen Sitztyp
-// export const fetchDiscountsForSeatType = async (seatTypeId) => {
-//     try {
-//         const response = await fetch(`${API_BASE_URL}/seat_type_discounts?seat_type_id=${seatTypeId}`, {
-//             method: 'GET',
-//             headers: {
-//                 'Content-Type': 'application/json',
-//             }
-//         });
-
-//         const data = await response.json();
-//         if (!response.ok) {
-//             throw new Error(data.error || 'Fehler beim Abrufen der Discounts für Sitztyp');
-//         }
-//         return data.discounts; // Array von Discounts
-//     } catch (error) {
-//         console.error('Error fetching discounts for seat type:', error);
-//         throw error;
-//     }
-// };
-
-
 export async function deleteSeatType(token, seat_type_id) {
     const response = await fetch(`${API_BASE_URL}/seat_types/${seat_type_id}`, {
         method: 'DELETE',
@@ -1154,85 +1152,24 @@ export async function fetchLeaderboard(token) {
     return data;
 }
 
-/*
 
 
 
-@app.route('/bookings/new', methods=['POST'])
-def create_booking():
-    data = request.get_json()
-    vorname = data.get('vorname')
-    nachname = data.get('nachname')
-    email = data.get('email')
-    user_id = data.get('user_id')  # Kann null/None sein
-    total_amount = data.get('total_amount')
-    paypal_order_id = data.get('paypal_order_id', 111)
-    cart_items = data.get('cart_items', [])
+// export async function createBookingNew(vorname, nachname, email, user_id, total_amount, paypal_order_id, cart_items) {
+//     const response = await fetch(`${API_BASE_URL}/bookings/new`, {
+//         method: 'POST',
+//         headers: {
+//             'Content-Type': 'application/json',
+//         },
+//         body: JSON.stringify({ vorname, nachname, email, user_id, total_amount, paypal_order_id, cart_items })
+//     });
+//     const data = await response.json();
 
-    # Grundlegende Validierung
-    if not vorname or not nachname or not email:
-        return jsonify({"error": "Vorname, Nachname und Email sind erforderlich"}), 400
-    if not cart_items:
-        return jsonify({"error": "cart_items darf nicht leer sein"}), 400
-    if total_amount is None:
-        return jsonify({"error": "total_amount ist erforderlich"}), 400
-
-    try:
-        with psycopg2.connect(DATABASE_URL) as conn:
-            with conn.cursor() as cursor:
-                # Erstelle einen Buchungseintrag
-                # payment_status immer 'completed'
-                # booking_time mit CURRENT_TIMESTAMP
-                # user_id kann NULL sein, daher verwenden wir bedingte Platzhalter
-                cursor.execute("""
-                    INSERT INTO bookings (user_id, booking_time, payment_status, total_amount, paypal_order_id, vorname, nachname, email)
-                    VALUES (%s, CURRENT_TIMESTAMP, 'completed', %s, %s, %s, %s, %s)
-                    RETURNING booking_id
-                """, (user_id, total_amount, paypal_order_id, vorname, nachname, email))
-                booking_id = cursor.fetchone()[0]
-
-                # Nun die booking_seats einfügen
-                # Für jeden Eintrag in cart_items einen Insert
-                # price lassen wir leer, also NULL
-                for item in cart_items:
-                    seat_id = item.get('seat_id')
-                    showtime_id = item.get('showtime_id')
-
-                    if not seat_id or not showtime_id:
-                        conn.rollback()
-                        return jsonify({"error": "Jedes cart_item braucht seat_id und showtime_id"}), 400
-
-                    # Füge den Sitz in booking_seats ein
-                    cursor.execute("""
-                        INSERT INTO booking_seats (booking_id, seat_id, showtime_id)
-                        VALUES (%s, %s, %s)
-                    """, (booking_id, seat_id, showtime_id))
-
-                conn.commit()
-
-        return jsonify({"message": "Buchung erfolgreich angelegt", "booking_id": booking_id}), 201
-    except Exception as e:
-        print(f"Fehler beim Erstellen der Buchung: {e}")
-        return jsonify({"error": "Fehler beim Erstellen der Buchung"}), 500
-
-
-*/
-//das will ich jetzt umsetzten
-export async function createBookingNew(vorname, nachname, email, user_id, total_amount, paypal_order_id, cart_items) {
-    const response = await fetch(`${API_BASE_URL}/bookings/new`, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ vorname, nachname, email, user_id, total_amount, paypal_order_id, cart_items })
-    });
-    const data = await response.json();
-
-    if (!response.ok) {
-        throw new Error(data.error || 'Fehler beim Erstellen der Buchung');
-    }
-    return data;
-}
+//     if (!response.ok) {
+//         throw new Error(data.error || 'Fehler beim Erstellen der Buchung');
+//     }
+//     return data;
+// }
 
 
 // Funktion zum Aktualisieren des Benutzer-Warenkorbs

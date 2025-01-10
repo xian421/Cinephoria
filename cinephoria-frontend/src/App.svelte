@@ -28,6 +28,7 @@
     import Leaderboard from './routes/leaderboard.svelte';
     import Bestelluebersicht from './routes/Bestelluebersicht.svelte';
     import Adminrewards from './routes/Adminrewards.svelte';
+    import Ticketanzeige from './routes/Ticketanzeige.svelte';
 
     /* WICHTIG: Snacksanddrinks-Komponente importieren */
     import Snacksanddrinks from './routes/snacksanddrinks.svelte';
@@ -171,6 +172,8 @@
       <Route path="/belohnung" component={Belohnung} />
       <Route path="/leaderboard" component={Leaderboard} />
       <Route path="/bestelluebersicht" component={Bestelluebersicht} />
+      <Route path="/ticketanzeige/" component={Ticketanzeige} />
+
 
       <!-- WICHTIG: Neue Route für Snacks & Drinks -->
       <Route path="/snacksanddrinks" component={Snacksanddrinks} />

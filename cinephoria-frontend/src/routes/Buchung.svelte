@@ -3,7 +3,6 @@
     import { onMount, tick } from 'svelte';
     import { navigate } from 'svelte-routing';
     import { 
-        createBooking, 
         fetchSeatTypes, 
         fetchSeatsWithReservation, 
         fetchSeatTypesWithDiscounts 
