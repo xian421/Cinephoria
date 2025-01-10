@@ -109,14 +109,22 @@
 
       <button class="{isActive('/') ? 'active' : ''}" on:click={() => navigate('/')}>Alle Filme</button>
       <button class="{isActive('/nowplaying') ? 'active' : ''}" on:click={() => navigate('/nowplaying')}>Programm</button>
+      
+      <!-- Neuer Button für Snacks & Drinks (jetzt korrekt auf /snacksanddrinks) -->
+      <button class="{isActive('/snacksanddrinks') ? 'active' : ''}" on:click={() => navigate('/snacksanddrinks')}>
+        Snacks & Drinks
+      </button>
+      
       <button class="{isActive('/upcoming') ? 'active' : ''}" on:click={() => navigate('/upcoming')}>Upcoming</button>
-      <button class="{isActive('/warenkorb') ? 'active' : ''}" on:click={() => navigate('/warenkorb')}>Warenkorb <Timer mode="navbar" /></button>
+      <button class="{isActive('/warenkorb') ? 'active' : ''}" on:click={() => navigate('/warenkorb')}>
+        Warenkorb <Timer mode="navbar" />
+      </button>
 
       {#if $authStore.isLoggedIn}
           <div class="profile-dropdown-container {isProfileDropdownOpen ? 'open' : ''}">
               <div class="profile-container" on:click={toggleProfileMenu}>
                   {#if $authStore.profile_image && $authStore.profile_image !== 'default.png'}
-                      <img src={`/Profilbilder/${$authStore.profile_image}`} alt="Profilbild" class="profile-image" />
+                  <img src={`/Profilbilder/${$authStore.profile_image}`} alt="Profilbild" class="profile-image" />
                   {:else}
                       <div class="profile-initials">{$authStore.initials}</div>
                   {/if}
@@ -145,8 +153,12 @@
                               <button type="submit">Einloggen</button>
                           </div>
                           <div class="button-container">
-                              <button type="button" class="secondary-button" on:click={() => currentView = 'register'}>Registrieren</button>
-                              <button type="button" class="secondary-button" on:click={() => currentView = 'forgotPassword'}>Passwort vergessen?</button>
+                              <button type="button" class="secondary-button" on:click={() => currentView = 'register'}>
+                                Registrieren
+                              </button>
+                              <button type="button" class="secondary-button" on:click={() => currentView = 'forgotPassword'}>
+                                Passwort vergessen?
+                              </button>
                           </div>
                       </form>
                   {:else if currentView === 'register'}
@@ -159,7 +171,9 @@
                               <button on:click={handleRegisterFn}>Registrieren</button>
                           </div>
                           <div class="button-container">
-                              <button type="button" class="secondary-button" on:click={() => currentView = 'login'}>Zurück</button>
+                              <button type="button" class="secondary-button" on:click={() => currentView = 'login'}>
+                                Zurück
+                              </button>
                           </div>
                       </div>
                   {:else if currentView === 'forgotPassword'}
@@ -169,7 +183,9 @@
                               <button on:click={handleForgotPasswordFn}>Link senden</button>
                           </div>
                           <div class="button-container">
-                              <button type="button" class="secondary-button" on:click={() => currentView = 'login'}>Zurück</button>
+                              <button type="button" class="secondary-button" on:click={() => currentView = 'login'}>
+                                Zurück
+                              </button>
                           </div>
                       </div>
                   {/if}
@@ -177,8 +193,9 @@
           </div>
       {/if}
       
-      <!-- Füge die Timer-Komponente in die Navbar ein
-      <Timer mode="navbar" />  -->
+      <!-- Optional: Timer-Komponente an anderer Stelle einbinden oder auskommentieren
+      <Timer mode="navbar" />
+      -->
   </nav>
 </div>
 
@@ -197,7 +214,6 @@
       width: 100%;
       height: 100%;
       font-family: 'Roboto', sans-serif;
-      
       color: #fff;
       overflow-x: hidden;
   }
@@ -212,10 +228,8 @@
     z-index: 1001;
     padding: 1rem 2rem;
     box-sizing: border-box;
- 
-}
+  }
 
- 
   /* Navigation */
   nav {
     display: flex;
@@ -291,7 +305,7 @@
       position: absolute;
       top: calc(100% + 10px);
       right: 0;
-      background: rgba(0, 0, 0, 0.8); /* Halbtransparente schwarze Hintergrundfarbe */
+      background: rgba(0, 0, 0, 0.8);
       background: linear-gradient(135deg, rgba(0,4,40,0.9), rgba(4, 29, 50, 0.9));
       border-radius: 12px;
       padding: 1rem;
@@ -307,14 +321,12 @@
       align-items: center;
   }
 
-  /* Öffne Dropdown-Menü bei Aktivierung */
   .dropdown-container.open .dropdown-menu,
   .profile-dropdown-container.open .profile-dropdown-menu {
       transform: scaleY(1);
       opacity: 1;
   }
 
-  /* Dropdown-Inhalt */
   .dropdown-menu form,
   .dropdown-menu div {
       display: flex;
@@ -326,16 +338,16 @@
 
   /* Eingabefelder im Dropdown-Menü */
   .dropdown-menu input {
-      background: rgba(255, 255, 255, 0.1); /* Halbtransparenter weißer Hintergrund */
-      color: #fff; /* Weiße Schrift */
-      border: 1px solid #2ecc71; /* Grüne Umrandung */
+      background: rgba(255, 255, 255, 0.1);
+      color: #fff;
+      border: 1px solid #2ecc71;
       border-radius: 8px;
       padding: 0.8rem;
       margin: 0.5rem 0;
       font-size: 1rem;
       text-align: center;
-      box-shadow: 0 0 5px rgba(46, 204, 113, 0.5); /* Grüne Leuchten-Schatten */
-      width: 100%; /* Eingabefelder füllen die gesamte Breite */
+      box-shadow: 0 0 5px rgba(46, 204, 113, 0.5);
+      width: 100%;
   }
 
   .dropdown-menu input:focus {
@@ -344,7 +356,6 @@
       outline: none;
   }
 
-  /* Login-Button Container */
   .login-button-container {
       display: flex;
       justify-content: center;
@@ -352,64 +363,62 @@
       margin-top: 0.5rem;
   }
 
-  /* Login-Button-Stile */
   .dropdown-menu .login-button-container button {
-      background: transparent; /* Transparenter Hintergrund */
-      color: #fff; /* Weiße Schrift */
-      border: 2px solid #2ecc71; /* Grüne, leuchtende Umrandung */
-      border-radius: 12px; /* Abgerundete Ecken */
-      padding: 0.8rem 1.2rem; /* Konsistente Padding */
+      background: transparent;
+      color: #fff;
+      border: 2px solid #2ecc71;
+      border-radius: 12px;
+      padding: 0.8rem 1.2rem;
       cursor: pointer;
       font-weight: bold;
       transition: all 0.3s ease;
-      text-shadow: 0 0 5px #fff; /* Weißer Textschatten für Leuchteffekt */
-      box-shadow: 0 0 5px rgba(46, 204, 113, 0.5); /* Grüne Leuchten-Schatten */
-      width: 100%; /* Button füllt die gesamte Breite */
+      text-shadow: 0 0 5px #fff;
+      box-shadow: 0 0 5px rgba(46, 204, 113, 0.5);
+      width: 100%;
   }
 
   .dropdown-menu .login-button-container button:hover {
-      border-color: #2ecc71; /* Grüne Umrandung bleibt bestehen */
-      transform: scale(1.05); /* Leichtes Vergrößern */
-      box-shadow: 0 0 15px #2ecc71; /* Intensiveres Leuchten */
-      background: rgba(46, 204, 113, 0.1); /* Optional: Subtiles Hintergrundleuchten */
+      border-color: #2ecc71;
+      transform: scale(1.05);
+      box-shadow: 0 0 15px #2ecc71;
+      background: rgba(46, 204, 113, 0.1);
   }
 
-  /* Sekundäre Buttons (z.B. Registrieren, Passwort vergessen) */
   .button-container {
       display: flex !important;
-      justify-content: space-between !important; /* Platz zwischen den Buttons */
+      justify-content: space-between !important;
       gap: 0.5rem !important;
       margin-top: 1rem !important;
       width: 100%;
   }
 
   .dropdown-menu .button-container .secondary-button {
-      background: transparent; /* Transparenter Hintergrund */
-      color: #fff; /* Weiße Schrift */
-      border: 2px solid #3498db; /* Blaue, leuchtende Umrandung */
-      border-radius: 12px; /* Abgerundete Ecken */
-      padding: 0.5rem 1rem; /* Konsistente Padding */
+      background: transparent;
+      color: #fff;
+      border: 2px solid #3498db;
+      border-radius: 12px;
+      padding: 0.5rem 1rem;
       cursor: pointer;
       font-weight: bold;
       transition: all 0.3s ease;
-      text-shadow: 0 0 5px #fff; /* Weißer Textschatten für Leuchteffekt */
-      box-shadow: 0 0 5px rgba(52, 152, 219, 0.5); /* Blaue Leuchten-Schatten */
-      flex: 1; /* Jeder Button nimmt gleich viel Platz ein */
+      text-shadow: 0 0 5px #fff;
+      box-shadow: 0 0 5px rgba(52, 152, 219, 0.5);
+      flex: 1;
   }
 
   .dropdown-menu .button-container .secondary-button:first-child {
-      margin-right: 0.25rem; /* Abstand zwischen den Buttons */
+      margin-right: 0.25rem;
   }
 
   .dropdown-menu .button-container .secondary-button:last-child {
-      margin-left: 0.25rem; /* Abstand zwischen den Buttons */
+      margin-left: 0.25rem;
   }
 
   .dropdown-menu .button-container .secondary-button:hover {
-      border-color: #3498db; /* Blaue Umrandung bleibt bestehen */
-      transform: scale(1.05); /* Leichtes Vergrößern */
-      box-shadow: 0 0 15px #3498db; /* Intensiveres Leuchten */
-      background: rgba(52, 152, 219, 0.1); /* Optional: Subtiles Hintergrundleuchten */
+      border-color: #3498db;
+      transform: scale(1.05);
+      box-shadow: 0 0 15px #3498db;
+      background: rgba(52, 152, 219, 0.1);
   }
 
   /* Profil Dropdown Menü */
@@ -501,4 +510,3 @@
       display: block;
   }
 </style>
-    
