@@ -1,5 +1,4 @@
 # app.py
-
 import os
 import psycopg2
 import psycopg2.extras
@@ -12,8 +11,6 @@ from datetime import datetime, timedelta, timezone
 from functools import wraps
 import uuid
 import logging
-
-
 
 
 
@@ -82,6 +79,8 @@ def admin_required(f):
 
 # PayPal Start
 
+
+#Der Token ist richtig
 def get_paypal_access_token():
     response = requests.post(
         f"{PAYPAL_API_BASE}/v1/oauth2/token",
@@ -97,47 +96,141 @@ def get_paypal_access_token():
     else:
         print(response.json())
         raise Exception('Failed to obtain PayPal access token')
+    
+    
+@app.route('/paypal/create-order', methods=['POST'])
+def create_paypal_order():
+    data = request.get_json()
+    total_amount = data.get('total_amount')
 
-def create_paypal_order(amount, currency='EUR'):
-    access_token = get_paypal_access_token()
-    response = requests.post(
-        f"{PAYPAL_API_BASE}/v2/checkout/orders",
-        headers={
-            "Content-Type": "application/json",
-            "Authorization": f"Bearer {access_token}"
-        },
-        json={
+    if not total_amount:
+        return jsonify({"error": "total_amount ist erforderlich"}), 400
+
+    try:
+        access_token = get_paypal_access_token()
+        url = f"{PAYPAL_API_BASE}/v2/checkout/orders"
+        
+        # Bestimmte Felder im Body sind wichtig, z.B. amount, currency_code usw.
+        payload = {
             "intent": "CAPTURE",
             "purchase_units": [
                 {
                     "amount": {
-                        "currency_code": currency,
-                        "value": f"{amount:.2f}"
+                        "currency_code": "EUR",
+                        "value": str(total_amount)
                     }
                 }
             ]
         }
-    )
-    if response.status_code == 201:
-        return response.json()
-    else:
-        print(response.json())
-        raise Exception('Failed to create PayPal order')
-    
-def capture_paypal_order(order_id):
-    access_token = get_paypal_access_token()
-    response = requests.post(
-        f"{PAYPAL_API_BASE}/v2/checkout/orders/{order_id}/capture",
-        headers={
+
+        headers = {
             "Content-Type": "application/json",
-            "Authorization": f"Bearer {access_token}"
+            "Authorization": f"Bearer {access_token}",
         }
-    )
-    if response.status_code == 201:
-        return response.json()
-    else:
-        print(response.json())
-        raise Exception('Failed to capture PayPal order')
+
+        response = requests.post(url, json=payload, headers=headers)
+        
+        if response.status_code != 201:
+            print("Fehler beim Erstellen der PayPal-Order:", response.text)
+            return jsonify({"error": "Failed to create PayPal order"}), 400
+
+        order_data = response.json()
+        order_id = order_data["id"]
+
+        return jsonify({"orderID": order_id}), 200
+
+    except Exception as e:
+        print("Fehler in create_paypal_order:", e)
+        return jsonify({"error": str(e)}), 500
+    
+    
+@app.route('/paypal/capture-order', methods=['POST'])
+def capture_paypal_order():
+    data = request.get_json()
+    order_id = data.get('orderID')
+
+    vorname = data.get('vorname')
+    nachname = data.get('nachname')
+    email = data.get('email')
+    user_id = data.get('user_id')  # Kann None sein
+    total_amount = data.get('total_amount')
+    cart_items = data.get('cart_items', [])
+
+    # Validierung
+    if not order_id or not vorname or not nachname or not email or total_amount is None or not cart_items:
+        return jsonify({"error": "Fehlende Buchungsdaten"}), 400
+
+    try:
+        # 1) PayPal Capture
+        access_token = get_paypal_access_token()
+        url = f"{PAYPAL_API_BASE}/v2/checkout/orders/{order_id}/capture"
+        headers = {
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {access_token}",
+        }
+        response = requests.post(url, headers=headers)
+        if response.status_code != 201:
+            print("Fehler beim Capturen der PayPal-Order:", response.text)
+            return jsonify({"error": "Failed to capture PayPal order"}), 400
+
+        capture_data = response.json()
+
+        # 2) Prüfen, ob PayPal die Zahlung bestätigt hat
+        if capture_data.get("status") == "COMPLETED":
+            # 3) Buchung in DB anlegen (so wie vorher in /bookings/new)
+            with psycopg2.connect(DATABASE_URL) as conn:
+                with conn.cursor() as cursor:
+                    cursor.execute("""
+                        INSERT INTO bookings (
+                            user_id,
+                            booking_time,
+                            payment_status,
+                            total_amount,
+                            paypal_order_id,
+                            vorname,
+                            nachname,
+                            email
+                        )
+                        VALUES (%s, CURRENT_TIMESTAMP, 'completed', %s, %s, %s, %s, %s)
+                        RETURNING booking_id
+                    """, (
+                        user_id, 
+                        total_amount,
+                        order_id,
+                        vorname,
+                        nachname,
+                        email
+                    ))
+                    booking_id = cursor.fetchone()[0]
+
+                    for item in cart_items:
+                        seat_id = item.get('seat_id')
+                        showtime_id = item.get('showtime_id')
+                        seat_type_discount_id = item.get('seat_type_discount_id')
+                        if not seat_id or not showtime_id:
+                            conn.rollback()
+                            return jsonify({"error": "Jedes cart_item braucht seat_id und showtime_id"}), 400
+
+                        cursor.execute("""
+                            INSERT INTO booking_seats 
+                                (booking_id, seat_id, showtime_id, seat_type_discount_id)
+                            VALUES (%s, %s, %s, %s)
+                        """, (booking_id, seat_id, showtime_id, seat_type_discount_id))
+
+                    conn.commit()
+
+            return jsonify({
+                "message": "Payment captured and booking completed",
+                "booking_id": booking_id
+            }), 200
+        else:
+            # Wenn PayPal nicht COMPLETED ist, dann war etwas mit der Zahlung nicht in Ordnung
+            return jsonify({"error": "Payment was not completed"}), 400
+
+    except Exception as e:
+        print("Fehler in capture_paypal_order:", e)
+        return jsonify({"error": str(e)}), 500
+
 
 
 # PayPal Ende
@@ -2200,63 +2293,63 @@ def get_leaderboard():
         return jsonify({'error': 'Fehler beim Abrufen des Leaderboards'}), 500
     
 
-@app.route('/bookings/new', methods=['POST'])
-def create_booking():
-    data = request.get_json()
-    vorname = data.get('vorname')
-    nachname = data.get('nachname')
-    email = data.get('email')
-    user_id = data.get('user_id')  # Kann null/None sein
-    total_amount = data.get('total_amount')
-    paypal_order_id = data.get('paypal_order_id', 111)
-    cart_items = data.get('cart_items', [])
-    seat_type_discount = data.get('seat_type_discount')
+# @app.route('/bookings/new', methods=['POST'])
+# def create_booking():
+#     data = request.get_json()
+#     vorname = data.get('vorname')
+#     nachname = data.get('nachname')
+#     email = data.get('email')
+#     user_id = data.get('user_id')  # Kann null/None sein
+#     total_amount = data.get('total_amount')
+#     paypal_order_id = data.get('paypal_order_id', 111)
+#     cart_items = data.get('cart_items', [])
+#     seat_type_discount = data.get('seat_type_discount')
 
-    # Grundlegende Validierung
-    if not vorname or not nachname or not email:
-        return jsonify({"error": "Vorname, Nachname und Email sind erforderlich"}), 400
-    if not cart_items:
-        return jsonify({"error": "cart_items darf nicht leer sein"}), 400
-    if total_amount is None:
-        return jsonify({"error": "total_amount ist erforderlich"}), 400
+#     # Grundlegende Validierung
+#     if not vorname or not nachname or not email:
+#         return jsonify({"error": "Vorname, Nachname und Email sind erforderlich"}), 400
+#     if not cart_items:
+#         return jsonify({"error": "cart_items darf nicht leer sein"}), 400
+#     if total_amount is None:
+#         return jsonify({"error": "total_amount ist erforderlich"}), 400
 
-    try:
-        with psycopg2.connect(DATABASE_URL) as conn:
-            with conn.cursor() as cursor:
-                # Erstelle einen Buchungseintrag
-                # payment_status immer 'completed'
-                # booking_time mit CURRENT_TIMESTAMP
-                # user_id kann NULL sein, daher verwenden wir bedingte Platzhalter
-                cursor.execute("""
-                    INSERT INTO bookings (user_id, booking_time, payment_status, total_amount, paypal_order_id, vorname, nachname, email)
-                    VALUES (%s, CURRENT_TIMESTAMP, 'completed', %s, %s, %s, %s, %s)
-                    RETURNING booking_id
-                """, (user_id, total_amount, paypal_order_id, vorname, nachname, email))
-                booking_id = cursor.fetchone()[0]
+#     try:
+#         with psycopg2.connect(DATABASE_URL) as conn:
+#             with conn.cursor() as cursor:
+#                 # Erstelle einen Buchungseintrag
+#                 # payment_status immer 'completed'
+#                 # booking_time mit CURRENT_TIMESTAMP
+#                 # user_id kann NULL sein, daher verwenden wir bedingte Platzhalter
+#                 cursor.execute("""
+#                     INSERT INTO bookings (user_id, booking_time, payment_status, total_amount, paypal_order_id, vorname, nachname, email)
+#                     VALUES (%s, CURRENT_TIMESTAMP, 'completed', %s, %s, %s, %s, %s)
+#                     RETURNING booking_id
+#                 """, (user_id, total_amount, paypal_order_id, vorname, nachname, email))
+#                 booking_id = cursor.fetchone()[0]
 
-                # Nun die booking_seats einfügen
-                # Für jeden Eintrag in cart_items einen Insert
-                # price lassen wir leer, also NULL
-                for item in cart_items:
-                    seat_id = item.get('seat_id')
-                    showtime_id = item.get('showtime_id')
-                    seat_type_discount_id = item.get('seat_type_discount_id')  
-                    if not seat_id or not showtime_id:
-                        conn.rollback()
-                        return jsonify({"error": "Jedes cart_item braucht seat_id und showtime_id"}), 400
+#                 # Nun die booking_seats einfügen
+#                 # Für jeden Eintrag in cart_items einen Insert
+#                 # price lassen wir leer, also NULL
+#                 for item in cart_items:
+#                     seat_id = item.get('seat_id')
+#                     showtime_id = item.get('showtime_id')
+#                     seat_type_discount_id = item.get('seat_type_discount_id')  
+#                     if not seat_id or not showtime_id:
+#                         conn.rollback()
+#                         return jsonify({"error": "Jedes cart_item braucht seat_id und showtime_id"}), 400
 
-                    # Füge den Sitz in booking_seats ein
-                    cursor.execute("""
-                        INSERT INTO booking_seats (booking_id, seat_id, showtime_id, seat_type_discount_id)
-                        VALUES (%s, %s, %s, %s)
-                    """, (booking_id, seat_id, showtime_id, seat_type_discount_id))
+#                     # Füge den Sitz in booking_seats ein
+#                     cursor.execute("""
+#                         INSERT INTO booking_seats (booking_id, seat_id, showtime_id, seat_type_discount_id)
+#                         VALUES (%s, %s, %s, %s)
+#                     """, (booking_id, seat_id, showtime_id, seat_type_discount_id))
 
-                conn.commit()
+#                 conn.commit()
 
-        return jsonify({"message": "Buchung erfolgreich angelegt", "booking_id": booking_id}), 201
-    except Exception as e:
-        print(f"Fehler beim Erstellen der Buchung: {e}")
-        return jsonify({"error": "Fehler beim Erstellen der Buchung"}), 500
+#         return jsonify({"message": "Buchung erfolgreich angelegt", "booking_id": booking_id}), 201
+#     except Exception as e:
+#         print(f"Fehler beim Erstellen der Buchung: {e}")
+#         return jsonify({"error": "Fehler beim Erstellen der Buchung"}), 500
 
 
 #-->Um den Sitzen im Warenkorb einen Discount (ermäßigung) zu geben
