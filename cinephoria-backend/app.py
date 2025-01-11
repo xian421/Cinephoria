@@ -276,7 +276,9 @@ def read_qrcode(token):
                         sh.movie_id,
                         sh.start_time,
                         sh.end_time,
-                        sc.name AS kinosaal
+                        sc.name AS kinosaal,
+                        m.title AS movie_title,
+                        m.description AS movie_description
                     FROM booking_seats bs
                     JOIN seats s ON s.seat_id = bs.seat_id
                     JOIN seat_types st ON st.seat_type_id = s.seat_type_id
@@ -284,9 +286,39 @@ def read_qrcode(token):
                     JOIN discounts d ON d.discount_id = std.discount_id
                     JOIN showtimes sh ON sh.showtime_id = bs.showtime_id
                     JOIN screens sc ON sc.screen_id = sh.screen_id
+                    JOIN movies m ON m.movie_id = sh.movie_id
                     WHERE bs.booking_id = %s
                 """, (booking_id,))
                 seats = cursor.fetchall()
+
+                # Gruppiere die Sitzplätze nach movie_id
+                movies = {}
+                for seat in seats:
+                    movie_id = seat['movie_id']
+                    if movie_id not in movies:
+                        movies[movie_id] = {
+                            "movie_id": movie_id,
+                            "title": seat['movie_title'],
+                            "description": seat['movie_description'],
+                            "start_time": seat['start_time'].isoformat(),
+                            "end_time": seat['end_time'].isoformat(),
+                            "kinosaal": seat['kinosaal'],
+                            "seats": []
+                        }
+                    # Entferne redundante Felder aus dem Sitzplatz-Dictionary
+                    seat_data = {
+                        "seat_id": seat['nummer'],  # Annahme: 'nummer' entspricht 'seat_id'
+                        "reihe": seat['reihe'],
+                        "type": seat['type'],
+                        "farbe": seat['farbe'],
+                        "type_icon": seat['type_icon'],
+                        "discount_percentage": seat['discount_percentage'],
+                        "discount_amount": seat['discount_amount'],
+                        "discount_name": seat['discount'],
+                        "discount_infos": seat['discount_infos'],
+                        "showtime_id": seat['showtime_id']
+                    }
+                    movies[movie_id]["seats"].append(seat_data)
 
                 # Strukturierte Buchungsdaten zusammenstellen
                 booking_data = {
@@ -300,13 +332,13 @@ def read_qrcode(token):
                     "email": booking['email'],
                     "nachname": booking['nachname'],
                     "vorname": booking['vorname'],
-                    "seats": seats  # Bereits als Liste von Dictionaries durch RealDictCursor
+                    "movies": list(movies.values())  # Liste der Filme mit zugehörigen Sitzplätzen
                 }
 
         return jsonify(booking_data), 200
 
     except Exception as e:
-        print("Fehler in read_qrcode:", e)
+        logging.error(f"Fehler in read_qrcode: {e}")
         return jsonify({"error": "Interner Serverfehler"}), 500
 
 
