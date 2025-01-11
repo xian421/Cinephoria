@@ -341,11 +341,8 @@ export const fetchSeatsForShowtime = async (showtimeId, token) => {
 
 
 
-// 1) PayPal-Order erstellen (Nur den Betrag übergeben, 
-//    oder bei Bedarf auch den Warenkorb, Name usw.)
+// 1) PayPal-Order erstellen
 export const createPayPalOrder = async (total_amount) => {
-    // Du kannst hier beliebig viele Felder schicken,
-    // je nachdem, wie dein '/paypal/create-order' Endpoint aufgebaut ist.
     const response = await fetch(`${API_BASE_URL}/paypal/create-order`, {
         method: 'POST',
         headers: {
@@ -353,8 +350,7 @@ export const createPayPalOrder = async (total_amount) => {
         },
         body: JSON.stringify({
             total_amount: total_amount
-            // Optional: cart_items, user_id, etc. falls du das im 
-            // create-order-Endpoint schon brauchst
+            // Optional: cart_items, user_id, etc.
         })
     });
 
@@ -397,9 +393,24 @@ export const capturePayPalOrder = async (
         throw new Error(data.error || 'Fehler beim Erfassen der PayPal-Order');
     }
 
-    // Wenn alles klappt, bekommst du z. B. { message: "...", booking_id: 123 }
+    // Wenn alles klappt, bekommst du: "message": "Payment captured and booking completed","booking_id": booking_id, "qr_token": qr_token
     return data;
 };
+
+// 3) Buchungsdetails basierend auf dem QR-Token abrufen
+export async function fetchQRCodeData(qrcodetoken) {
+    const response = await fetch(`${API_BASE_URL}/read/qrcode/${qrcodetoken}`, {
+        headers: {
+            "Content-Type": "application/json",
+        },
+    });
+    const data = await response.json();
+    if (!response.ok) {
+        throw new Error(data.error || 'Fehler beim Laden des QR-Codes.');
+    }
+    return data;
+}
+
 
 
 
@@ -1242,7 +1253,6 @@ export async function fetchShowtimesaktuell() {
 }
 
 
-// src/services/api.js
 
 export async function fetchCurrentShowtimesByMovie(movieId) {
     const response = await fetch(`${API_BASE_URL}/showtimes/aktuell?movie_id=${movieId}`, {

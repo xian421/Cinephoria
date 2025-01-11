@@ -29,6 +29,7 @@
     import Bestelluebersicht from './routes/Bestelluebersicht.svelte';
     import Adminrewards from './routes/Adminrewards.svelte';
     import Ticketanzeige from './routes/Ticketanzeige.svelte';
+    import Viewbooking from './routes/Viewbooking.svelte';
 
     /* WICHTIG: Snacksanddrinks-Komponente importieren */
     import Snacksanddrinks from './routes/snacksanddrinks.svelte';
@@ -172,7 +173,13 @@
       <Route path="/belohnung" component={Belohnung} />
       <Route path="/leaderboard" component={Leaderboard} />
       <Route path="/bestelluebersicht" component={Bestelluebersicht} />
-      <Route path="/ticketanzeige/" component={Ticketanzeige} />
+      <Route path="/ticketanzeige/:token" let:params>
+        <Ticketanzeige token={params.token} />
+      </Route>
+      <Route path="/viewbooking/:token" let:params>
+        <Viewbooking token={params.token} />
+        </Route>
+    
 
 
       <!-- WICHTIG: Neue Route für Snacks & Drinks -->

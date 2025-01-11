@@ -1,3 +1,4 @@
+<!-- src/Checkout.svelte -->
 <script lang="ts">
     import { onMount } from 'svelte';
     import { get } from 'svelte/store';
@@ -26,7 +27,7 @@
             if (paypalContainer) { // Überprüfen, ob die Referenz vorhanden ist
                 initializePayPalButton(paypalContainer);
             }
-        } catch (error) {
+        } catch (error: any) {
             console.error(error);
             Swal.fire({
                 title: "Fehler",
@@ -139,7 +140,7 @@
                     const response = await createPayPalOrder(totalPrice);
                     const orderID = response.orderID; 
                     return orderID;
-                } catch (e) {
+                } catch (e: any) {
                     console.error("Fehler bei createPayPalOrder:", e);
                     Swal.fire({
                         title: "Fehler",
@@ -175,16 +176,19 @@
                         throw new Error(captureResp.error);
                     }
   
+                    const qrToken = captureResp.qr_token;
+  
                     Swal.fire({
                         title: "Erfolg",
-                        text: `Buchung erfolgreich angelegt! ID: ${captureResp.booking_id}`,
+                        text: `Buchung erfolgreich angelegt!`,
                         icon: "success"
                     }).then(() => {
                         clearCart();
-                        navigate('/ticketanzeige');
+                        // Navigiere zur Ticketanzeige mit dem qr_token als Parameter
+                        navigate(`/ticketanzeige/${qrToken}`);
                     });
   
-                } catch (err) {
+                } catch (err: any) {
                     console.error("Fehler onApprove:", err);
                     Swal.fire({
                         title: "Fehler",
