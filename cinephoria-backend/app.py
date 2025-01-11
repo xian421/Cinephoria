@@ -3,6 +3,7 @@ import os
 import psycopg2
 import psycopg2.extras
 from psycopg2 import IntegrityError
+from psycopg2.extras import RealDictCursor
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 import requests
