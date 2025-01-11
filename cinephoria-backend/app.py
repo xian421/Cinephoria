@@ -275,7 +275,7 @@ def read_qrcode(token):
                         sh.movie_id,
                         sh.start_time,
                         sh.end_time,
-                        sc.name AS kinosaal,
+                        sc.name AS kinosaal
                     FROM booking_seats bs
                     JOIN seats s ON s.seat_id = bs.seat_id
                     JOIN seat_types st ON st.seat_type_id = s.seat_type_id
