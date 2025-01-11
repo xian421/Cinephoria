@@ -309,8 +309,7 @@ def read_qrcode(token):
                         "discount_percentage": seat['discount_percentage'],
                         "discount_amount": seat['discount_amount'],
                         "discount_name": seat['discount'],
-                        "discount_infos": seat['discount_infos'],
-                        "showtime_id": seat['showtime_id']
+                        "discount_infos": seat['discount_infos']
                     }
                     movies[movie_id]["seats"].append(seat_data)
 
