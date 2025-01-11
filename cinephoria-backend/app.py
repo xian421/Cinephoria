@@ -1,9 +1,8 @@
 # app.py
 import os
 import psycopg2
-import psycopg2.extras
-from psycopg2 import IntegrityError
 from psycopg2.extras import RealDictCursor
+from psycopg2 import IntegrityError
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 import requests
@@ -286,7 +285,6 @@ def read_qrcode(token):
                     JOIN discounts d ON d.discount_id = std.discount_id
                     JOIN showtimes sh ON sh.showtime_id = bs.showtime_id
                     JOIN screens sc ON sc.screen_id = sh.screen_id
-                    JOIN movies m ON m.movie_id = sh.movie_id
                     WHERE bs.booking_id = %s
                 """, (booking_id,))
                 seats = cursor.fetchall()
