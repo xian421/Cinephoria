@@ -279,8 +279,8 @@ def read_qrcode(token):
                     FROM booking_seats bs
                     JOIN seats s ON s.seat_id = bs.seat_id
                     JOIN seat_types st ON st.seat_type_id = s.seat_type_id
-                    JOIN seat_type_discounts std ON std.seat_type_discount_id = bs.seat_type_discount_id
-                    JOIN discounts d ON d.discount_id = std.discount_id
+                    LEFT JOIN seat_type_discounts std ON std.seat_type_discount_id = bs.seat_type_discount_id
+                    LEFT JOIN discounts d ON d.discount_id = std.discount_id
                     JOIN showtimes sh ON sh.showtime_id = bs.showtime_id
                     JOIN screens sc ON sc.screen_id = sh.screen_id
                     WHERE bs.booking_id = %s
