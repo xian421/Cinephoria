@@ -143,7 +143,7 @@ def create_paypal_order():
         print("Fehler in create_paypal_order:", e)
         return jsonify({"error": str(e)}), 500
     
-    
+   
 @app.route('/paypal/capture-order', methods=['POST'])
 def capture_paypal_order():
     data = request.get_json()
@@ -177,7 +177,10 @@ def capture_paypal_order():
 
         # 2) Prüfen, ob PayPal die Zahlung bestätigt hat
         if capture_data.get("status") == "COMPLETED":
-            # 3) Buchung in DB anlegen (so wie vorher in /bookings/new)
+            # 3) QR-Token generieren
+            qr_token = str(uuid.uuid4())
+
+            # 4) Buchung in DB anlegen (inkl. qr_token)
             with psycopg2.connect(DATABASE_URL) as conn:
                 with conn.cursor() as cursor:
                     cursor.execute("""
@@ -189,9 +192,10 @@ def capture_paypal_order():
                             paypal_order_id,
                             vorname,
                             nachname,
-                            email
+                            email,
+                            qr_token
                         )
-                        VALUES (%s, CURRENT_TIMESTAMP, 'completed', %s, %s, %s, %s, %s)
+                        VALUES (%s, CURRENT_TIMESTAMP, 'completed', %s, %s, %s, %s, %s, %s)
                         RETURNING booking_id
                     """, (
                         user_id, 
@@ -199,7 +203,8 @@ def capture_paypal_order():
                         order_id,
                         vorname,
                         nachname,
-                        email
+                        email,
+                        qr_token
                     ))
                     booking_id = cursor.fetchone()[0]
 
@@ -221,7 +226,8 @@ def capture_paypal_order():
 
             return jsonify({
                 "message": "Payment captured and booking completed",
-                "booking_id": booking_id
+                "booking_id": booking_id,
+                "qr_token": qr_token  # Gebe den qr_token zurück
             }), 200
         else:
             # Wenn PayPal nicht COMPLETED ist, dann war etwas mit der Zahlung nicht in Ordnung
@@ -234,6 +240,58 @@ def capture_paypal_order():
 
 
 # PayPal Ende
+
+#Hier QR-Code
+@app.route('/read/qrcode/<token>', methods=['GET'])
+def read_qrcode(token):
+    try:
+        with psycopg2.connect(DATABASE_URL) as conn:
+            with conn.cursor() as cursor:
+                cursor.execute("""
+                    SELECT booking_id, user_id, booking_time, payment_status, total_amount, 
+                           created_at, paypal_order_id, email, nachname, vorname
+                    FROM bookings
+                    WHERE qr_token = %s
+                """, (token,))
+                booking = cursor.fetchone()
+
+                if not booking:
+                    return jsonify({"error": "Buchung nicht gefunden"}), 404
+
+                booking_data = {
+                    "booking_id": booking[0],
+                    "user_id": booking[1],
+                    "booking_time": booking[2].isoformat(),
+                    "payment_status": booking[3],
+                    "total_amount": float(booking[4]),
+                    "created_at": booking[5].isoformat(),
+                    "paypal_order_id": booking[6],
+                    "email": booking[7],
+                    "nachname": booking[8],
+                    "vorname": booking[9]
+                }
+
+                # Optional: Buchungsdetails der Sitzplätze hinzufügen
+                cursor.execute("""
+                    SELECT seat_id, showtime_id, seat_type_discount_id
+                    FROM booking_seats
+                    WHERE booking_id = %s
+                """, (booking[0],))
+                seats = cursor.fetchall()
+                booking_data["seats"] = [
+                    {
+                        "seat_id": seat[0],
+                        "showtime_id": seat[1],
+                        "seat_type_discount_id": seat[2]
+                    } for seat in seats
+                ]
+
+        return jsonify(booking_data), 200
+
+    except Exception as e:
+        print("Fehler in read_qrcode:", e)
+        return jsonify({"error": "Interner Serverfehler"}), 500
+
 
 # Token Validierung Endpunkt
 @app.route('/validate-token', methods=['POST'])
