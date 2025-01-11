@@ -276,8 +276,6 @@ def read_qrcode(token):
                         sh.start_time,
                         sh.end_time,
                         sc.name AS kinosaal,
-                        m.title AS movie_title,
-                        m.description AS movie_description
                     FROM booking_seats bs
                     JOIN seats s ON s.seat_id = bs.seat_id
                     JOIN seat_types st ON st.seat_type_id = s.seat_type_id
@@ -296,8 +294,6 @@ def read_qrcode(token):
                     if movie_id not in movies:
                         movies[movie_id] = {
                             "movie_id": movie_id,
-                            "title": seat['movie_title'],
-                            "description": seat['movie_description'],
                             "start_time": seat['start_time'].isoformat(),
                             "end_time": seat['end_time'].isoformat(),
                             "kinosaal": seat['kinosaal'],
@@ -305,7 +301,7 @@ def read_qrcode(token):
                         }
                     # Entferne redundante Felder aus dem Sitzplatz-Dictionary
                     seat_data = {
-                        "seat_id": seat['nummer'],  # Annahme: 'nummer' entspricht 'seat_id'
+                        "nummer": seat['nummer'],
                         "reihe": seat['reihe'],
                         "type": seat['type'],
                         "farbe": seat['farbe'],
