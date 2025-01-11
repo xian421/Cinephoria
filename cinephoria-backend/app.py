@@ -240,13 +240,13 @@ def capture_paypal_order():
 
 
 # PayPal Ende
-
 #Hier QR-Code
 @app.route('/read/qrcode/<token>', methods=['GET'])
 def read_qrcode(token):
     try:
         with psycopg2.connect(DATABASE_URL) as conn:
-            with conn.cursor() as cursor:
+            with conn.cursor(cursor_factory=RealDictCursor) as cursor:
+                # Zuerst die Buchung anhand des QR-Tokens abrufen
                 cursor.execute("""
                     SELECT booking_id, user_id, booking_time, payment_status, total_amount, 
                            created_at, paypal_order_id, email, nachname, vorname
@@ -258,33 +258,49 @@ def read_qrcode(token):
                 if not booking:
                     return jsonify({"error": "Buchung nicht gefunden"}), 404
 
-                booking_data = {
-                    "booking_id": booking[0],
-                    "user_id": booking[1],
-                    "booking_time": booking[2].isoformat(),
-                    "payment_status": booking[3],
-                    "total_amount": float(booking[4]),
-                    "created_at": booking[5].isoformat(),
-                    "paypal_order_id": booking[6],
-                    "email": booking[7],
-                    "nachname": booking[8],
-                    "vorname": booking[9]
-                }
+                booking_id = booking['booking_id']
 
-                # Optional: Buchungsdetails der Sitzplätze hinzufügen
+                # Verwende das erweiterte SQL-Statement, um detaillierte Buchungsinformationen zu erhalten
                 cursor.execute("""
-                    SELECT seat_id, showtime_id, seat_type_discount_id
-                    FROM booking_seats
-                    WHERE booking_id = %s
-                """, (booking[0],))
+                    SELECT 
+                        s.number AS nummer,
+                        s.row AS reihe,
+                        st.name AS type,
+                        st.color AS farbe,
+                        st.icon AS type_icon,
+                        std.discount_percentage,
+                        std.discount_amount,
+                        d.name AS discount,
+                        d.description AS discount_infos,
+                        sh.movie_id,
+                        sh.start_time,
+                        sh.end_time,
+                        sc.name AS kinosaal
+                    FROM booking_seats bs
+                    JOIN seats s ON s.seat_id = bs.seat_id
+                    JOIN seat_types st ON st.seat_type_id = s.seat_type_id
+                    JOIN seat_type_discounts std ON std.seat_type_discount_id = bs.seat_type_discount_id
+                    JOIN discounts d ON d.discount_id = std.discount_id
+                    JOIN showtimes sh ON sh.showtime_id = bs.showtime_id
+                    JOIN screens sc ON sc.screen_id = sh.screen_id
+                    WHERE bs.booking_id = %s
+                """, (booking_id,))
                 seats = cursor.fetchall()
-                booking_data["seats"] = [
-                    {
-                        "seat_id": seat[0],
-                        "showtime_id": seat[1],
-                        "seat_type_discount_id": seat[2]
-                    } for seat in seats
-                ]
+
+                # Strukturierte Buchungsdaten zusammenstellen
+                booking_data = {
+                    "booking_id": booking['booking_id'],
+                    "user_id": booking['user_id'],
+                    "booking_time": booking['booking_time'].isoformat(),
+                    "payment_status": booking['payment_status'],
+                    "total_amount": float(booking['total_amount']),
+                    "created_at": booking['created_at'].isoformat(),
+                    "paypal_order_id": booking['paypal_order_id'],
+                    "email": booking['email'],
+                    "nachname": booking['nachname'],
+                    "vorname": booking['vorname'],
+                    "seats": seats  # Bereits als Liste von Dictionaries durch RealDictCursor
+                }
 
         return jsonify(booking_data), 200
 
