@@ -2607,7 +2607,7 @@ def add_supermarkt_item():
                 cursor.execute("""
                     INSERT INTO supermarkt_items (barcode, item_name, price, category)
                     VALUES (%s, %s, %s, %s)
-                    RETURNING item_id, barcode, item_name, price, category
+                    RETURNING item_id, barcode, item_name, price, category, created_at, updated_at
                 """, (barcode, item_name, price, category))
                 new_item = cursor.fetchone()
                 columns = [desc[0] for desc in cursor.description]
@@ -2642,7 +2642,7 @@ def update_supermarkt_item(item_id):
                         price = %s,
                         category = %s
                     WHERE item_id = %s
-                    RETURNING item_id, barcode, item_name, price, category
+                    RETURNING item_id, barcode, item_name, price, category, created_at, updated_at
                 """, (barcode, item_name, price, category, item_id))
                 updated_item = cursor.fetchone()
                 columns = [desc[0] for desc in cursor.description]
