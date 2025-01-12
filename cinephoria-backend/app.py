@@ -2579,7 +2579,7 @@ def get_supermarkt_items():
     try:
         with psycopg2.connect(DATABASE_URL) as conn:
             with conn.cursor(cursor_factory=psycopg2.extras.DictCursor) as cursor:
-                cursor.execute("SELECT item_id, barcode, item_name, price, category, created_at, updated_at FROM supermarkt_items")
+                cursor.execute("SELECT item_id, barcode, item_name, price, category, created_at, updated_at, pfand FROM supermarkt_items")
                 items = cursor.fetchall()
                 items_list = [dict(i) for i in items]
         return jsonify({'items': items_list}), 200
@@ -2597,6 +2597,8 @@ def add_supermarkt_item():
     item_name = data.get('item_name')
     price = data.get('price')
     category = data.get('category')
+    pfand = data.get('pfand', False)  # Standardwert FALSE, falls nicht angegeben
+
 
     if not barcode or not item_name or not price or not category:
         return jsonify({'error': 'Barcode, Item Name, Preis und Kategorie sind erforderlich'}), 400
@@ -2605,9 +2607,9 @@ def add_supermarkt_item():
         with psycopg2.connect(DATABASE_URL) as conn:
             with conn.cursor() as cursor:
                 cursor.execute("""
-                    INSERT INTO supermarkt_items (barcode, item_name, price, category)
-                    VALUES (%s, %s, %s, %s)
-                    RETURNING item_id, barcode, item_name, price, category, created_at, updated_at
+                    INSERT INTO supermarkt_items (barcode, item_name, price, category, pfand)
+                    VALUES (%s, %s, %s, %s, %s)
+                    RETURNING item_id, barcode, item_name, price, category, created_at, updated_at, pfand
                 """, (barcode, item_name, price, category))
                 new_item = cursor.fetchone()
                 columns = [desc[0] for desc in cursor.description]
@@ -2619,7 +2621,6 @@ def add_supermarkt_item():
         return jsonify({'error': 'Fehler beim Hinzufügen des Supermarkt-Items'}), 500
 
 
-#Jetzt updaten
 @app.route('/update/supermarkt/items/<int:item_id>', methods=['PUT'])
 @admin_required
 def update_supermarkt_item(item_id):
@@ -2628,6 +2629,8 @@ def update_supermarkt_item(item_id):
     item_name = data.get('item_name')
     price = data.get('price')
     category = data.get('category')
+    pfand = data.get('pfand', False)  # Standardwert FALSE, falls nicht angegeben
+
 
     if not barcode or not item_name or not price or not category:
         return jsonify({'error': 'Barcode, Item Name, Preis und Kategorie sind erforderlich'}), 400
@@ -2641,9 +2644,10 @@ def update_supermarkt_item(item_id):
                         item_name = %s,
                         price = %s,
                         category = %s
+                        pfand = %s
                     WHERE item_id = %s
-                    RETURNING item_id, barcode, item_name, price, category, created_at, updated_at
-                """, (barcode, item_name, price, category, item_id))
+                    RETURNING item_id, barcode, item_name, price, category, created_at, updated_at, pfand
+                """, (barcode, item_name, price, category, pfand, item_id))
                 updated_item = cursor.fetchone()
                 columns = [desc[0] for desc in cursor.description]
                 updated_item_dict = dict(zip(columns, updated_item))
