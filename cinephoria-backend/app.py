@@ -2725,7 +2725,32 @@ def delete_supermarkt_item(item_id):
         return jsonify({'error': 'Fehler beim Löschen des Supermarkt-Items'}), 500
 
 
-###############Pfand#################
+
+@app.route('/supermarkt/items/barcode/<string:barcode>', methods=['GET'])
+def get_supermarkt_item_by_barcode(barcode):
+    try:
+        with psycopg2.connect(DATABASE_URL) as conn:
+            with conn.cursor(cursor_factory=psycopg2.extras.DictCursor) as cursor:
+                cursor.execute("""
+                    SELECT 
+                        si.item_id, si.barcode, si.item_name, si.price, si.category, 
+                        si.created_at, si.updated_at, 
+                        sp.pfand_id, sp.amount, sp.name AS pfand_name, sp.description
+                    FROM supermarkt_items si
+                    LEFT JOIN supermarkt_pfand sp ON si.pfand_id = sp.pfand_id
+                    WHERE si.barcode = %s
+                """, (barcode,))
+                item = cursor.fetchone()
+                if item:
+                    return jsonify(dict(item)), 200
+                else:
+                    return jsonify({'error': 'Artikel nicht gefunden'}), 404
+    except Exception as e:
+        logger.error(f"Fehler beim Abrufen des Supermarkt-Items: {e}")
+        return jsonify({'error': 'Fehler beim Abrufen des Supermarkt-Items'}), 500
+
+                                   
+# ###############Pfand#################
 
 @app.route('/supermarkt/pfand', methods=['GET'])
 @admin_required
