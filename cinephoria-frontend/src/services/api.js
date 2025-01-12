@@ -1270,49 +1270,60 @@ export async function fetchCurrentShowtimesByMovie(movieId) {
 ////////////////////////////////////////////////////////////
 //                     Supermakt API                      //
 ////////////////////////////////////////////////////////////
+// ../services/api.js
 
-export async function fetchSupermarketitems() {
+export async function fetchSupermarketitems(token) {
     const response = await fetch(`${API_BASE_URL}/supermarkt/items`, {
         headers: {
-            "Content-Type": "application/json",
-        },
+            'Authorization': `Bearer ${token}`
+        }
     });
-    const data = await response.json();
     if (!response.ok) {
-        throw new Error(data.error || 'Fehler beim Laden der Supermarktartikel.');
+        throw new Error('Netzwerkantwort war nicht ok');
     }
-    return data.items;
+    return response.json();
 }
 
-export async function addSupermarketItem(token, barcode, item_name, price, category) {
+export async function fetchPfandOptions(token) {
+    const response = await fetch(`${API_BASE_URL}/supermarkt/pfand`, {
+        headers: {
+            'Authorization': `Bearer ${token}`
+        }
+    });
+    if (!response.ok) {
+        throw new Error('Netzwerkantwort war nicht ok');
+    }
+    return response.json();
+}
+
+export async function addSupermarketItem(token, barcode, item_name, price, category, pfand_id) {
     const response = await fetch(`${API_BASE_URL}/supermarkt/items`, {
-        method: "POST",
+        method: 'POST',
         headers: {
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${token}`,
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify({ barcode, item_name, price, category })
+        body: JSON.stringify({ barcode, item_name, price, category, pfand_id })
     });
-    const data = await response.json();
     if (!response.ok) {
-        throw new Error(data.error || 'Fehler beim Hinzufügen des Supermarktartikels');
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Netzwerkantwort war nicht ok');
     }
-    return data.item;
+    return response.json();
 }
 
-//Jetzt updaten
-export async function updateSupermarketItem(token, item_id, barcode, item_name, price, category) {
-    const response = await fetch(`${API_BASE_URL}/update/supermarkt/items/${item_id}`, {
-        method: "PUT",
+export async function updateSupermarketItem(token, item_id, barcode, item_name, price, category, pfand_id) {
+    const response = await fetch(`${API_BASE_URL}/supermarkt/items/${item_id}`, {
+        method: 'PUT',
         headers: {
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${token}`,
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify({ barcode, item_name, price, category })
+        body: JSON.stringify({ barcode, item_name, price, category, pfand_id: pfand_id !== null ? pfand_id : null })
     });
-    const data = await response.json();
     if (!response.ok) {
-        throw new Error(data.error || 'Fehler beim Aktualisieren des Supermarktartikels');
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Netzwerkantwort war nicht ok');
     }
-    return data.item;
+    return response.json();
 }

@@ -1,13 +1,14 @@
 <!-- Mitarbeitersupermarkt.svelte -->
 <script>
     import { onMount } from 'svelte';
-    import { fetchSupermarketitems, addSupermarketItem, updateSupermarketItem } from '../services/api';
+    import { fetchSupermarketitems, addSupermarketItem, updateSupermarketItem, fetchPfandOptions } from '../services/api';
     import { authStore } from '../stores/authStore.js';
     import { get } from 'svelte/store';
 
     let products = [];
     let sortedProducts = [];
-    let newItem = { barcode: '', item_name: '', price: '', category: '' };
+    let pfandOptions = []; // Neue Variable für Pfandoptionen
+    let newItem = { barcode: '', item_name: '', price: '', category: '', pfand_id: null };
     let isAdding = false; // Für Ladezustand
     let successMessage = '';
     let errorMessage = '';
@@ -25,7 +26,7 @@
         try {
             const data = await fetchSupermarketitems();
             console.log('Loaded Products:', data); // Debugging
-            products = data; // Direktes Zuweisen, da data ein Array ist
+            products = data.items;
             sortedProducts = [...products]; // Initial Kopie
         } catch (error) {
             console.error('Fehler beim Laden der Artikel:', error);
@@ -33,14 +34,31 @@
         }
     }
 
+    async function loadPfandOptions() {
+        const token = get(authStore).token;
+        try {
+            const data = await fetchPfandOptions(token);
+            pfandOptions = data.pfand_options;
+        } catch (error) {
+            console.error('Fehler beim Laden der Pfand-Optionen:', error);
+            errorMessage = 'Fehler beim Laden der Pfand-Optionen.';
+        }
+    }
+
     onMount(async () => {
         await loadProducts();
+        await loadPfandOptions();
     });
 
     async function handleAddItem() {
-        const { barcode, item_name, price, category } = newItem;
+        const { barcode, item_name, price, category, pfand_id } = newItem;
         if (!barcode || !item_name || !price || !category) {
             alert('Bitte alle Felder ausfüllen.');
+            return;
+        }
+
+        if (pfand_id && !pfandOptions.some(p => p.pfand_id === parseInt(pfand_id))) {
+            alert('Bitte wähle eine gültige Pfandoption.');
             return;
         }
 
@@ -54,22 +72,23 @@
                 barcode,
                 item_name,
                 price,
-                category
+                category,
+                pfand_id
             );
             console.log('Added Item:', addedItem); // Debugging
           
             // Aktualisiere die Produktliste
-            products = [...products, addedItem];
+            products = [...products, addedItem.item];
             sortProducts(sortColumn, sortDirection); // Sortiere erneut
 
             // Setze das Formular zurück
-            newItem = { barcode: '', item_name: '', price: '', category: '' };
+            newItem = { barcode: '', item_name: '', price: '', category: '', pfand_id: null };
             successMessage = 'Artikel erfolgreich hinzugefügt!';
             errorMessage = '';
             showAddModal = false; // Schließe das Modal
         } catch (error) {
             console.error('Fehler beim Hinzufügen des Artikels:', error);
-            errorMessage = 'Fehler beim Hinzufügen des Artikels.';
+            errorMessage = error.message || 'Fehler beim Hinzufügen des Artikels.';
             successMessage = '';
         } finally {
             isAdding = false;
@@ -77,9 +96,14 @@
     }
 
     async function handleUpdateItem() {
-        const { barcode, item_name, price, category } = editItem;
+        const { barcode, item_name, price, category, pfand_id } = editItem;
         if (!barcode || !item_name || !price || !category) {
             alert('Bitte alle Felder ausfüllen.');
+            return;
+        }
+
+        if (pfand_id && !pfandOptions.some(p => p.pfand_id === parseInt(pfand_id))) {
+            alert('Bitte wähle eine gültige Pfandoption.');
             return;
         }
 
@@ -91,12 +115,13 @@
                 barcode,
                 item_name,
                 price,
-                category
+                category,
+                pfand_id
             );
             console.log('Updated Item:', updatedItem); // Debugging
 
             // Aktualisiere die Produktliste
-            products = products.map(item => item.item_id === updatedItem.item_id ? updatedItem : item);
+            products = products.map(item => item.item_id === updatedItem.item.item_id ? updatedItem.item : item);
             sortProducts(sortColumn, sortDirection); // Sortiere erneut
 
             successMessage = 'Artikel erfolgreich aktualisiert!';
@@ -104,7 +129,7 @@
             showEditModal = false; // Schließe das Modal
         } catch (error) {
             console.error('Fehler beim Aktualisieren des Artikels:', error);
-            errorMessage = 'Fehler beim Aktualisieren des Artikels.';
+            errorMessage = error.message || 'Fehler beim Aktualisieren des Artikels.';
             successMessage = '';
         }
     }
@@ -126,6 +151,17 @@
                 const aDate = new Date(aValue);
                 const bDate = new Date(bValue);
                 return direction === 'asc' ? aDate - bDate : bDate - aDate;
+            }
+
+            if (column === 'pfand_id') {
+                // Sortiere nach Pfandname statt ID
+                const aPfand = pfandOptions.find(p => p.pfand_id === aValue);
+                const bPfand = pfandOptions.find(p => p.pfand_id === bValue);
+                const aName = aPfand ? aPfand.name.toLowerCase() : '';
+                const bName = bPfand ? bPfand.name.toLowerCase() : '';
+                if (aName < bName) return direction === 'asc' ? -1 : 1;
+                if (aName > bName) return direction === 'asc' ? 1 : -1;
+                return 0;
             }
 
             // Versuche, die Werte als Zahlen zu interpretieren
@@ -191,9 +227,10 @@
         margin-bottom: 30px;
         font-weight: bold;
         margin-top: 0;
+        text-align: center;
     }
 
-    /* Container-Stil für die gesamte Seite */
+    /* Hauptcontainer-Stil */
     .container {
         display: flex;
         flex-direction: column;
@@ -206,19 +243,24 @@
         font-family: 'Arial', sans-serif;
         color: #333;
         position: relative; /* Für den Add-Button */
+        padding-top: 60px; /* Platz für den absolut positionierten Button */
     }
 
-    /* Header mit Titel und Add-Button */
+    /* Header-Stil */
     .header {
         width: 100%;
         display: flex;
-        justify-content: space-between;
+        justify-content: center; /* Zentriert die Überschrift */
         align-items: center;
         margin-bottom: 20px;
+        position: relative; /* Für den absolut positionierten Button */
     }
 
-    /* Add-Button */
+    /* Add-Button absolut positionieren */
     .add-button {
+        position: absolute;
+        right: 0;
+        top: 0;
         padding: 10px 20px;
         font-size: 1rem;
         background-color: #28a745;
@@ -234,17 +276,15 @@
         background-color: #218838;
     }
 
-    /* Wrapper für die Tabelle, um horizontales Scrollen zu ermöglichen */
+    /* Wrapper für die Tabelle */
     .table-wrapper {
         width: 100%;
-        overflow-x: auto; /* Horizontales Scrollen bei schmalen Bildschirmen */
+        overflow-x: hidden; /* Verhindert horizontales Scrollen */
     }
 
     /* Tabelle */
     .table {
-        width: 100%; /* Nutzt die gesamte Breite */
-        max-width: 1500px; /* Begrenzung der maximalen Breite */
-        min-width: 700px; /* Mindestbreite der Tabelle */
+        width: 100%; /* Flexible Breite */
         border-collapse: collapse;
         background: #fff;
         box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1); /* Leichter Schatten für mehr Tiefe */
@@ -257,29 +297,24 @@
         background-color: #f8f9fa; /* Heller Hintergrund für den Kopfbereich */
     }
 
+    .table th, .table td {
+        padding: 10px; /* Weniger Padding für kompaktere Spalten */
+        font-size: 0.9rem; /* Kleinere Schriftgröße */
+        white-space: nowrap; /* Verhindert Zeilenumbrüche in Zellen */
+    }
+
     .table th {
-        padding: 20px;
         text-align: left;
         font-weight: bold;
-        font-size: 1.2rem; /* Größere Schriftgröße */
         color: #333;
         cursor: pointer;
         user-select: none;
-        white-space: nowrap; /* Verhindert Zeilenumbrüche in Kopfzellen */
     }
 
     /* Sortierindikatoren (Pfeile) */
     .table th .sort-indicator {
-        margin-left: 10px;
+        margin-left: 5px;
         font-size: 0.8rem;
-    }
-
-    /* Tabellenzellen */
-    .table td {
-        padding: 20px;
-        font-size: 1.1rem; /* Angenehme Lesbarkeit */
-        color: #555;
-        white-space: nowrap; /* Verhindert Zeilenumbrüche in Zellen */
     }
 
     /* Tabellenreihen */
@@ -357,11 +392,17 @@
         font-weight: bold;
     }
 
-    .form-container input {
+    .form-container input[type="text"],
+    .form-container input[type="number"],
+    .form-container select {
         padding: 10px;
         font-size: 1rem;
         border: 1px solid #ddd;
         border-radius: 5px;
+    }
+
+    .form-container input[type="checkbox"] {
+        margin-right: 10px;
     }
 
     /* Button-Stil */
@@ -385,17 +426,19 @@
     .success {
         color: green;
         margin-bottom: 10px;
+        text-align: center; /* Zentriert die Nachrichten */
     }
 
     .error {
         color: red;
         margin-bottom: 10px;
+        text-align: center; /* Zentriert die Nachrichten */
     }
 </style>
 
 <div class="container">
     <div class="header">
-        <h1 class="title">Alle Artikel in der Datenbank</h1>
+        <h1 class="title">Alle Artikel</h1>
         <button class="add-button" on:click={() => showAddModal = true}>Produkt hinzufügen</button>
     </div>
 
@@ -410,7 +453,7 @@
         <table class="table">
             <thead>
                 <tr>
-                    <th>Aktion</th> <!-- Neue Spalte für den Bearbeitungsstift -->
+                    <th>Aktion</th>
                     <th on:click={() => handleSort('item_name')}>
                         Name
                         {#if sortColumn === 'item_name'}
@@ -435,6 +478,13 @@
                             <span class="sort-indicator">{sortDirection === 'asc' ? '▲' : '▼'}</span>
                         {/if}
                     </th>
+
+                    <th on:click={() => handleSort('pfand_id')}>
+                        Pfand
+                        {#if sortColumn === 'pfand_id'}
+                            <span class="sort-indicator">{sortDirection === 'asc' ? '▲' : '▼'}</span>
+                        {/if}
+                    </th>
                     <th on:click={() => handleSort('created_at')}>
                         Erstellt am
                         {#if sortColumn === 'created_at'}
@@ -447,18 +497,20 @@
                             <span class="sort-indicator">{sortDirection === 'asc' ? '▲' : '▼'}</span>
                         {/if}
                     </th>
+             
                 </tr>
             </thead>
             <tbody>
                 {#each sortedProducts as product (product.item_id)}
                     <tr>
                         <td>
-                            <span class="edit-icon" on:click={() => openEditModal(product)}>✏️</span>
+                            <span class="edit-icon" on:click={() => openEditModal(product)} title="Produkt bearbeiten">✏️</span>
                         </td>
                         <td>{product.item_name}</td>
                         <td>{product.price} €</td>
                         <td>{product.barcode}</td>
                         <td>{product.category}</td>
+                        <td>{product.pfand_id ? product.pfand_name : 'Nein'}</td>
                         <td>{formatDate(product.created_at)}</td>
                         <td>{formatDate(product.updated_at)}</td>
                     </tr>
@@ -485,6 +537,18 @@
                     <label for="category">Kategorie:</label>
                     <input id="category" type="text" bind:value={newItem.category} />
 
+                    <label for="pfand_id">Pfand:</label>
+                    <select 
+                        id="pfand_id" 
+                        bind:value={newItem.pfand_id}
+                        on:change={e => newItem.pfand_id = e.target.value ? parseInt(e.target.value) : null}
+                    >
+                        <option value="">Kein Pfand</option>
+                        {#each pfandOptions as pfand}
+                            <option value={pfand.pfand_id}>{pfand.name} ({pfand.amount}€)</option>
+                        {/each}
+                    </select>
+
                     <button on:click={handleAddItem} disabled={isAdding}>
                         {isAdding ? 'Hinzufügen...' : 'Hinzufügen'}
                     </button>
@@ -510,6 +574,18 @@
 
                     <label for="edit_category">Kategorie:</label>
                     <input id="edit_category" type="text" bind:value={editItem.category} />
+
+                    <label for="edit_pfand_id">Pfand:</label>
+                    <select 
+                        id="edit_pfand_id" 
+                        bind:value={editItem.pfand_id}
+                        on:change={e => editItem.pfand_id = e.target.value ? parseInt(e.target.value) : null}
+                    >
+                        <option value="">Kein Pfand</option>
+                        {#each pfandOptions as pfand}
+                            <option value={pfand.pfand_id}>{pfand.name} ({pfand.amount}€)</option>
+                        {/each}
+                    </select>
 
                     <button on:click={handleUpdateItem}>
                         Aktualisieren

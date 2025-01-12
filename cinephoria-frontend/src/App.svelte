@@ -34,6 +34,7 @@
     import Mitarbeiter from './routes/mitarbeiter.svelte';
     import Mitarbeiterkino from './routes/mitarbeiterkino.svelte';
     import Mitarbeitersupermarkt from './routes/mitarbeitersupermarkt.svelte';
+    import Mitarbeiterscannen from './routes/mitarbeiterscannen.svelte';
     import './global.css';
     
 
@@ -46,7 +47,7 @@
 
     import { login, validateToken, fetchCinemas } from './services/api.js';
 
-    const minimalRoutes = ['/mitarbeiter', '/mitarbeiter/kino', '/mitarbeiter/supermarkt'];
+    const minimalRoutes = ['/mitarbeiter', '/mitarbeiter/kino', '/mitarbeiter/supermarkt', '/mitarbeiter/scannen'];
 
     $: isMinimalRoute = minimalRoutes.includes(window.location.pathname);
 
@@ -251,6 +252,7 @@
                 <Mitarbeitersupermarkt />
             </ProtectedRoute>
         </Route>
+        <Route path="/mitarbeiter/scannen" component={Mitarbeiterscannen} />
         <!-- <Route path="/mitarbeiter/supermarkt" component={Mitarbeitersupermarkt} /> -->
   </Router>
 {/if}
