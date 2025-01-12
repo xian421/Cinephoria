@@ -2586,6 +2586,8 @@ def get_supermarkt_items():
     except Exception as e:
         logger.error(f"Fehler beim Abrufen der Supermarkt-Items: {e}")
         return jsonify({'error': 'Fehler beim Abrufen der Supermarkt-Items'}), 500
+    
+
 
 @app.route('/supermarkt/items', methods=['POST'])
 @admin_required
@@ -2605,9 +2607,13 @@ def add_supermarkt_item():
                 cursor.execute("""
                     INSERT INTO supermarkt_items (barcode, item_name, price, category)
                     VALUES (%s, %s, %s, %s)
+                    RETURNING id, barcode, item_name, price, category
                 """, (barcode, item_name, price, category))
+                new_item = cursor.fetchone()
+                columns = [desc[0] for desc in cursor.description]
+                new_item_dict = dict(zip(columns, new_item))
                 conn.commit()
-                return jsonify({'message': 'Supermarkt-Item hinzugefügt'}), 201
+                return jsonify({'item': new_item_dict}), 201
     except Exception as e:
         logger.error(f"Fehler beim Hinzufügen des Supermarkt-Items: {e}")
         return jsonify({'error': 'Fehler beim Hinzufügen des Supermarkt-Items'}), 500
