@@ -2568,7 +2568,49 @@ def update_guest_cart():
         print(f"Fehler beim Aktualisieren des Gast-Warenkorbs: {e}")
         return jsonify({'error': 'Fehler beim Aktualisieren des Gast-Warenkorbs'}), 500
 
-#Um den Sitzen im Warenkorb einen Discount (ermäßigung) zu geben<--
+
+#############################################################################################################
+###################################     Hier Supermarktkasse    #############################################
+#############################################################################################################
+
+
+@app.route('/supermarkt/items', methods=['GET'])
+def get_supermarkt_items():
+    try:
+        with psycopg2.connect(DATABASE_URL) as conn:
+            with conn.cursor(cursor_factory=psycopg2.extras.DictCursor) as cursor:
+                cursor.execute("SELECT item_id, barcode, item_name, price, category FROM supermarkt_items")
+                items = cursor.fetchall()
+                items_list = [dict(i) for i in items]
+        return jsonify({'items': items_list}), 200
+    except Exception as e:
+        logger.error(f"Fehler beim Abrufen der Supermarkt-Items: {e}")
+        return jsonify({'error': 'Fehler beim Abrufen der Supermarkt-Items'}), 500
+
+@app.route('/supermarkt/items', methods=['POST'])
+@admin_required
+def add_supermarkt_item():
+    data = request.get_json()
+    barcode = data.get('barcode')
+    item_name = data.get('item_name')
+    price = data.get('price')
+    category = data.get('category')
+
+    if not barcode or not item_name or not price or not category:
+        return jsonify({'error': 'Barcode, Item Name, Preis und Kategorie sind erforderlich'}), 400
+
+    try:
+        with psycopg2.connect(DATABASE_URL) as conn:
+            with conn.cursor() as cursor:
+                cursor.execute("""
+                    INSERT INTO supermarkt_items (barcode, item_name, price, category)
+                    VALUES (%s, %s, %s, %s)
+                """, (barcode, item_name, price, category))
+                conn.commit()
+                return jsonify({'message': 'Supermarkt-Item hinzugefügt'}), 201
+    except Exception as e:
+        logger.error(f"Fehler beim Hinzufügen des Supermarkt-Items: {e}")
+        return jsonify({'error': 'Fehler beim Hinzufügen des Supermarkt-Items'}), 500
 
 
 if __name__ == '__main__':
