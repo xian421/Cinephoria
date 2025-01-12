@@ -2631,7 +2631,7 @@ def add_supermarkt_item():
         return jsonify({'error': 'Fehler beim Hinzufügen des Supermarkt-Items'}), 500
 
 
-@app.route('/supermarkt/items/<int:item_id>', methods=['PUT'])
+@app.route('update/supermarkt/items/<int:item_id>', methods=['PUT'])
 @admin_required
 def update_supermarkt_item(item_id):
     data = request.get_json()
@@ -2656,9 +2656,8 @@ def update_supermarkt_item(item_id):
                         item_name = %s,
                         price = %s,
                         category = %s,
-                        pfand_id = %s,
-                        updated_at = CURRENT_TIMESTAMP
-                    WHERE item_id = %s
+                        pfand_id = %s
+                        WHERE item_id = %s
                     RETURNING item_id, barcode, item_name, price, category, created_at, updated_at, pfand_id
                 """, (barcode, item_name, price, category, pfand_id, item_id))
                 updated_item = cursor.fetchone()
