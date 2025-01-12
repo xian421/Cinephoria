@@ -2579,7 +2579,7 @@ def get_supermarkt_items():
     try:
         with psycopg2.connect(DATABASE_URL) as conn:
             with conn.cursor(cursor_factory=psycopg2.extras.DictCursor) as cursor:
-                cursor.execute("SELECT item_id, barcode, item_name, price, category FROM supermarkt_items")
+                cursor.execute("SELECT item_id, barcode, item_name, price, category, created_at, updated_at FROM supermarkt_items")
                 items = cursor.fetchall()
                 items_list = [dict(i) for i in items]
         return jsonify({'items': items_list}), 200
