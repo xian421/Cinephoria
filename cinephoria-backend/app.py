@@ -2610,7 +2610,7 @@ def add_supermarkt_item():
                     INSERT INTO supermarkt_items (barcode, item_name, price, category, pfand)
                     VALUES (%s, %s, %s, %s, %s)
                     RETURNING item_id, barcode, item_name, price, category, created_at, updated_at, pfand
-                """, (barcode, item_name, price, category))
+                """, (barcode, item_name, price, category, pfand))
                 new_item = cursor.fetchone()
                 columns = [desc[0] for desc in cursor.description]
                 new_item_dict = dict(zip(columns, new_item))
