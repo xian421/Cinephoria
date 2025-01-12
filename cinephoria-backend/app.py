@@ -2593,7 +2593,7 @@ def get_supermarkt_items():
         logger.error(f"Fehler beim Abrufen der Supermarkt-Items: {e}")
         return jsonify({'error': 'Fehler beim Abrufen der Supermarkt-Items'}), 500
 
- @app.route('/supermarkt/items', methods=['POST'])
+@app.route('/supermarkt/items', methods=['POST'])
 @admin_required
 def add_supermarkt_item():
     data = request.get_json()
