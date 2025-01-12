@@ -2573,22 +2573,27 @@ def update_guest_cart():
 ###################################     Hier Supermarktkasse    #############################################
 #############################################################################################################
 
-
 @app.route('/supermarkt/items', methods=['GET'])
 def get_supermarkt_items():
     try:
         with psycopg2.connect(DATABASE_URL) as conn:
             with conn.cursor(cursor_factory=psycopg2.extras.DictCursor) as cursor:
-                cursor.execute("SELECT item_id, barcode, item_name, price, category, created_at, updated_at, pfand FROM supermarkt_items")
+                cursor.execute("""
+                    SELECT 
+                        si.item_id, si.barcode, si.item_name, si.price, si.category, 
+                        si.created_at, si.updated_at, 
+                        sp.pfand_id, sp.amount, sp.name AS pfand_name, sp.description
+                    FROM supermarkt_items si
+                    LEFT JOIN supermarkt_pfand sp ON si.pfand_id = sp.pfand_id
+                """)
                 items = cursor.fetchall()
                 items_list = [dict(i) for i in items]
         return jsonify({'items': items_list}), 200
     except Exception as e:
         logger.error(f"Fehler beim Abrufen der Supermarkt-Items: {e}")
         return jsonify({'error': 'Fehler beim Abrufen der Supermarkt-Items'}), 500
+
     
-
-
 @app.route('/supermarkt/items', methods=['POST'])
 @admin_required
 def add_supermarkt_item():
@@ -2597,31 +2602,36 @@ def add_supermarkt_item():
     item_name = data.get('item_name')
     price = data.get('price')
     category = data.get('category')
-    pfand = data.get('pfand', False)  # Standardwert FALSE, falls nicht angegeben
-
-
+    pfand_id = data.get('pfand_id')  # Fremdschlüssel
+    
     if not barcode or not item_name or not price or not category:
         return jsonify({'error': 'Barcode, Item Name, Preis und Kategorie sind erforderlich'}), 400
+
+    if pfand_id is not None and not isinstance(pfand_id, int):
+        return jsonify({'error': 'Pfand ID muss eine Ganzzahl sein'}), 400
 
     try:
         with psycopg2.connect(DATABASE_URL) as conn:
             with conn.cursor() as cursor:
                 cursor.execute("""
-                    INSERT INTO supermarkt_items (barcode, item_name, price, category, pfand)
+                    INSERT INTO supermarkt_items (barcode, item_name, price, category, pfand_id)
                     VALUES (%s, %s, %s, %s, %s)
-                    RETURNING item_id, barcode, item_name, price, category, created_at, updated_at, pfand
-                """, (barcode, item_name, price, category, pfand))
+                    RETURNING item_id, barcode, item_name, price, category, created_at, updated_at, pfand_id
+                """, (barcode, item_name, price, category, pfand_id))
                 new_item = cursor.fetchone()
                 columns = [desc[0] for desc in cursor.description]
                 new_item_dict = dict(zip(columns, new_item))
                 conn.commit()
                 return jsonify({'item': new_item_dict}), 201
+    except psycopg2.errors.UniqueViolation:
+        conn.rollback()
+        return jsonify({'error': 'Ein Artikel mit diesem Barcode existiert bereits'}), 400
     except Exception as e:
         logger.error(f"Fehler beim Hinzufügen des Supermarkt-Items: {e}")
         return jsonify({'error': 'Fehler beim Hinzufügen des Supermarkt-Items'}), 500
 
 
-@app.route('/update/supermarkt/items/<int:item_id>', methods=['PUT'])
+@app.route('/supermarkt/items/<int:item_id>', methods=['PUT'])
 @admin_required
 def update_supermarkt_item(item_id):
     data = request.get_json()
@@ -2629,11 +2639,13 @@ def update_supermarkt_item(item_id):
     item_name = data.get('item_name')
     price = data.get('price')
     category = data.get('category')
-    pfand = data.get('pfand', False)  # Standardwert FALSE, falls nicht angegeben
-
+    pfand_id = data.get('pfand_id')  # Fremdschlüssel
 
     if not barcode or not item_name or not price or not category:
         return jsonify({'error': 'Barcode, Item Name, Preis und Kategorie sind erforderlich'}), 400
+
+    if pfand_id is not None and not isinstance(pfand_id, int):
+        return jsonify({'error': 'Pfand ID muss eine Ganzzahl sein'}), 400
 
     try:
         with psycopg2.connect(DATABASE_URL) as conn:
@@ -2643,19 +2655,140 @@ def update_supermarkt_item(item_id):
                     SET barcode = %s,
                         item_name = %s,
                         price = %s,
-                        category = %s
-                        pfand = %s
+                        category = %s,
+                        pfand_id = %s,
+                        updated_at = CURRENT_TIMESTAMP
                     WHERE item_id = %s
-                    RETURNING item_id, barcode, item_name, price, category, created_at, updated_at, pfand
-                """, (barcode, item_name, price, category, pfand, item_id))
+                    RETURNING item_id, barcode, item_name, price, category, created_at, updated_at, pfand_id
+                """, (barcode, item_name, price, category, pfand_id, item_id))
                 updated_item = cursor.fetchone()
-                columns = [desc[0] for desc in cursor.description]
-                updated_item_dict = dict(zip(columns, updated_item))
-                conn.commit()
-                return jsonify({'item': updated_item_dict}), 200
+                if updated_item:
+                    columns = [desc[0] for desc in cursor.description]
+                    updated_item_dict = dict(zip(columns, updated_item))
+                    conn.commit()
+                    return jsonify({'item': updated_item_dict}), 200
+                else:
+                    return jsonify({'error': 'Item nicht gefunden'}), 404
+    except psycopg2.errors.UniqueViolation:
+        conn.rollback()
+        return jsonify({'error': 'Ein Artikel mit diesem Barcode existiert bereits'}), 400
     except Exception as e:
         logger.error(f"Fehler beim Aktualisieren des Supermarkt-Items: {e}")
         return jsonify({'error': 'Fehler beim Aktualisieren des Supermarkt-Items'}), 500
+
+@app.route('/supermarkt/items/<int:item_id>', methods=['DELETE'])
+@admin_required
+def delete_supermarkt_item(item_id):
+    try:
+        with psycopg2.connect(DATABASE_URL) as conn:
+            with conn.cursor() as cursor:
+                cursor.execute("DELETE FROM supermarkt_items WHERE item_id = %s RETURNING item_id", (item_id,))
+                deleted_item = cursor.fetchone()
+                if deleted_item:
+                    conn.commit()
+                    return jsonify({'message': 'Artikel erfolgreich gelöscht'}), 200
+                else:
+                    return jsonify({'error': 'Artikel nicht gefunden'}), 404
+    except Exception as e:
+        logger.error(f"Fehler beim Löschen des Supermarkt-Items: {e}")
+        return jsonify({'error': 'Fehler beim Löschen des Supermarkt-Items'}), 500
+
+
+###############Pfand#################
+
+@app.route('/supermarkt/pfand', methods=['GET'])
+@admin_required
+def get_pfand_options():
+    try:
+        with psycopg2.connect(DATABASE_URL) as conn:
+            with conn.cursor(cursor_factory=psycopg2.extras.DictCursor) as cursor:
+                cursor.execute("SELECT pfand_id, amount, name, description FROM supermarkt_pfand")
+                pfand_options = cursor.fetchall()
+                pfand_list = [dict(p) for p in pfand_options]
+        return jsonify({'pfand_options': pfand_list}), 200
+    except Exception as e:
+        logger.error(f"Fehler beim Abrufen der Pfand-Optionen: {e}")
+        return jsonify({'error': 'Fehler beim Abrufen der Pfand-Optionen'}), 500
+
+@app.route('/supermarkt/pfand', methods=['POST'])
+@admin_required
+def add_pfand_option():
+    data = request.get_json()
+    amount = data.get('amount')
+    name = data.get('name')
+    description = data.get('description', '')
+
+    if amount is None or not name:
+        return jsonify({'error': 'Amount und Name sind erforderlich'}), 400
+
+    try:
+        with psycopg2.connect(DATABASE_URL) as conn:
+            with conn.cursor() as cursor:
+                cursor.execute("""
+                    INSERT INTO supermarkt_pfand (amount, name, description)
+                    VALUES (%s, %s, %s)
+                    RETURNING pfand_id, amount, name, description
+                """, (amount, name, description))
+                new_pfand = cursor.fetchone()
+                columns = [desc[0] for desc in cursor.description]
+                new_pfand_dict = dict(zip(columns, new_pfand))
+                conn.commit()
+                return jsonify({'pfand_option': new_pfand_dict}), 201
+    except Exception as e:
+        logger.error(f"Fehler beim Hinzufügen der Pfand-Option: {e}")
+        return jsonify({'error': 'Fehler beim Hinzufügen der Pfand-Option'}), 500
+
+@app.route('/supermarkt/pfand/<int:pfand_id>', methods=['PUT'])
+@admin_required
+def update_pfand_option(pfand_id):
+    data = request.get_json()
+    amount = data.get('amount')
+    name = data.get('name')
+    description = data.get('description', '')
+
+    if amount is None or not name:
+        return jsonify({'error': 'Amount und Name sind erforderlich'}), 400
+
+    try:
+        with psycopg2.connect(DATABASE_URL) as conn:
+            with conn.cursor() as cursor:
+                cursor.execute("""
+                    UPDATE supermarkt_pfand
+                    SET amount = %s,
+                        name = %s,
+                        description = %s
+                    WHERE pfand_id = %s
+                    RETURNING pfand_id, amount, name, description
+                """, (amount, name, description, pfand_id))
+                updated_pfand = cursor.fetchone()
+                if updated_pfand:
+                    columns = [desc[0] for desc in cursor.description]
+                    updated_pfand_dict = dict(zip(columns, updated_pfand))
+                    conn.commit()
+                    return jsonify({'pfand_option': updated_pfand_dict}), 200
+                else:
+                    return jsonify({'error': 'Pfand-Option nicht gefunden'}), 404
+    except Exception as e:
+        logger.error(f"Fehler beim Aktualisieren der Pfand-Option: {e}")
+        return jsonify({'error': 'Fehler beim Aktualisieren der Pfand-Option'}), 500
+
+@app.route('/supermarkt/pfand/<int:pfand_id>', methods=['DELETE'])
+@admin_required
+def delete_pfand_option(pfand_id):
+    try:
+        with psycopg2.connect(DATABASE_URL) as conn:
+            with conn.cursor() as cursor:
+                cursor.execute("DELETE FROM supermarkt_pfand WHERE pfand_id = %s RETURNING pfand_id", (pfand_id,))
+                deleted_pfand = cursor.fetchone()
+                if deleted_pfand:
+                    conn.commit()
+                    return jsonify({'message': 'Pfand-Option erfolgreich gelöscht'}), 200
+                else:
+                    return jsonify({'error': 'Pfand-Option nicht gefunden'}), 404
+    except Exception as e:
+        logger.error(f"Fehler beim Löschen der Pfand-Option: {e}")
+        return jsonify({'error': 'Fehler beim Löschen der Pfand-Option'}), 500
+
 
 
 if __name__ == '__main__':
