@@ -2619,5 +2619,40 @@ def add_supermarkt_item():
         return jsonify({'error': 'Fehler beim Hinzufügen des Supermarkt-Items'}), 500
 
 
+#Jetzt updaten
+@app.route('/supermarkt/items/<int:item_id>', methods=['PUT'])
+@admin_required
+def update_supermarkt_item(item_id):
+    data = request.get_json()
+    barcode = data.get('barcode')
+    item_name = data.get('item_name')
+    price = data.get('price')
+    category = data.get('category')
+
+    if not barcode or not item_name or not price or not category:
+        return jsonify({'error': 'Barcode, Item Name, Preis und Kategorie sind erforderlich'}), 400
+
+    try:
+        with psycopg2.connect(DATABASE_URL) as conn:
+            with conn.cursor() as cursor:
+                cursor.execute("""
+                    UPDATE supermarkt_items
+                    SET barcode = %s,
+                        item_name = %s,
+                        price = %s,
+                        category = %s
+                    WHERE item_id = %s
+                    RETURNING item_id, barcode, item_name, price, category
+                """, (barcode, item_name, price, category, item_id))
+                updated_item = cursor.fetchone()
+                columns = [desc[0] for desc in cursor.description]
+                updated_item_dict = dict(zip(columns, updated_item))
+                conn.commit()
+                return jsonify({'item': updated_item_dict}), 200
+    except Exception as e:
+        logger.error(f"Fehler beim Aktualisieren des Supermarkt-Items: {e}")
+        return jsonify({'error': 'Fehler beim Aktualisieren des Supermarkt-Items'}), 500
+
+
 if __name__ == '__main__':
     app.run(debug=True)
