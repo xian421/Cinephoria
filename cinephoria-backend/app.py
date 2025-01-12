@@ -2631,7 +2631,7 @@ def add_supermarkt_item():
         return jsonify({'error': 'Fehler beim Hinzufügen des Supermarkt-Items'}), 500
 
 
-@app.route('update/supermarkt/items/<int:item_id>', methods=['PUT'])
+@app.route('/update/supermarkt/items/<int:item_id>', methods=['PUT'])
 @admin_required
 def update_supermarkt_item(item_id):
     data = request.get_json()
