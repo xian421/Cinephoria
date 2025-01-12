@@ -93,3 +93,33 @@ h1 {
 .custom-swal2-cancel:hover {
     background-color: #e53935 !important;
 }
+
+
+
+
+/* Globale Stile für minimalistische Routen */
+.minimal-route {
+    background: #ffffff; /* Weißer Hintergrund */
+    color: #000000; /* Schwarzer Text */
+}
+
+/* H1 für minimalistische Routen */
+.minimal-route h1 {
+    color: #000; /* Schwarzer Text */
+    text-shadow: none; /* Kein Leuchten */
+    font-size: 2.5rem; /* Etwas kleiner für minimalistisches Design */
+    margin-top: 80px;
+    margin-bottom: 20px;
+}
+
+/* Buttons in minimalistischen Routen */
+.minimal-route .back-button {
+    background-color: #007bff; /* Blau statt grün */
+    color: #fff;
+    box-shadow: none;
+}
+
+.minimal-route .back-button:hover {
+    background-color: #0056b3; /* Dunkleres Blau */
+    transform: translateY(0); /* Kein Springen */
+}

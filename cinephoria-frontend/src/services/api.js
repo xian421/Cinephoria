@@ -1266,3 +1266,53 @@ export async function fetchCurrentShowtimesByMovie(movieId) {
     }
     return data.showtimes;
 }
+
+////////////////////////////////////////////////////////////
+//                     Supermakt API                      //
+////////////////////////////////////////////////////////////
+
+export async function fetchSupermarketitems() {
+    const response = await fetch(`${API_BASE_URL}/supermarkt/items`, {
+        headers: {
+            "Content-Type": "application/json",
+        },
+    });
+    const data = await response.json();
+    if (!response.ok) {
+        throw new Error(data.error || 'Fehler beim Laden der Supermarktartikel.');
+    }
+    return data.items;
+}
+
+export async function addSupermarketItem(token, barcode, item_name, price, category) {
+    const response = await fetch(`${API_BASE_URL}/supermarkt/items`, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${token}`,
+        },
+        body: JSON.stringify({ barcode, item_name, price, category })
+    });
+    const data = await response.json();
+    if (!response.ok) {
+        throw new Error(data.error || 'Fehler beim Hinzufügen des Supermarktartikels');
+    }
+    return data.item;
+}
+
+//Jetzt updaten
+export async function updateSupermarketItem(token, item_id, barcode, item_name, price, category) {
+    const response = await fetch(`${API_BASE_URL}/update/supermarkt/items/${item_id}`, {
+        method: "PUT",
+        headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${token}`,
+        },
+        body: JSON.stringify({ barcode, item_name, price, category })
+    });
+    const data = await response.json();
+    if (!response.ok) {
+        throw new Error(data.error || 'Fehler beim Aktualisieren des Supermarktartikels');
+    }
+    return data.item;
+}

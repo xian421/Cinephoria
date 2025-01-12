@@ -91,43 +91,44 @@
         <h2>Ihre Bestätigung und Details sehen Sie hier:</h2>
         {#if bookingData}
             <div class="booking-details">
-                <h2>Bestätigungsdetails</h2>
-                <p class="total-price"><strong>Gesamtpreis:</strong> {bookingData.total_amount.toFixed(2)} €</p>
+                <h2 class="total-price"><strong>Gesamtpreis:</strong> {bookingData.total_amount.toFixed(2)} €</h2>
 
-                <h3>Alle Filme:</h3>
                 <ul class="movie-list">
                     {#each movies as movie}
                         <li class="movie-item">
                             <h3>{movie.title}</h3>
                             <p>Kinosaal: {movie.kinosaal}</p>
                             <p>
-                                Startzeit: {new Date(movie.start_time).toLocaleDateString('de-DE', {
+                                <strong> {new Date(movie.start_time).toLocaleDateString('de-DE', {
                                     day: '2-digit',
                                     month: '2-digit',
                                     year: 'numeric',
                                     hour: '2-digit',
                                     minute: '2-digit',
-                                }).replace(',', ' Uhr')}
-                            </p>
+                                }).replace(',', ' um ')}
+                         Uhr </strong>  </p>
 
-                            <h4>Sitzplätze:</h4>
-                            <ul class="seat-list">
-                                {#each movie.seats as seat}
-                                    <li
-                                        class="seat-item"
-                                        style="background-color: {seat.farbe}"
-                                        title={seat.type || ''}
-                                    >
-                                        {#if seat.type_icon}
-                                            <i class="{seat.type_icon} seat-icon"></i>
-                                        {/if}
-                                        {seat.reihe}{seat.nummer}
-                                        {#if seat.discount_infos}
-                                            <br><small>{seat.discount_infos}</small>
-                                        {/if}
-                                    </li>
-                                {/each}
-                            </ul>
+                         <ul class="seat-list">
+                            {#each movie.seats as seat}
+                                <li
+                                    class="seat-item"
+                                    style="background-color: {seat.farbe};"
+                                    title={seat.type || ''}
+                                >
+                                    <!-- Icon wird nur angezeigt, wenn vorhanden -->
+                                    {#if seat.type_icon}
+                                        <i class={`fas ${seat.type_icon} seat-icon`}></i>
+                                    {/if}
+                                    <!-- Sitzplatznummer und Reihe -->
+                                    {seat.reihe}{seat.nummer}
+                                    <!-- Rabattinformationen -->
+                                    {#if seat.discount_infos}
+                                        <br><small>{seat.discount_infos}</small>
+                                    {/if}
+                                </li>
+                            {/each}
+                        </ul>
+                        
                         </li>
                     {/each}
                 </ul>
@@ -136,9 +137,9 @@
 
         {#if qrCodeDataUrl}
             <div class="qr-code-section">
-                <h3>Ihr QR-Code:</h3>
+                <h3>Ihr Ticket:</h3>
                 <img src="{qrCodeDataUrl}" alt="QR Code" class="qr-code">
-                <p>Scannen Sie den QR-Code für Details.</p>
+                <p>Zeigen Sie diesen QR-Code dem Kontrolleur.</p>
                 <a href="{qrCodeDataUrl}" download="ticket_qrcode.png" class="download-link">QR-Code herunterladen</a>
             </div>
         {:else if qrError}
@@ -152,6 +153,7 @@
 
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap');
+
 
     .background {
         min-height: 100vh;

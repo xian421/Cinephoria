@@ -30,11 +30,12 @@
     import Adminrewards from './routes/Adminrewards.svelte';
     import Ticketanzeige from './routes/Ticketanzeige.svelte';
     import Viewbooking from './routes/Viewbooking.svelte';
-
-    /* WICHTIG: Snacksanddrinks-Komponente importieren */
     import Snacksanddrinks from './routes/snacksanddrinks.svelte';
-
+    import Mitarbeiter from './routes/mitarbeiter.svelte';
+    import Mitarbeiterkino from './routes/mitarbeiterkino.svelte';
+    import Mitarbeitersupermarkt from './routes/mitarbeitersupermarkt.svelte';
     import './global.css';
+    
 
     import { loadProfile } from './stores/profileStore.js';
     import { authStore, setAuth, updateAuth } from './stores/authStore.js';
@@ -44,6 +45,15 @@
     import ProtectedRoute from './components/ProtectedRoute.svelte';
 
     import { login, validateToken, fetchCinemas } from './services/api.js';
+
+    const minimalRoutes = ['/mitarbeiter', '/mitarbeiter/kino', '/mitarbeiter/supermarkt'];
+
+    $: isMinimalRoute = minimalRoutes.includes(window.location.pathname);
+
+    $: {
+        document.body.classList.toggle('minimal-route', isMinimalRoute);
+    }
+
 
     let cinemas = [];
     let firstCinema = '';
@@ -143,6 +153,8 @@
   <p>Loading...</p>
 {:else}
   <Router>
+    
+    {#if !isMinimalRoute}
       <Navbar 
           toggleLoginDropdown={toggleLoginDropdown} 
           toggleProfileMenu={toggleProfileMenu} 
@@ -153,6 +165,7 @@
           initials={$authStore.initials} 
           isLoggedIn={$authStore.isLoggedIn}
       />
+    {/if}
 
       <!-- Routen -->
       <Route path="/" component={Home} />
@@ -184,6 +197,8 @@
 
       <!-- WICHTIG: Neue Route für Snacks & Drinks -->
       <Route path="/snacksanddrinks" component={Snacksanddrinks} />
+
+
 
       <!-- Geschützte Admin-Routen -->
       <Route path="/adminkinosaal" let:params>
@@ -224,6 +239,18 @@
       <Route path="/unauthorized" component={Unauthorized} />
       <Route path="*" component={NotFound} />
 
-      <Footer firstCinema={firstCinema} />
+      {#if !isMinimalRoute}
+        <Footer firstCinema={firstCinema} />
+      {/if}
+
+
+        <Route path="/mitarbeiter" component={Mitarbeiter} />
+        <Route path="/mitarbeiter/kino" component={Mitarbeiterkino} />
+        <Route path="/mitarbeiter/supermarkt" let:params>
+            <ProtectedRoute admin={true}>
+                <Mitarbeitersupermarkt />
+            </ProtectedRoute>
+        </Route>
+        <!-- <Route path="/mitarbeiter/supermarkt" component={Mitarbeitersupermarkt} /> -->
   </Router>
 {/if}
