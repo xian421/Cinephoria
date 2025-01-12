@@ -2593,8 +2593,7 @@ def get_supermarkt_items():
         logger.error(f"Fehler beim Abrufen der Supermarkt-Items: {e}")
         return jsonify({'error': 'Fehler beim Abrufen der Supermarkt-Items'}), 500
 
-    
-@app.route('/supermarkt/items', methods=['POST'])
+ @app.route('/supermarkt/items', methods=['POST'])
 @admin_required
 def add_supermarkt_item():
     data = request.get_json()
@@ -2613,10 +2612,25 @@ def add_supermarkt_item():
     try:
         with psycopg2.connect(DATABASE_URL) as conn:
             with conn.cursor() as cursor:
+                # Überprüfe, ob pfand_id existiert, falls angegeben
+                if pfand_id:
+                    cursor.execute("SELECT pfand_id FROM supermarkt_pfand WHERE pfand_id = %s", (pfand_id,))
+                    if cursor.fetchone() is None:
+                        return jsonify({'error': 'Ungültige Pfand ID'}), 400
+
                 cursor.execute("""
                     INSERT INTO supermarkt_items (barcode, item_name, price, category, pfand_id)
                     VALUES (%s, %s, %s, %s, %s)
-                    RETURNING item_id, barcode, item_name, price, category, created_at, updated_at, pfand_id
+                    RETURNING 
+                        supermarkt_items.item_id, 
+                        supermarkt_items.barcode, 
+                        supermarkt_items.item_name, 
+                        supermarkt_items.price, 
+                        supermarkt_items.category, 
+                        supermarkt_items.created_at, 
+                        supermarkt_items.updated_at, 
+                        supermarkt_items.pfand_id,
+                        (SELECT name FROM supermarkt_pfand WHERE supermarkt_pfand.pfand_id = supermarkt_items.pfand_id) AS pfand_name
                 """, (barcode, item_name, price, category, pfand_id))
                 new_item = cursor.fetchone()
                 columns = [desc[0] for desc in cursor.description]
@@ -2630,8 +2644,9 @@ def add_supermarkt_item():
         logger.error(f"Fehler beim Hinzufügen des Supermarkt-Items: {e}")
         return jsonify({'error': 'Fehler beim Hinzufügen des Supermarkt-Items'}), 500
 
+    
 
-@app.route('/update/supermarkt/items/<int:item_id>', methods=['PUT'])
+@app.route('/supermarkt/items/<int:item_id>', methods=['PUT'])
 @admin_required
 def update_supermarkt_item(item_id):
     data = request.get_json()
@@ -2650,15 +2665,31 @@ def update_supermarkt_item(item_id):
     try:
         with psycopg2.connect(DATABASE_URL) as conn:
             with conn.cursor() as cursor:
+                # Überprüfe, ob pfand_id existiert
+                if pfand_id:
+                    cursor.execute("SELECT pfand_id FROM supermarkt_pfand WHERE pfand_id = %s", (pfand_id,))
+                    if cursor.fetchone() is None:
+                        return jsonify({'error': 'Ungültige Pfand ID'}), 400
+
                 cursor.execute("""
                     UPDATE supermarkt_items
                     SET barcode = %s,
                         item_name = %s,
                         price = %s,
                         category = %s,
-                        pfand_id = %s
-                        WHERE item_id = %s
-                    RETURNING item_id, barcode, item_name, price, category, created_at, updated_at, pfand_id
+                        pfand_id = %s,
+                        updated_at = CURRENT_TIMESTAMP
+                    WHERE item_id = %s
+                    RETURNING 
+                        supermarkt_items.item_id, 
+                        supermarkt_items.barcode, 
+                        supermarkt_items.item_name, 
+                        supermarkt_items.price, 
+                        supermarkt_items.category, 
+                        supermarkt_items.created_at, 
+                        supermarkt_items.updated_at, 
+                        supermarkt_items.pfand_id,
+                        (SELECT name FROM supermarkt_pfand WHERE supermarkt_pfand.pfand_id = supermarkt_items.pfand_id) AS pfand_name
                 """, (barcode, item_name, price, category, pfand_id, item_id))
                 updated_item = cursor.fetchone()
                 if updated_item:
@@ -2674,6 +2705,7 @@ def update_supermarkt_item(item_id):
     except Exception as e:
         logger.error(f"Fehler beim Aktualisieren des Supermarkt-Items: {e}")
         return jsonify({'error': 'Fehler beim Aktualisieren des Supermarkt-Items'}), 500
+
 
 @app.route('/supermarkt/items/<int:item_id>', methods=['DELETE'])
 @admin_required
