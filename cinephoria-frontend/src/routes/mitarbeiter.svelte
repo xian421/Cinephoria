@@ -1,5 +1,23 @@
 <script>
 import { navigate } from 'svelte-routing';
+import { onMount } from 'svelte';
+import { authStore } from '../stores/authStore';
+import { get } from 'svelte/store';
+
+//Schreibe eine FUnktion zu überprüfung ob der User admin ist
+
+onMount(() => {
+    const { isAdmin } = get(authStore);
+    if (!isAdmin) {
+        setTimeout(() => {
+            navigate('/');
+            //Hier nochmal timeout und seite neu laden
+            setTimeout(() => {
+                location.reload();
+            }, 500);
+        }, 500);
+    }
+});
 
     const handleSupermarktKasse = () => {
         navigate('/mitarbeiter/supermarkt');        
@@ -7,6 +25,10 @@ import { navigate } from 'svelte-routing';
 
     const handleKinoTicket = () => {
          navigate('/mitarbeiter/kino');
+    };
+
+    const handleScannen = () => {
+        navigate('/mitarbeiter/scannen');
     };
 </script>
 
@@ -68,10 +90,13 @@ import { navigate } from 'svelte-routing';
     <h1>Mitarbeiterbereich</h1>
     <div class="buttons">
         <button class="button button-supermarkt" on:click={handleSupermarktKasse}>
-            Supermarkt-Kasse
+            Supermarkt-Kasse-Daten
         </button>
         <button class="button button-kino" on:click={handleKinoTicket}>
-            Kino-Ticket
+            Kino-Ticket noch keien Logik
+        </button>
+        <button class="button button-supermarkt" on:click={handleScannen}>
+            Scannen
         </button>
     </div>
 </div>

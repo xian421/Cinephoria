@@ -46,6 +46,7 @@
     import ProtectedRoute from './components/ProtectedRoute.svelte';
 
     import { login, validateToken, fetchCinemas } from './services/api.js';
+    import { params } from 'svelte-spa-router';
 
     const minimalRoutes = ['/mitarbeiter', '/mitarbeiter/kino', '/mitarbeiter/supermarkt', '/mitarbeiter/scannen'];
 
@@ -244,15 +245,26 @@
         <Footer firstCinema={firstCinema} />
       {/if}
 
-
-        <Route path="/mitarbeiter" component={Mitarbeiter} />
-        <Route path="/mitarbeiter/kino" component={Mitarbeiterkino} />
+<!-- Supermarkt -->
+        <Route path="/mitarbeiter" let:params>
+            <ProtectedRoute admin={true}>
+                <Mitarbeiter />
+            </ProtectedRoute>
+        </Route>
+        <Route path="/mitarbeiter/kino" let:params>
+            <ProtectedRoute admin={true}>
+                <Mitarbeiterkino />
+            </ProtectedRoute>
+        </Route>
         <Route path="/mitarbeiter/supermarkt" let:params>
             <ProtectedRoute admin={true}>
                 <Mitarbeitersupermarkt />
             </ProtectedRoute>
+        </Route>         
+        <Route path="/mitarbeiter/scannen" let:params>
+            <ProtectedRoute admin={true}>
+                <Mitarbeiterscannen />
+            </ProtectedRoute>
         </Route>
-        <Route path="/mitarbeiter/scannen" component={Mitarbeiterscannen} />
-        <!-- <Route path="/mitarbeiter/supermarkt" component={Mitarbeitersupermarkt} /> -->
   </Router>
 {/if}

@@ -1,36 +1,76 @@
 <!-- mitarbeiterscannen.svelte -->
 <script>
-    import { onMount } from 'svelte';
-
-    // Fake-Daten für die Demonstration
-    const fakeProducts = {
-        '1234567890123': { name: 'Apfel', price: 0.99 },
-        '9876543210987': { name: 'Bananen', price: 1.29 },
-        '5555555555555': { name: 'Milch', price: 0.89 },
-        '4444444444444': { name: 'Brot', price: 1.49 },
-        '3333333333333': { name: 'Käse', price: 2.99 }
-    };
+    import { fetchProductByBarcode } from '../services/api';
+    import { authStore } from '../stores/authStore.js';
+    import { get } from 'svelte/store';
 
     let barcodeInput = '';
     let scannedItems = [];
     let total = 0;
+    let subtotal = 0;
+    let tax = 0;
     let errorMessage = '';
+    let paymentMethod = 'Bar'; // Standard Zahlungsmethode
+    let discount = 0; // Rabatt in Euro
 
-    function handleScan() {
+    // Konstante für Mehrwertsteuer (z.B. 19%)
+    const TAX_RATE = 0.19;
+
+    async function handleScan() {
         const barcode = barcodeInput.trim();
         if (!barcode) {
             errorMessage = 'Bitte geben Sie einen Barcode ein.';
             return;
         }
 
-        const product = fakeProducts[barcode];
-        if (product) {
-            scannedItems = [...scannedItems, { ...product, barcode }];
-            total += product.price;
-            errorMessage = '';
-            barcodeInput = '';
-        } else {
-            errorMessage = 'Artikel nicht gefunden.';
+        const token = get(authStore).token;
+        try {
+            const data = await fetchProductByBarcode(token, barcode);
+            const product = data; // API gibt das gesamte Objekt zurück
+
+            if (product) {
+                const itemName = product.item_name;
+                const itemPrice = parseFloat(product.price) || 0;
+                const pfandName = product.pfand_name || null;
+                const pfandPrice = parseFloat(product.amount) || 0;
+
+                const totalPrice = itemPrice + pfandPrice;
+
+                const existingItem = scannedItems.find(item => item.item_id === product.item_id);
+
+                if (existingItem) {
+                    existingItem.quantity += 1;
+                    existingItem.totalPrice += totalPrice;
+                } else {
+                    scannedItems = [
+                        ...scannedItems,
+                        { 
+                            item_id: product.item_id,
+                            name: itemName,
+                            price: itemPrice,
+                            pfandName: pfandName,
+                            pfandPrice: pfandPrice,
+                            quantity: 1,
+                            totalPrice: totalPrice
+                        }
+                    ];
+                }
+
+                // Aktualisiere Subtotal
+                subtotal += itemPrice;
+                // Extrahiere die MwSt. aus der Zwischensumme
+                tax = subtotal - (subtotal / (1 + TAX_RATE));
+                // Berechne den Gesamtbetrag
+                total = subtotal + pfandTotal() - discount;
+
+                errorMessage = '';
+                barcodeInput = '';
+            } else {
+                errorMessage = 'Artikel nicht gefunden.';
+            }
+        } catch (error) {
+            console.error('Fehler beim Scannen des Artikels:', error);
+            errorMessage = error.message || 'Fehler beim Scannen des Artikels.';
         }
     }
 
@@ -43,8 +83,42 @@
     function resetScan() {
         scannedItems = [];
         total = 0;
+        subtotal = 0;
+        tax = 0;
+        discount = 0;
         errorMessage = '';
         barcodeInput = '';
+    }
+
+    function applyDiscount() {
+        if (discount < 0) {
+            discount = 0;
+        } else if (discount > (subtotal + tax)) {
+            discount = subtotal + tax;
+        }
+        total = subtotal + pfandTotal() - discount;
+    }
+
+    function pfandTotal() {
+        return scannedItems.reduce((acc, item) => acc + (item.pfandPrice * item.quantity), 0);
+    }
+
+    function removeItem(item_id) {
+        const item = scannedItems.find(i => i.item_id === item_id);
+        if (item) {
+            subtotal -= item.price * item.quantity;
+            tax = subtotal - (subtotal / (1 + TAX_RATE));
+            total -= (item.price * item.quantity) + (item.pfandPrice * item.quantity);
+            scannedItems = scannedItems.filter(i => i.item_id !== item_id);
+        }
+    }
+
+    function changePaymentMethod(method) {
+        paymentMethod = method;
+    }
+
+    function printReceipt() {
+        window.print();
     }
 </script>
 
@@ -131,11 +205,12 @@
         border-bottom: none;
     }
 
-    .total {
+    .subtotal, .tax, .discount, .total {
         display: flex;
         justify-content: space-between;
         font-weight: bold;
         font-size: 1.2rem;
+        margin-top: 10px;
     }
 
     .actions {
@@ -152,10 +227,30 @@
         border-radius: 5px;
         cursor: pointer;
         transition: background-color 0.3s;
+        margin: 0 5px;
     }
 
     .actions button:hover {
         background-color: #c82333;
+    }
+
+    .payment-method {
+        margin-top: 20px;
+    }
+
+    .payment-method label {
+        margin-right: 10px;
+    }
+
+    @media print {
+        .scanner, .actions, .payment-method, .error {
+            display: none;
+        }
+
+        .receipt {
+            border: none;
+            background-color: white;
+        }
     }
 </style>
 
@@ -182,13 +277,40 @@
         <div class="receipt-items">
             {#each scannedItems as item, index}
                 <div class="receipt-item">
-                    <span>{index + 1}. {item.name}</span>
-                    <span>{item.price.toFixed(2)} €</span>
+                    <span>{index + 1}. {item.name} x{item.quantity}</span>
+                    <span>{(item.price * item.quantity).toFixed(2)} €</span>
                 </div>
+                {#if item.pfandPrice > 0}
+                    <div class="receipt-item" style="margin-left: 20px;">
+                        <span>Pfand für {item.name} x{item.quantity}</span>
+                        <span>{(item.pfandPrice * item.quantity).toFixed(2)} €</span>
+                    </div>
+                {/if}
             {/each}
             {#if scannedItems.length === 0}
                 <div style="text-align: center; color: #777;">Keine Artikel gescannt.</div>
             {/if}
+        </div>
+        <div class="subtotal">
+            <span>Zwischensumme:</span>
+            <span>{subtotal.toFixed(2)} €</span>
+        </div>
+        <div class="tax">
+            <span>MwSt. (19%):</span>
+            <span>{tax.toFixed(2)} €</span>
+        </div>
+        <div class="discount">
+            <span>Rabatt:</span>
+            <span>
+                <input 
+                    type="number" 
+                    step="0.01" 
+                    bind:value={discount} 
+                    on:change={applyDiscount} 
+                    placeholder="Rabatt in €" 
+                    style="width: 100px; padding: 5px; border: 1px solid #ddd; border-radius: 5px;"
+                /> € 
+            </span>
         </div>
         <div class="total">
             <span>Gesamt:</span>
@@ -197,8 +319,20 @@
     </div>
 
     {#if scannedItems.length > 0}
+        <div class="payment-method">
+            <label for="payment">Zahlungsmethode:</label>
+            <select id="payment" bind:value={paymentMethod}>
+                <option value="Bar">Bar</option>
+                <option value="Kreditkarte">Kreditkarte</option>
+                <option value="Debitkarte">Debitkarte</option>
+                <option value="PayPal">PayPal</option>
+                <option value="Andere">Andere</option>
+            </select>
+        </div>
+
         <div class="actions">
             <button on:click={resetScan}>Neuer Scan</button>
+            <button on:click={printReceipt}>Quittung Drucken</button>
         </div>
     {/if}
 </div>

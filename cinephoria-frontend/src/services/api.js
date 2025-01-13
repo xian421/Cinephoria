@@ -1327,3 +1327,18 @@ export async function updateSupermarketItem(token, item_id, barcode, item_name, 
     }
     return response.json();
 }
+
+export async function fetchProductByBarcode(token, barcode) {
+    const response = await fetch(`${API_BASE_URL}/supermarkt/items/barcode/${barcode}`, {
+        headers: {
+            'Authorization': `Bearer ${token}`
+        }
+    });
+
+    if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Netzwerkantwort war nicht ok');
+    }
+
+    return response.json();
+}

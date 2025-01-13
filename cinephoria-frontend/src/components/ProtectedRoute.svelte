@@ -24,6 +24,9 @@
                 confirmButtonText: "OK",
             });
             navigate('/');
+            setTimeout(() => {
+                location.reload();
+            }, 500);
         } else if (admin && !isAdmin) {
             await Swal.fire({
                 title: "Zugriff verweigert",
@@ -32,6 +35,9 @@
                 confirmButtonText: "OK",
             });
             navigate('/unauthorized');
+            setTimeout(() => {
+                location.reload();
+            }, 500);
         }
     });
 </script>
