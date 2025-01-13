@@ -2738,7 +2738,7 @@ def get_supermarkt_item_by_barcode(barcode):
                         sp.pfand_id, sp.amount, sp.name AS pfand_name, sp.description
                     FROM supermarkt_items si
                     LEFT JOIN supermarkt_pfand sp ON si.pfand_id = sp.pfand_id
-                    WHERE si.barcode = '%s'
+                    WHERE si.barcode = %s
                 """, (barcode,))
                 item = cursor.fetchone()
                 if item:
