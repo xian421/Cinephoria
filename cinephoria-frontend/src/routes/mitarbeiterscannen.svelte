@@ -16,6 +16,18 @@
     // Konstante für Mehrwertsteuer (z.B. 19%)
     const TAX_RATE = 0.19;
 
+    // Funktion zur Berechnung von Subtotal, MwSt. und Total
+    function computeTotals() {
+        subtotal = scannedItems.reduce((acc, item) => acc + (item.price * item.quantity), 0);
+        tax = subtotal * TAX_RATE;
+        total = subtotal + pfandTotal() - discount;
+    }
+
+    // Funktion zur Berechnung der gesamten Pfandbeträge
+    function pfandTotal() {
+        return scannedItems.reduce((acc, item) => acc + (item.pfandPrice * item.quantity), 0);
+    }
+
     async function handleScan() {
         const barcode = barcodeInput.trim();
         if (!barcode) {
@@ -34,14 +46,15 @@
                 const pfandName = product.pfand_name || null;
                 const pfandPrice = parseFloat(product.amount) || 0;
 
-                const totalPrice = itemPrice + pfandPrice;
+                // Prüfen, ob der Artikel bereits gescannt wurde
+                const existingItemIndex = scannedItems.findIndex(item => item.item_id === product.item_id);
 
-                const existingItem = scannedItems.find(item => item.item_id === product.item_id);
-
-                if (existingItem) {
-                    existingItem.quantity += 1;
-                    existingItem.totalPrice += totalPrice;
+                if (existingItemIndex !== -1) {
+                    // Artikel existiert bereits, Menge und Gesamtpreis erhöhen
+                    scannedItems[existingItemIndex].quantity += 1;
+                    scannedItems[existingItemIndex].totalPrice += (itemPrice + pfandPrice);
                 } else {
+                    // Neuer Artikel hinzufügen
                     scannedItems = [
                         ...scannedItems,
                         { 
@@ -51,17 +64,16 @@
                             pfandName: pfandName,
                             pfandPrice: pfandPrice,
                             quantity: 1,
-                            totalPrice: totalPrice
+                            totalPrice: itemPrice + pfandPrice
                         }
                     ];
                 }
 
-                // Aktualisiere Subtotal
-                subtotal += itemPrice;
-                // Extrahiere die MwSt. aus der Zwischensumme
-                tax = subtotal - (subtotal / (1 + TAX_RATE));
-                // Berechne den Gesamtbetrag
-                total = subtotal + pfandTotal() - discount;
+                // Reaktive Aktualisierung des Arrays
+                scannedItems = [...scannedItems];
+
+                // Berechnungen aktualisieren
+                computeTotals();
 
                 errorMessage = '';
                 barcodeInput = '';
@@ -91,25 +103,20 @@
     }
 
     function applyDiscount() {
+        // Rabatt nicht negativ und nicht größer als subtotal + tax
         if (discount < 0) {
             discount = 0;
         } else if (discount > (subtotal + tax)) {
             discount = subtotal + tax;
         }
-        total = subtotal + pfandTotal() - discount;
-    }
-
-    function pfandTotal() {
-        return scannedItems.reduce((acc, item) => acc + (item.pfandPrice * item.quantity), 0);
+        computeTotals();
     }
 
     function removeItem(item_id) {
         const item = scannedItems.find(i => i.item_id === item_id);
         if (item) {
-            subtotal -= item.price * item.quantity;
-            tax = subtotal - (subtotal / (1 + TAX_RATE));
-            total -= (item.price * item.quantity) + (item.pfandPrice * item.quantity);
             scannedItems = scannedItems.filter(i => i.item_id !== item_id);
+            computeTotals();
         }
     }
 
@@ -236,10 +243,24 @@
 
     .payment-method {
         margin-top: 20px;
+        text-align: center;
     }
 
     .payment-method label {
         margin-right: 10px;
+    }
+
+    .remove-button {
+        background-color: transparent;
+        border: none;
+        color: red;
+        cursor: pointer;
+        font-size: 0.9rem;
+        margin-left: 10px;
+    }
+
+    .remove-button:hover {
+        text-decoration: underline;
     }
 
     @media print {
@@ -286,6 +307,9 @@
                         <span>{(item.pfandPrice * item.quantity).toFixed(2)} €</span>
                     </div>
                 {/if}
+                <div class="receipt-item">
+                    <button class="remove-button" on:click={() => removeItem(item.item_id)}>Artikel entfernen</button>
+                </div>
             {/each}
             {#if scannedItems.length === 0}
                 <div style="text-align: center; color: #777;">Keine Artikel gescannt.</div>
