@@ -328,7 +328,7 @@ def read_qrcode(token):
                     "email": booking['email'],
                     "nachname": booking['nachname'],
                     "vorname": booking['vorname'],
-                    "qr_code": booking['qr_code'],
+                    "qr_token": booking['qr_token'],
                     "movies": list(movies.values())  # Liste der Filme mit zugehörigen Sitzplätzen
                 }
 
