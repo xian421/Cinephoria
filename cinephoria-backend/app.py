@@ -179,6 +179,7 @@ def capture_paypal_order():
         if capture_data.get("status") == "COMPLETED":
             # 3) QR-Token generieren
             qr_token = str(uuid.uuid4())
+            qr_seite = str(uuid.uuid4())
 
             # 4) Buchung in DB anlegen (inkl. qr_token)
             with psycopg2.connect(DATABASE_URL) as conn:
@@ -193,9 +194,10 @@ def capture_paypal_order():
                             vorname,
                             nachname,
                             email,
-                            qr_token
+                            qr_token,
+                            qr_seite
                         )
-                        VALUES (%s, CURRENT_TIMESTAMP, 'completed', %s, %s, %s, %s, %s, %s)
+                        VALUES (%s, CURRENT_TIMESTAMP, 'completed', %s, %s, %s, %s, %s, %s, %s)
                         RETURNING booking_id
                     """, (
                         user_id, 
@@ -204,7 +206,8 @@ def capture_paypal_order():
                         vorname,
                         nachname,
                         email,
-                        qr_token
+                        qr_token,
+                        qr_seite
                     ))
                     booking_id = cursor.fetchone()[0]
 
@@ -227,7 +230,7 @@ def capture_paypal_order():
             return jsonify({
                 "message": "Payment captured and booking completed",
                 "booking_id": booking_id,
-                "qr_token": qr_token  # Gebe den qr_token zurück
+                "qr_token": qr_seite  # Gibt qr_seite zurück nicht qr_token
             }), 200
         else:
             # Wenn PayPal nicht COMPLETED ist, dann war etwas mit der Zahlung nicht in Ordnung
@@ -249,9 +252,9 @@ def read_qrcode(token):
                 # Zuerst die Buchung anhand des QR-Tokens abrufen
                 cursor.execute("""
                     SELECT booking_id, user_id, booking_time, payment_status, total_amount, 
-                           created_at, paypal_order_id, email, nachname, vorname
+                           created_at, paypal_order_id, email, nachname, vorname, qr_code
                     FROM bookings
-                    WHERE qr_token = %s
+                    WHERE qr_seite = %s
                 """, (token,))
                 booking = cursor.fetchone()
 
@@ -325,6 +328,7 @@ def read_qrcode(token):
                     "email": booking['email'],
                     "nachname": booking['nachname'],
                     "vorname": booking['vorname'],
+                    "qr_code": booking['qr_code'],
                     "movies": list(movies.values())  # Liste der Filme mit zugehörigen Sitzplätzen
                 }
 
