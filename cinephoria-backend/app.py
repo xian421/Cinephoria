@@ -252,7 +252,7 @@ def read_qrcode(token):
                 # Zuerst die Buchung anhand des QR-Tokens abrufen
                 cursor.execute("""
                     SELECT booking_id, user_id, booking_time, payment_status, total_amount, 
-                           created_at, paypal_order_id, email, nachname, vorname, qr_code
+                           created_at, paypal_order_id, email, nachname, vorname, qr_token
                     FROM bookings
                     WHERE qr_seite = %s
                 """, (token,))
