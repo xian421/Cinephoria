@@ -20,7 +20,7 @@ export const login = async (email, password) => {
 };
 
 export const validateToken = async (token) => {
-    console.log('hierlöschenspäter', token); //HIER löschen
+    console.log('hierlöschenspäter', token); //HIER löschen    
     const response = await fetch(`${API_BASE_URL}/validate-token`, {
         method: "POST",
         headers: {

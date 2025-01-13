@@ -58,7 +58,7 @@
 
     async function generateQRCode(bookingData: any) {
         try {
-            const qrContent = JSON.stringify(bookingData);
+            const qrContent = bookingData.qr_token;
             qrCodeDataUrl = await QRCode.toDataURL(qrContent);
         } catch {
             qrError = 'QR-Code konnte nicht generiert werden.';
