@@ -2742,8 +2742,22 @@ def get_supermarkt_item_by_barcode(barcode):
                 """, (barcode,))
                 item = cursor.fetchone()
                 if item:
-                    return jsonify(dict(item)), 200
+                    item_dict = dict(item)
+                    # Setze 'pfand_name' auf 'Kein Pfand', wenn 'pfand_id' NULL ist
+                    if item_dict['pfand_id'] is None:
+                        item_dict['pfand_name'] = 'Kein Pfand'
+                        item_dict['amount'] = 0.0
+                    else:
+                        # Sicherstellen, dass 'amount' ein Float ist
+                        item_dict['amount'] = float(item_dict['amount'])
+                    
+                    # Sicherstellen, dass 'price' ein Float ist
+                    item_dict['price'] = float(item_dict['price'])
+                    
+                    logger.info(f"Found item: {item_dict}")
+                    return jsonify(item_dict), 200
                 else:
+                    logger.info("Artikel nicht gefunden")
                     return jsonify({'error': 'Artikel nicht gefunden'}), 404
     except Exception as e:
         logger.error(f"Fehler beim Abrufen des Supermarkt-Items: {e}")
