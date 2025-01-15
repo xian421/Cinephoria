@@ -2869,8 +2869,8 @@ def delete_pfand_option(pfand_id):
 
 # Ergänze dies in deiner bestehenden Backend-Datei
 
-@app.route('/employee/read/qrcode/<token>', methods=['GET'])
-def employee_read_qrcode(token):
+@app.route('/read/qrcode/<token>', methods=['GET'])
+def read_qrcode(token):
     try:
         with psycopg2.connect(DATABASE_URL) as conn:
             with conn.cursor(cursor_factory=RealDictCursor) as cursor:
@@ -2903,8 +2903,7 @@ def employee_read_qrcode(token):
                         sh.movie_id,
                         sh.start_time,
                         sh.end_time,
-                        sc.name AS kinosaal,
-                        m.title AS movie_title
+                        sc.name AS kinosaal
                     FROM booking_seats bs
                     JOIN seats s ON s.seat_id = bs.seat_id
                     JOIN seat_types st ON st.seat_type_id = s.seat_type_id
@@ -2912,7 +2911,6 @@ def employee_read_qrcode(token):
                     LEFT JOIN discounts d ON d.discount_id = std.discount_id
                     JOIN showtimes sh ON sh.showtime_id = bs.showtime_id
                     JOIN screens sc ON sc.screen_id = sh.screen_id
-                    JOIN movies m ON m.movie_id = sh.movie_id
                     WHERE bs.booking_id = %s
                 """, (booking_id,))
                 seats = cursor.fetchall()
@@ -2924,7 +2922,6 @@ def employee_read_qrcode(token):
                     if movie_id not in movies:
                         movies[movie_id] = {
                             "movie_id": movie_id,
-                            "title": seat['movie_title'],
                             "start_time": seat['start_time'].isoformat(),
                             "end_time": seat['end_time'].isoformat(),
                             "kinosaal": seat['kinosaal'],
@@ -2955,15 +2952,14 @@ def employee_read_qrcode(token):
                     "nachname": booking['nachname'],
                     "vorname": booking['vorname'],
                     "qr_token": booking['qr_token'],
-                    "movies": list(movies.values())  # Liste der Filme mit Sitzplätzen
+                    "movies": list(movies.values())  # Liste der Filme mit zugehörigen Sitzplätzen
                 }
 
         return jsonify(booking_data), 200
 
     except Exception as e:
-        logging.error(f"Fehler in employee_read_qrcode: {e}")
+        logging.error(f"Fehler in read_qrcode: {e}")
         return jsonify({"error": "Interner Serverfehler"}), 500
-
 
 
 
