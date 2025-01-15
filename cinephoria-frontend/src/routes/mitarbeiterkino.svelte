@@ -363,7 +363,7 @@
 
     .toggle-dark-btn {
         margin-top: 1rem;
-        padding: 0.5rem 1rem;
+        padding: 0.8rem 2rem;
         background: none;
         border: 2px solid currentColor;
         border-radius: 5px;
@@ -386,6 +386,9 @@
         border-radius: 8px;
         box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
         transition: background-color 0.3s, border-color 0.3s;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
     }
 
     .dark-mode .scanner-container {
@@ -398,16 +401,25 @@
         display: flex;
         flex-direction: column;
         align-items: stretch;
-        margin-bottom: 1.5rem;
+        width: 100%;
+    }
+
+    .qr-video {
+        width: 100%;
+        max-width: 400px;
+        height: auto;
+        border: 2px solid #2ecc71;
+        border-radius: 5px;
+        margin-bottom: 1rem;
     }
 
     .qr-input {
         width: 100%;
-        padding: 0.8rem;
+        padding: 1rem;
         margin-bottom: 1rem;
         border: 1px solid #cccccc;
         border-radius: 5px;
-        font-size: 1rem;
+        font-size: 1.2rem;
         outline: none;
         transition: border-color 0.3s;
     }
@@ -426,13 +438,13 @@
         display: flex;
         align-items: center;
         justify-content: center;
-        padding: 0.8rem;
+        padding: 1rem;
         background-color: #2ecc71;
         color: #ffffff;
         border: none;
         border-radius: 5px;
         cursor: pointer;
-        font-size: 1rem;
+        font-size: 1.2rem;
         transition: background-color 0.3s, transform 0.3s;
     }
 
@@ -451,8 +463,8 @@
         border: 4px solid #f3f3f3;
         border-top: 4px solid #ffffff;
         border-radius: 50%;
-        width: 18px;
-        height: 18px;
+        width: 24px;
+        height: 24px;
         animation: spin 1s linear infinite;
         margin-right: 0.5rem;
     }
@@ -465,7 +477,7 @@
     /* Ladeindikator */
     .loading {
         text-align: center;
-        font-size: 1rem;
+        font-size: 1.2rem;
         color: #666666;
         margin-top: 1rem;
     }
@@ -489,7 +501,7 @@
 
     .progress {
         width: 70%; /* Dynamisch anpassen */
-        height: 10px;
+        height: 12px;
         background-color: #2ecc71;
         animation: loading 2s infinite;
     }
@@ -503,10 +515,11 @@
     /* Buchungsdetails */
     .booking-details {
         margin-top: 1.5rem;
+        width: 100%;
     }
 
     .booking-details h2 {
-        font-size: 1.5rem;
+        font-size: 1.8rem;
         margin-bottom: 1rem;
         color: inherit;
         text-align: center;
@@ -516,8 +529,8 @@
         background: #ffffff;
         border: 1px solid #eeeeee;
         border-radius: 5px;
-        padding: 1rem;
-        margin-bottom: 1rem;
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
         box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
         transition: background-color 0.3s, border-color 0.3s;
     }
@@ -528,16 +541,16 @@
     }
 
     .movie-card h3 {
-        font-size: 1.2rem;
+        font-size: 1.5rem;
         color: #2ecc71;
-        margin-bottom: 0.5rem;
+        margin-bottom: 0.8rem;
     }
 
     .movie-card p {
-        margin: 0.3rem 0;
+        margin: 0.5rem 0;
         color: #555555;
-        line-height: 1.4;
-        font-size: 0.9rem;
+        line-height: 1.6;
+        font-size: 1rem;
     }
 
     .dark-mode .movie-card p {
@@ -546,7 +559,7 @@
 
     .movie-card h4 {
         margin-top: 1rem;
-        font-size: 1rem;
+        font-size: 1.1rem;
         color: #333333;
     }
 
@@ -566,12 +579,12 @@
     .seat-item {
         display: flex;
         align-items: center;
-        padding: 0.3rem 0.6rem;
+        padding: 0.5rem 1rem;
         border-radius: 4px;
         color: #ffffff;
-        font-size: 0.8rem;
+        font-size: 1rem;
         position: relative;
-        min-width: 50px;
+        min-width: 60px;
         justify-content: center;
         transition: transform 0.2s;
     }
@@ -586,12 +599,13 @@
 
     /* Status-Indikator */
     .status-indicator {
-        padding: 0.5rem;
+        padding: 0.8rem;
         border-radius: 5px;
         text-align: center;
         margin-bottom: 1rem;
         font-weight: bold;
         color: #ffffff;
+        font-size: 1.2rem;
     }
 
     .status-indicator.green {
@@ -612,23 +626,23 @@
         text-align: center;
         font-weight: bold;
         margin-top: 1rem;
-        font-size: 1rem;
+        font-size: 1.2rem;
     }
 
     /* Zurück-Button */
     .back-btn {
         display: block;
         margin: 1.5rem auto 0;
-        padding: 0.8rem 1.5rem;
+        padding: 1rem 2rem;
         background: #dddddd;
         color: #333333;
         border: none;
         border-radius: 5px;
         cursor: pointer;
-        font-size: 1rem;
+        font-size: 1.2rem;
         transition: background-color 0.3s, transform 0.3s;
         width: 100%;
-        max-width: 200px;
+        max-width: 250px;
     }
 
     .dark-mode .back-btn {
@@ -649,16 +663,16 @@
     .new-scan-btn {
         display: block;
         margin: 1rem auto 0;
-        padding: 0.8rem 1.5rem;
+        padding: 1rem 2rem;
         background: #2ecc71;
         color: #ffffff;
         border: none;
         border-radius: 5px;
         cursor: pointer;
-        font-size: 1rem;
+        font-size: 1.2rem;
         transition: background-color 0.3s, transform 0.3s;
         width: 100%;
-        max-width: 200px;
+        max-width: 250px;
     }
 
     .new-scan-btn:hover {
@@ -666,25 +680,165 @@
         transform: scale(1.02);
     }
 
-    /* Video-Element für QR-Scanner */
-    .qr-video {
-        width: 100%;
-        height: auto;
-        border: 2px solid #2ecc71;
-        border-radius: 5px;
-        margin-bottom: 1rem;
+    /* Responsive Design */
+    @media (max-width: 768px) {
+        .header-text {
+            font-size: 2.5rem;
+        }
+
+        .tagline {
+            font-size: 1.2rem;
+        }
+
+        .toggle-dark-btn {
+            padding: 0.8rem 2rem;
+            font-size: 1.2rem;
+        }
+
+        .scanner-container {
+            padding: 1.5rem;
+        }
+
+        .qr-video {
+            max-width: 100%;
+            height: auto;
+        }
+
+        .qr-input {
+            padding: 1.2rem;
+            font-size: 1.4rem;
+        }
+
+        .submit-btn {
+            padding: 1.2rem;
+            font-size: 1.4rem;
+        }
+
+        .spinner {
+            width: 24px;
+            height: 24px;
+        }
+
+        .loading {
+            font-size: 1.4rem;
+        }
+
+        .progress {
+            height: 14px;
+        }
+
+        .booking-details h2 {
+            font-size: 2rem;
+        }
+
+        .movie-card {
+            padding: 2rem;
+        }
+
+        .movie-card h3 {
+            font-size: 1.8rem;
+        }
+
+        .movie-card p {
+            font-size: 1.2rem;
+        }
+
+        .movie-card h4 {
+            font-size: 1.3rem;
+        }
+
+        .seat-item {
+            min-width: 70px;
+            padding: 0.6rem 1.2rem;
+            font-size: 1.1rem;
+        }
+
+        .status-indicator {
+            font-size: 1.4rem;
+        }
+
+        .error {
+            font-size: 1.4rem;
+        }
+
+        .back-btn,
+        .new-scan-btn {
+            padding: 1.2rem 2.5rem;
+            font-size: 1.4rem;
+            max-width: 300px;
+        }
     }
 
-    /* Responsive Design */
-    @media (max-width: 600px) {
+    @media (max-width: 480px) {
+        .header-text {
+            font-size: 2rem;
+        }
+
+        .tagline {
+            font-size: 1rem;
+        }
+
+        .toggle-dark-btn {
+            padding: 0.6rem 1.5rem;
+            font-size: 1rem;
+        }
+
         .scanner-container {
             padding: 1rem;
         }
-        .movie-card {
-            padding: 0.5rem;
+
+        .qr-input {
+            padding: 1rem;
+            font-size: 1.2rem;
         }
+
+        .submit-btn {
+            padding: 1rem;
+            font-size: 1.2rem;
+        }
+
+        .loading {
+            font-size: 1.2rem;
+        }
+
+        .booking-details h2 {
+            font-size: 1.6rem;
+        }
+
+        .movie-card {
+            padding: 1.5rem;
+        }
+
+        .movie-card h3 {
+            font-size: 1.5rem;
+        }
+
+        .movie-card p {
+            font-size: 1rem;
+        }
+
+        .movie-card h4 {
+            font-size: 1.1rem;
+        }
+
+        .seat-item {
+            min-width: 60px;
+            padding: 0.5rem 1rem;
+            font-size: 1rem;
+        }
+
+        .status-indicator {
+            font-size: 1.2rem;
+        }
+
+        .error {
+            font-size: 1.2rem;
+        }
+
         .back-btn,
         .new-scan-btn {
+            padding: 1rem 2rem;
+            font-size: 1.2rem;
             max-width: 100%;
         }
     }
