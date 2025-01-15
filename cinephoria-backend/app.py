@@ -2869,7 +2869,7 @@ def delete_pfand_option(pfand_id):
 
 # Ergänze dies in deiner bestehenden Backend-Datei
 
-@app.route('/read/qrcode/<token>', methods=['GET'])
+@app.route('/mitarbeiter/read/qrcode/<token>', methods=['GET'])
 def read_qrcode(token):
     try:
         with psycopg2.connect(DATABASE_URL) as conn:
