@@ -1342,3 +1342,21 @@ export async function fetchProductByBarcode(token, barcode) {
 
     return response.json();
 }
+
+
+
+
+
+// Neue Funktion für Mitarbeiter
+export async function fetchEmployeeQRCodeData(qrcodetoken) {
+    const response = await fetch(`${API_BASE_URL}/mitarbeiter/read/qrcode/${qrcodetoken}`, {
+        headers: {
+            "Content-Type": "application/json",
+        },
+    });
+    const data = await response.json();
+    if (!response.ok) {
+        throw new Error(data.error || 'Fehler beim Laden des QR-Codes.');
+    }
+    return data;
+}

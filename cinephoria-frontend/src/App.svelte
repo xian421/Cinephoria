@@ -35,6 +35,7 @@
     import Mitarbeiterkino from './routes/mitarbeiterkino.svelte';
     import Mitarbeitersupermarkt from './routes/mitarbeitersupermarkt.svelte';
     import Mitarbeiterscannen from './routes/mitarbeiterscannen.svelte';
+    import Mitarbeiterpfand from './routes/mitarbeiterpfand.svelte';
     import './global.css';
     
 
@@ -48,7 +49,7 @@
     import { login, validateToken, fetchCinemas } from './services/api.js';
     import { params } from 'svelte-spa-router';
 
-    const minimalRoutes = ['/mitarbeiter', '/mitarbeiter/kino', '/mitarbeiter/supermarkt', '/mitarbeiter/scannen'];
+    const minimalRoutes = ['/mitarbeiter', '/mitarbeiter/kino', '/mitarbeiter/supermarkt', '/mitarbeiter/scannen', '/mitarbeiter/pfand'];
 
     $: isMinimalRoute = minimalRoutes.includes(window.location.pathname);
 
@@ -264,6 +265,11 @@
         <Route path="/mitarbeiter/scannen" let:params>
             <ProtectedRoute admin={true}>
                 <Mitarbeiterscannen />
+            </ProtectedRoute>
+        </Route>
+        <Route path="/mitarbeiter/pfand" let:params>
+            <ProtectedRoute admin={true}>
+                <Mitarbeiterpfand />
             </ProtectedRoute>
         </Route>
   </Router>
