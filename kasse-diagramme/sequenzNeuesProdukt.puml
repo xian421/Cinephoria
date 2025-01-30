@@ -1,0 +1,27 @@
+@startuml
+actor User
+
+participant "mitarbeitersupermarkt.svelte" as MS
+participant "Modal.svelte" as Modal
+participant "ProductForm.svelte" as PF
+participant "productService.js" as PS
+participant "api.js" as API
+participant "productStore.js" as ProductStore
+participant "notifications.js" as Notifications
+
+== Hinzufügen eines neuen Produkts ==
+User -> MS: Klick auf "Produkt hinzufügen"
+MS -> Modal: Öffne Modal mit ProductForm
+Modal -> PF: Anzeige des Formulars
+User -> PF: Ausfüllen und Absenden des Formulars
+PF -> MS: Submit-Event mit Produktdaten
+MS -> PS: addProduct(product, pfandOptions)
+PS -> PS: validateProduct(product, pfandOptions)
+PS -> API: addSupermarketItem(...)
+API --> PS: Hinzugefügtes Produkt
+PS -> ProductStore: addProductToStore(addedItem)
+PS --> MS: Produkt hinzugefügt
+MS -> Notifications: showSuccessAlert("Artikel erfolgreich hinzugefügt!")
+MS -> Modal: Schließe Modal
+MS --> User
+@enduml

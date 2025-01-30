@@ -1,0 +1,29 @@
+@startuml
+actor User
+
+participant "ProductList.svelte" as PL
+participant "mitarbeitersupermarkt.svelte" as MS
+participant "Modal.svelte" as Modal
+participant "ProductForm.svelte" as PF
+participant "productService.js" as PS
+participant "api" as API
+participant "productStore.js" as ProductStore
+participant "notifications.js" as Notifications
+
+== Bearbeiten eines bestehenden Produkts ==
+User -> PL: Klick auf "Bearbeiten" Icon
+PL -> MS: onEdit(product)
+MS -> Modal: Öffne Modal mit ProductForm (edit)
+Modal -> PF: Anzeige des Formulars mit Produktdaten
+User -> PF: Ändern und Absenden des Formulars
+PF -> MS: Submit-Event mit aktualisierten Produktdaten
+MS -> PS: updateProduct(product, pfandOptions)
+PS -> PS: validateProduct(product, pfandOptions)
+PS -> API: updateSupermarketItem(...)
+API --> PS: Aktualisiertes Produkt
+PS -> ProductStore: updateProductInStore(updatedItem)
+PS --> MS: Produkt aktualisiert
+MS -> Notifications: showSuccessAlert("Artikel erfolgreich aktualisiert!")
+MS -> Modal: Schließe Modal
+MS --> User
+@enduml

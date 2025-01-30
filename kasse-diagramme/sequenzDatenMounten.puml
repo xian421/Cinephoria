@@ -1,0 +1,24 @@
+@startuml
+actor User
+
+participant "mitarbeitersupermarkt.svelte" as MS
+participant "productService.js" as PS
+participant "api" as API
+participant "productStore.js" as ProductStore
+participant "pfandStore.js" as PfandStore
+participant "notifications.js" as Notifications
+
+== Laden der Daten beim Mounten ==
+User -> MS: Seite laden
+MS -> PS: loadAllProducts()
+PS -> API: fetchSupermarketitems()
+API --> PS: Produktdaten
+PS -> ProductStore: setProducts(data.items)
+PS -> PS: loadPfandOptions()
+PS -> API: fetchPfandOptions()
+API --> PS: Pfandoptionen
+PS -> PfandStore: setPfandOptions(data.pfand_options)
+PS --> MS: Daten geladen
+MS -> Notifications: showSuccessAlert("Daten erfolgreich geladen")
+MS --> User
+@enduml
