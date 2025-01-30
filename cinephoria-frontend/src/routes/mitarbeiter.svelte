@@ -93,10 +93,10 @@ onMount(() => {
             Supermarkt-Kasse-Daten
         </button>
         <button class="button button-kino" on:click={handleKinoTicket}>
-            Kino-Ticket noch keien Logik
+            Kino-Ticket Scannen
         </button>
         <button class="button button-supermarkt" on:click={handleScannen}>
-            Scannen
+            Aritel Scannen
         </button>
     </div>
-</div>
+</div>  

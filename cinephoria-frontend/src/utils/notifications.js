@@ -68,7 +68,7 @@ export function showSuccessToast(message) {
 /**
  * Zeigt eine Fehlermeldung an.
  * @param {string} message - Die Fehlermeldung, die angezeigt werden soll.
- * @returns {Promise<Swal.SweetAlertResult>} - Das Ergebnis der SweetAlert2-Instanz.
+ * @returns {Promise<import('sweetalert2').SweetAlertResult>} - Das Ergebnis der SweetAlert2-Instanz.
  */
 export function showErrorAlert(message) {
     return SwalDark.fire({
@@ -82,7 +82,7 @@ export function showErrorAlert(message) {
 /**
  * Zeigt eine Erfolgsmeldung an.
  * @param {string} message - Die Erfolgsmeldung, die angezeigt werden soll.
- * @returns {Promise<Swal.SweetAlertResult>} - Das Ergebnis der SweetAlert2-Instanz.
+ * @returns {Promise<import('sweetalert2').SweetAlertResult>} - Das Ergebnis der SweetAlert2-Instanz.
  */
 export function showSuccessAlert(message) {
     return SwalDark.fire({
@@ -90,6 +90,7 @@ export function showSuccessAlert(message) {
         text: message,
         icon: "success",
         confirmButtonText: "OK",
+        timer: 1000,
     });
 }
 
@@ -97,7 +98,7 @@ export function showSuccessAlert(message) {
  * Zeigt einen Bestätigungsdialog an.
  * @param {string} title - Der Titel des Dialogs.
  * @param {string} text - Der Text des Dialogs.
- * @returns {Promise<Swal.SweetAlertResult>} - Das Ergebnis der SweetAlert2-Instanz.
+ * @returns {Promise<import('sweetalert2').SweetAlertResult>} - Das Ergebnis der SweetAlert2-Instanz.
  */
 export function showConfirmationDialog(title, text) {
     return SwalDark.fire({
@@ -115,7 +116,7 @@ export function showConfirmationDialog(title, text) {
  * @param {string} title - Der Titel der Warnung.
  * @param {string} text - Der Text der Warnung.
  * @param {number} timer - Die Dauer der Anzeige in Millisekunden (optional).
- * @returns {Promise<Swal.SweetAlertResult>} - Das Ergebnis der SweetAlert2-Instanz.
+ * @returns {Promise<import('sweetalert2').SweetAlertResult>} - Das Ergebnis der SweetAlert2-Instanz.
  */
 export function showWarningAlert(title, text, timer = 3000) {
     return SwalDark.fire({

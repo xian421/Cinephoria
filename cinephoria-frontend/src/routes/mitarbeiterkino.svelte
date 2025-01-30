@@ -3,7 +3,7 @@
     import Swal from 'sweetalert2';
     import { fetchEmployeeQRCodeData, fetchMovieDetails } from '../services/api';
     import { onMount, onDestroy } from 'svelte';
-    import QrScanner from 'qr-scanner'; // Importiere qr-scanner
+    import QrScanner from 'qr-scanner';
 
     // TypeScript Schnittstellen
     interface Seat {
@@ -35,11 +35,11 @@
     let qrError: string | null = null;
     let isLoading: boolean = false;
 
-    // Status: 'green', 'yellow', 'red' oder null
-    let status: 'green' | 'yellow' | 'red' | null = null;
+    // Status: 'green', 'yellow', 'red', 'black' oder null
+    let status: 'green' | 'yellow' | 'red' | 'black' | null = null;
 
     // Dark Mode
-    let darkMode: boolean = false;
+    let darkMode: boolean = true;
 
     // Referenz für das Videoelement (für QR-Scanner)
     let videoElement: HTMLVideoElement;
@@ -50,12 +50,17 @@
     // State zur Steuerung des Scannens
     let isScanning: boolean = true;
 
+    // State für manuelle Eingabe
+    let manualInput: boolean = false;
+
     // Funktion zum Abrufen der Buchungsdetails
     async function fetchBookingDetails(token: string) {
         try {
             const data = await fetchEmployeeQRCodeData(token);
             bookingData = data;
             console.log('Buchungsdaten:', bookingData);
+            console.log('Starttime', bookingData.movies[0].start_time);
+            console.log('Endtime', bookingData.movies[0].end_time);
             const moviesData = bookingData.movies;
 
             const moviesWithDetails = await Promise.all(
@@ -74,15 +79,23 @@
             determineStatus();
         } catch (error: any) {
             console.error('Fehler beim Abrufen der Buchungsdetails:', error);
-            qrError = error.message || 'Ein unbekannter Fehler ist aufgetreten.';
-            status = 'red';
+            
+            if (error.code === 'INVALID_TIME') {
+                // Zeit-bedingter Fehler
+                qrError = error.message || 'Ungültige Buchungszeit.';
+                status = 'red';
+            } else {
+                // Allgemeiner Fehler
+                qrError = error.message || 'Ein unbekannter Fehler ist aufgetreten.';
+                status = 'black';
+            }
         }
     }
 
     // Funktion zur Bestimmung des Status basierend auf den Buchungsdetails
     function determineStatus() {
-        if (!bookingData || bookingData.movies.length === 0) {
-            status = 'red';
+        if (Date.now() < new Date(bookingData.movies[0].start_time).getTime() - 30 * 60 * 1000 || Date.now() > new Date(bookingData.movies[0].end_time).getTime()) {
+            status = 'red'; // Setze auf 'red', wenn die Einlösung zur falschen Zeit erfolgt
             return;
         }
 
@@ -92,9 +105,17 @@
         );
 
         if (hasDiscount) {
-            status = 'yellow';
+            if (status === 'red') {
+                status = 'red';
+            } else {
+                status = 'yellow';
+            }
         } else {
-            status = 'green';
+            if (status === 'red') {
+                status = 'red';
+            } else {
+                status = 'green';
+            }
         }
     }
 
@@ -135,24 +156,34 @@
                     timer: 1500,
                     showConfirmButton: false
                 });
-            } else {
+            } else if (status === 'red') {
                 await Swal.fire({
                     icon: 'error',
                     title: 'Ungültige Buchung',
-                    text: 'QR-Code nicht gefunden oder ungültig.',
+                    text: 'Die Buchungszeit ist ungültig.',
+                    timer: 1500,
+                    showConfirmButton: false
+                });
+            } else if (status === 'black') {
+                await Swal.fire({
+                    icon: 'error',
+                    title: 'Fehler',
+                    text: 'Ein Fehler ist bei der Buchung aufgetreten.',
                     timer: 1500,
                     showConfirmButton: false
                 });
             }
         } catch {
-            // Fehlerfall: Status bereits auf 'red' gesetzt
-            await Swal.fire({
-                icon: 'error',
-                title: 'Ungültige Buchung',
-                text: 'QR-Code nicht gefunden oder ungültig.',
-                timer: 1500,
-                showConfirmButton: false
-            });
+            // Fehlerfall: Status bereits auf 'black' gesetzt
+            if (status !== 'red') { // Nur zusätzliche Fehler behandeln
+                await Swal.fire({
+                    icon: 'error',
+                    title: 'Fehler',
+                    text: 'Ein Fehler ist bei der Buchung aufgetreten.',
+                    timer: 1500,
+                    showConfirmButton: false
+                });
+            }
         } finally {
             isLoading = false;
         }
@@ -206,6 +237,7 @@
         qrError = null;
         status = null;
         isScanning = true;
+        manualInput = false;
         initializeQrScanner();
     }
 
@@ -222,15 +254,10 @@
 
 <div class="background {darkMode ? 'dark-mode' : ''}">
     <header class="header-section">
-        <h1 class="header-text">Mitarbeiter-QR-Code-Scanner</h1>
-        <p class="tagline">Scannen Sie den QR-Code, um die Buchungsdetails anzuzeigen.</p>
-        <button on:click={() => darkMode = !darkMode} class="toggle-dark-btn">
-            {#if darkMode}
-                🌙 Dunkelmodus
-            {:else}
-                ☀️ Hellmodus
-            {/if}
-        </button>
+        <h1 class="header-text">QR-Code-Scanner</h1>
+        {#if !isScanning && !isLoading}
+            <button on:click={startNewScan} class="new-scan-btn">Neuer Scan</button>
+        {/if}
     </header>
 
     <main class="scanner-container">
@@ -238,21 +265,29 @@
             <!-- Aktiviertes Video-Element für QR-Scanner -->
             <video bind:this={videoElement} class="qr-video" aria-label="QR-Code Kamera-Stream"></video>
 
-            <input
-                type="text"
-                bind:value={qrToken}
-                placeholder="QR-Code Token eingeben"
-                class="qr-input"
-                aria-label="QR-Code Token"
-            />
-            <button type="submit" class="submit-btn" disabled={isLoading}>
-                {#if isLoading}
-                    <span class="spinner"></span> Scannen...
-                {:else}
-                    Scannen
-                {/if}
-            </button>
+            {#if manualInput}
+                <input
+                    type="text"
+                    bind:value={qrToken}
+                    placeholder="QR-Code Token eingeben"
+                    class="qr-input"
+                    aria-label="QR-Code Token"
+                />
+                <button type="submit" class="submit-btn" disabled={isLoading}>
+                    {#if isLoading}
+                        <span class="spinner"></span> Scannen...
+                    {:else}
+                        Scannen
+                    {/if}
+                </button>
+            {/if}
         </form>
+
+        {#if !manualInput && !isScanning && !isLoading}
+            <button on:click={() => manualInput = true} class="manual-input-btn" aria-label="Manuelle Eingabe">
+                Manuelleingeben
+            </button>
+        {/if}
 
         {#if isLoading}
             <div class="progress-bar">
@@ -268,8 +303,10 @@
                         ✅ Gültige Buchung
                     {:else if status === 'yellow'}
                         ⚠️ Buchung mit Rabatt
-                    {:else}
-                        ❌ Ungültige Buchung
+                    {:else if status === 'red'}
+                        ❌ Ungültige Buchung (Zeit)
+                    {:else if status === 'black'}
+                        ⚫️ Fehler bei der Buchung
                     {/if}
                 </div>
                 <h2>Ticket Informationen</h2>
@@ -299,9 +336,9 @@
                                     {#if seat.type_icon}
                                         <i class={`fas ${seat.type_icon} seat-icon`} aria-hidden="true"></i>
                                     {/if}
-                                    <span>{seat.reihe}{seat.nummer}</span>
+                                    <span>{seat.reihe}{seat.nummer} </span>
                                     {#if seat.discount_infos}
-                                        <br><small>{seat.discount_infos}</small>
+                                        <small>: {seat.discount_infos}</small>
                                     {/if}
                                 </li>
                             {/each}
@@ -313,12 +350,18 @@
             <div class="error">{qrError}</div>
         {/if}
 
-        {#if !isScanning && !isLoading}
-            <button on:click={startNewScan} class="new-scan-btn">Neuer Scan</button>
-        {/if}
-
         <button on:click={() => navigate('/mitarbeiter')} class="back-btn">Zurück zur Startseite</button>
     </main>
+
+    <footer class="footer-section">
+        <button on:click={() => darkMode = !darkMode} class="toggle-dark-btn">
+            {#if darkMode}
+                🌙 Dunkelmodus
+            {:else}
+                ☀️ Hellmodus
+            {/if}
+        </button>
+    </footer>
 </div>
 
 <style>
@@ -354,26 +397,6 @@
         font-size: 2rem;
         color: inherit;
         margin-bottom: 0.5rem;
-    }
-
-    .tagline {
-        font-size: 1rem;
-        color: inherit;
-    }
-
-    .toggle-dark-btn {
-        margin-top: 1rem;
-        padding: 0.8rem 2rem;
-        background: none;
-        border: 2px solid currentColor;
-        border-radius: 5px;
-        cursor: pointer;
-        font-size: 1rem;
-        transition: background-color 0.3s, color 0.3s;
-    }
-
-    .toggle-dark-btn:hover {
-        background-color: rgba(0, 0, 0, 0.1);
     }
 
     /* Scanner-Container */
@@ -620,6 +643,10 @@
         background-color: #e74c3c;
     }
 
+    .status-indicator.black {
+        background-color: #000000; /* Schwarzer Hintergrund */
+    }
+
     /* Fehlernachricht */
     .error {
         color: #dc3545;
@@ -680,19 +707,48 @@
         transform: scale(1.02);
     }
 
+    /* Manuelle Eingabe Button */
+    .manual-input-btn {
+        margin-top: 1rem;
+        padding: 0.5rem 1rem;
+        background: #3498db;
+        color: #ffffff;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        font-size: 1rem;
+        transition: background-color 0.3s, transform 0.3s;
+    }
+
+    .manual-input-btn:hover {
+        background-color: #2980b9;
+        transform: scale(1.05);
+    }
+
+    /* Footer-Stile */
+    .footer-section {
+        margin-top: 2rem;
+    }
+
+    /* Toggle Dark Mode Button */
+    .toggle-dark-btn {
+        padding: 0.8rem 2rem;
+        background: none;
+        border: 2px solid currentColor;
+        border-radius: 5px;
+        cursor: pointer;
+        font-size: 1rem;
+        transition: background-color 0.3s, color 0.3s;
+    }
+
+    .toggle-dark-btn:hover {
+        background-color: rgba(0, 0, 0, 0.1);
+    }
+
     /* Responsive Design */
     @media (max-width: 768px) {
         .header-text {
             font-size: 2.5rem;
-        }
-
-        .tagline {
-            font-size: 1.2rem;
-        }
-
-        .toggle-dark-btn {
-            padding: 0.8rem 2rem;
-            font-size: 1.2rem;
         }
 
         .scanner-container {
@@ -774,15 +830,6 @@
             font-size: 2rem;
         }
 
-        .tagline {
-            font-size: 1rem;
-        }
-
-        .toggle-dark-btn {
-            padding: 0.6rem 1.5rem;
-            font-size: 1rem;
-        }
-
         .scanner-container {
             padding: 1rem;
         }
@@ -840,6 +887,11 @@
             padding: 1rem 2rem;
             font-size: 1.2rem;
             max-width: 100%;
+        }
+
+        .manual-input-btn {
+            padding: 0.4rem 0.8rem;
+            font-size: 0.9rem;
         }
     }
 </style>

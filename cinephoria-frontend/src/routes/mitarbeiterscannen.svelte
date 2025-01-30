@@ -39,6 +39,7 @@
         try {
             const data = await fetchProductByBarcode(token, barcode);
             const product = data; // API gibt das gesamte Objekt zurück
+            console.log(product);
 
             if (product) {
                 const itemName = product.item_name;
