@@ -2581,6 +2581,7 @@ def update_guest_cart():
 #############################################################################################################
 
 @app.route('/supermarkt/items', methods=['GET'])
+@admin_required
 def get_supermarkt_items():
     try:
         with psycopg2.connect(DATABASE_URL) as conn:
