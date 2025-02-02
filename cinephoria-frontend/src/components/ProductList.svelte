@@ -76,7 +76,6 @@
 </table>
 
 <style>
-    /* Stellen Sie sicher, dass die Styles hier mit den Hauptstyles übereinstimmen */
     .table {
         width: 100%; 
         border-collapse: collapse;

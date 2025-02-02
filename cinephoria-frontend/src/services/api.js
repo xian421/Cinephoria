@@ -1270,7 +1270,14 @@ export async function fetchCurrentShowtimesByMovie(movieId) {
 ////////////////////////////////////////////////////////////
 //                     Supermakt API                      //
 ////////////////////////////////////////////////////////////
-// ../services/api.js
+
+
+/**
+ * Ruft alle Supermarktkassenartikel ab.
+ * @param {String} token - Das Authentifizierungs-Token.
+ * @returns {Promise<Object>} - Ein Array von Produktobjekten.
+ * @throws {Error} - Bei HTTP-Fehlern.
+ */
 
 export async function fetchSupermarketitems(token) {
     const response = await fetch(`${API_BASE_URL}/supermarkt/items`, {

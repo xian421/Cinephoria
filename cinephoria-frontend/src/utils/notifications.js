@@ -65,6 +65,30 @@ export function showSuccessToast(message) {
     });
 }
 
+
+/**
+ * Zeigt einen Error-Toast in der oberen rechten Ecke an.
+ * @param {string} message - Die Fehlermeldung, die angezeigt werden soll.
+ */
+export function showErrorToast(message) {
+    const Toast = SwalDark.mixin({
+        toast: true,
+        position: "top-end",
+        showConfirmButton: false,
+        timer: 3000,
+        timerProgressBar: true,
+        didOpen: (toast) => {
+            toast.addEventListener('mouseenter', Swal.stopTimer);
+            toast.addEventListener('mouseleave', Swal.resumeTimer);
+        }
+    });
+    Toast.fire({
+        icon: "error",
+        title: message
+    });
+}
+
+
 /**
  * Zeigt eine Fehlermeldung an.
  * @param {string} message - Die Fehlermeldung, die angezeigt werden soll.
@@ -90,7 +114,6 @@ export function showSuccessAlert(message) {
         text: message,
         icon: "success",
         confirmButtonText: "OK",
-        timer: 1000,
     });
 }
 

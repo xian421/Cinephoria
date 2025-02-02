@@ -85,9 +85,7 @@
         });
     }
 
-    /**
-     * Lädt die erforderlichen Daten (Produkte und Pfand-Optionen).
-     */
+
     async function loadData() {
         try {
             const loadedProducts = await loadAllProducts();

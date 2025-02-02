@@ -5,14 +5,34 @@ import { authStore } from '../stores/authStore.js';
 import { get } from 'svelte/store';
 import { validateProduct } from '../utils/validation.js';
 
+
+/**
+ * @typedef {Object} Product
+ * @property {number} item_id - Die eindeutige ID des Artikels.
+ * @property {string} item_name - Der Name des Artikels.
+ * @property {string} barcode - Der Barcode des Artikels.
+ * @property {string} category - Die Kategorie des Artikels.
+ * @property {string|null} description - Die Beschreibung des Artikels.
+ * @property {string|null} pfand_id - Die Pfand-ID des Artikels.
+ * @property {string|null} pfand_name - Der Name des Pfandartikels.
+ * @property {string} price - Der Preis des Artikels (als String, z.B. "3.00").
+ * @property {string} created_at - Das Erstellungsdatum des Artikels.
+ * @property {string} updated_at - Das Aktualisierungsdatum des Artikels.
+ * @property {number|null} amount - Der Pfandbetrag.
+ */
+
+
 /**
  * Lädt alle Produkte vom Server.
- * @returns {Promise<Array>} Eine Liste von Produkten.
+ * @returns {Promise<Product[]>} Eine Liste von Produkten.
  * @throws {Error} Wenn das Laden der Produkte fehlschlägt.
  */
+
 export async function loadAllProducts() {
     try {
-        const data = await fetchSupermarketitems();
+        const token = get(authStore).token;
+        const data = await fetchSupermarketitems(token);
+        console.log('fetchSupermarketitems: ' ,data);
         return data.items;
     } catch (error) {
         console.error('Fehler beim Laden der Produkte:', error);

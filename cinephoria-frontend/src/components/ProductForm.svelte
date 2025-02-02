@@ -66,9 +66,6 @@
         border-radius: 5px;
     }
 
-    .form-container input[type="checkbox"] {
-        margin-right: 10px;
-    }
 
     .form-container button {
         padding: 10px;

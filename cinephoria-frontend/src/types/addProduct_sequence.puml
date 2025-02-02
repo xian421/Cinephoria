@@ -1,0 +1,22 @@
+@startuml AddProductSequence
+actor User
+participant "ProductService" as PS
+participant "Validation" as V
+participant "AuthStore" as AS
+participant "API" as API
+
+User -> PS : addProduct(product, pfandOptions)
+PS -> V : validateProduct(product, pfandOptions)
+V --> PS : validationError
+
+alt [validationError vorhanden]
+    PS -> User : Error wird geworfen
+else [keine Validierungsfehler]
+    PS -> AS : get(authStore).token
+    AS --> PS : token zurückgegeben
+    PS -> API : addSupermarketItem(token, barcode, item_name, price, category, pfand_id)
+    API --> PS : item
+    PS -> User : Produkt erfolgreich hinzugefügt
+end
+
+@enduml
