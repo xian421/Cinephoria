@@ -1,82 +1,84 @@
 <!-- src/components/ProductList.svelte -->
 <script>
     import { formatDate } from '../utils/dateFormatter.js';
-
+  
     export let products = [];
     export let sortColumn = '';
     export let sortDirection = 'asc';
     export let onSort;
     export let onEdit;
-</script>
-
-<table class="table">
+    export let onDelete;  // Neu: Löschen-Event
+  </script>
+  
+  <table class="table">
     <thead>
-        <tr>
-            <th>Aktion</th>
-            <th on:click={() => onSort('item_name')}>
-                Name
-                {#if sortColumn === 'item_name'}
-                    <span class="sort-indicator">{sortDirection === 'asc' ? '▲' : '▼'}</span>
-                {/if}
-            </th>
-            <th on:click={() => onSort('price')}>
-                Preis
-                {#if sortColumn === 'price'}
-                    <span class="sort-indicator">{sortDirection === 'asc' ? '▲' : '▼'}</span>
-                {/if}
-            </th>
-            <th on:click={() => onSort('barcode')}>
-                Barcode
-                {#if sortColumn === 'barcode'}
-                    <span class="sort-indicator">{sortDirection === 'asc' ? '▲' : '▼'}</span>
-                {/if}
-            </th>
-            <th on:click={() => onSort('category')}>
-                Kategorie
-                {#if sortColumn === 'category'}
-                    <span class="sort-indicator">{sortDirection === 'asc' ? '▲' : '▼'}</span>
-                {/if}
-            </th>
-            <th on:click={() => onSort('pfand_id')}>
-                Pfand
-                {#if sortColumn === 'pfand_id'}
-                    <span class="sort-indicator">{sortDirection === 'asc' ? '▲' : '▼'}</span>
-                {/if}
-            </th>
-            <th on:click={() => onSort('created_at')}>
-                Erstellt am
-                {#if sortColumn === 'created_at'}
-                    <span class="sort-indicator">{sortDirection === 'asc' ? '▲' : '▼'}</span>
-                {/if}
-            </th>
-            <th on:click={() => onSort('updated_at')}>
-                Aktualisiert am
-                {#if sortColumn === 'updated_at'}
-                    <span class="sort-indicator">{sortDirection === 'asc' ? '▲' : '▼'}</span>
-                {/if}
-            </th>
-        </tr>
+      <tr>
+        <th>Aktion</th>
+        <th on:click={() => onSort('item_name')}>
+          Name
+          {#if sortColumn === 'item_name'}
+            <span class="sort-indicator">{sortDirection === 'asc' ? '▲' : '▼'}</span>
+          {/if}
+        </th>
+        <th on:click={() => onSort('price')}>
+          Preis
+          {#if sortColumn === 'price'}
+            <span class="sort-indicator">{sortDirection === 'asc' ? '▲' : '▼'}</span>
+          {/if}
+        </th>
+        <th on:click={() => onSort('barcode')}>
+          Barcode
+          {#if sortColumn === 'barcode'}
+            <span class="sort-indicator">{sortDirection === 'asc' ? '▲' : '▼'}</span>
+          {/if}
+        </th>
+        <th on:click={() => onSort('category')}>
+          Kategorie
+          {#if sortColumn === 'category'}
+            <span class="sort-indicator">{sortDirection === 'asc' ? '▲' : '▼'}</span>
+          {/if}
+        </th>
+        <th on:click={() => onSort('pfand_id')}>
+          Pfand
+          {#if sortColumn === 'pfand_id'}
+            <span class="sort-indicator">{sortDirection === 'asc' ? '▲' : '▼'}</span>
+          {/if}
+        </th>
+        <th on:click={() => onSort('created_at')}>
+          Erstellt am
+          {#if sortColumn === 'created_at'}
+            <span class="sort-indicator">{sortDirection === 'asc' ? '▲' : '▼'}</span>
+          {/if}
+        </th>
+        <th on:click={() => onSort('updated_at')}>
+          Aktualisiert am
+          {#if sortColumn === 'updated_at'}
+            <span class="sort-indicator">{sortDirection === 'asc' ? '▲' : '▼'}</span>
+          {/if}
+        </th>
+      </tr>
     </thead>
     <tbody>
-        {#each products as product (product.item_id)}
-            <tr>
-                <td>
-                    <span class="edit-icon" on:click={() => onEdit(product)} title="Produkt bearbeiten">✏️</span>
-                </td>
-                <td>{product.item_name}</td>
-                <td>{product.price} €</td>
-                <td>{product.barcode}</td>
-                <td>{product.category}</td>
-                <td>{product.pfand_id ? product.pfand_name : 'Nein'}</td>
-                <td>{formatDate(product.created_at)}</td>
-                <td>{formatDate(product.updated_at)}</td>
-            </tr>
-        {/each}
+      {#each products as product (product.item_id)}
+        <tr>
+          <td>
+            <span class="edit-icon" on:click={() => onEdit(product)} title="Produkt bearbeiten">✏️</span>
+            <span class="delete-icon" on:click={() => onDelete(product.item_id)} title="Produkt löschen">🗑️</span>
+          </td>
+          <td>{product.item_name}</td>
+          <td>{product.price} €</td>
+          <td>{product.barcode}</td>
+          <td>{product.category}</td>
+          <td>{product.pfand_id ? product.pfand_name : 'Nein'}</td>
+          <td>{formatDate(product.created_at)}</td>
+          <td>{formatDate(product.updated_at)}</td>
+        </tr>
+      {/each}
     </tbody>
-</table>
-
-<style>
-    .table {
+  </table>
+  
+  <style>
+     .table {
         width: 100%; 
         border-collapse: collapse;
         background: #fff;
@@ -129,4 +131,14 @@
     .edit-icon:hover {
         color: #0056b3;
     }
-</style>
+    .delete-icon {
+      cursor: pointer;
+      margin-left: 8px;
+      color: red;
+      font-size: 1.2rem;
+    }
+    .delete-icon:hover {
+      color: darkred;
+    }
+  </style>
+  

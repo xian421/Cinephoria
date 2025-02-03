@@ -5,11 +5,11 @@
     import ProductList from '../components/ProductList.svelte';
     import ProductForm from '../components/ProductForm.svelte';
     import Modal from '../components/Modal.svelte';
-    import { showSuccessAlert, showErrorAlert } from '../utils/notifications.js';
+    import { showSuccessAlert, showErrorAlert, showConfirmationDialog, showSuccessToast } from '../utils/notifications.js';
     import { productsStore, setProducts, addProductToStore, updateProductInStore } from '../stores/productStore.js';
     import { pfandStore, setPfandOptions } from '../stores/pfandStore.js';
     import { sortStore, updateSort } from '../stores/sortStore.js';
-    import { loadAllProducts, loadPfandOptions, addProduct, updateProduct } from '../services/productService.js';
+    import { loadAllProducts, loadPfandOptions, addProduct, updateProduct, deleteProduct } from '../services/productService.js';
 
     import { derived } from 'svelte/store';
 
@@ -115,7 +115,7 @@
      * @param {Object} product - Das zu bearbeitende Produkt.
      */
     function openEditModal(product) {
-        editItem = { ...product }; // Erstelle eine Kopie des Produkts
+        editItem = { ...product };
         showEditModal = true;
     }
 
@@ -142,7 +142,7 @@
 
             // Setze das Formular zurück
             newItem = { barcode: '', item_name: '', price: '', category: '', pfand_id: null };
-            showSuccessAlert("Artikel erfolgreich hinzugefügt!");
+            showSuccessToast("Artikel erfolgreich hinzugefügt!");
             showAddModal = false; // Schließe das Modal
         } catch (error) {
             console.error('Fehler beim Hinzufügen des Artikels:', error);
@@ -163,13 +163,37 @@
             updateProductInStore(updatedItem);
             // Sortierung wird automatisch durch den abgeleiteten Store angewendet
 
-            showSuccessAlert("Artikel erfolgreich aktualisiert!");
+            showSuccessToast("Artikel erfolgreich aktualisiert!");
             showEditModal = false; // Schließe das Modal
         } catch (error) {
             console.error('Fehler beim Aktualisieren des Artikels:', error);
             showErrorAlert(error.message || 'Fehler beim Aktualisieren des Artikels.');
         }
     }
+
+    /**
+     * Handhabt das Löschen eines Produkts.
+     * @param {Number} item_id - Die ID des zu löschenden Produkts.
+     */
+   
+     async function handleDelete(item_id) {
+    try {
+      await deleteProduct(item_id);
+      setProducts(get(productsStore).filter(p => p.item_id !== item_id));
+      showSuccessToast("Artikel erfolgreich gelöscht!");
+    } catch (error) {
+      console.error('Fehler beim Löschen des Artikels:', error);
+      showErrorAlert(error.message || 'Fehler beim Löschen des Artikels.');
+    }
+  }
+
+  // Zeigt einen Bestätigungsdialog und löscht das Produkt, falls bestätigt wird.
+  async function handleDeleteWithConfirmation(item_id) {
+    const result = await showConfirmationDialog("Produkt löschen", "Bist du sicher, dass du dieses Produkt löschen möchtest?");
+    if (result.isConfirmed) {
+      handleDelete(item_id);
+    }
+  }
 </script>
 
 <style>
@@ -243,6 +267,7 @@
             sortDirection={$sortStore.direction}
             onSort={handleSort}
             onEdit={openEditModal}
+            onDelete={handleDeleteWithConfirmation}
         />
     </div>
 

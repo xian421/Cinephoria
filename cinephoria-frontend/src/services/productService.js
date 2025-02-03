@@ -1,6 +1,6 @@
 // src/services/productService.js
 
-import { fetchSupermarketitems, addSupermarketItem, updateSupermarketItem, fetchPfandOptions } from './api';
+import { fetchSupermarketitems, addSupermarketItem, updateSupermarketItem, fetchPfandOptions, deleteSupermarketItem } from './api';
 import { authStore } from '../stores/authStore.js';
 import { get } from 'svelte/store';
 import { validateProduct } from '../utils/validation.js';
@@ -116,5 +116,22 @@ export async function updateProduct(product, pfandOptions) {
     } catch (error) {
         console.error('Fehler beim Aktualisieren des Produkts:', error);
         throw new Error(error.message || 'Fehler beim Aktualisieren des Produkts.');
+    }
+}
+
+
+/**
+ * Löscht ein Produkt.
+ * @param {number} itemId - Die ID des zu löschenden Produkts.
+ * @returns {Promise<void>}
+ * @throws {Error} Wenn das Löschen des Produkts fehlschlägt.
+ */
+export async function deleteProduct(itemId) {
+    const token = get(authStore).token;
+    try {
+        await deleteSupermarketItem(token, itemId);
+    } catch (error) {
+        console.error('Fehler beim Löschen des Produkts:', error);
+        throw new Error(error.message || 'Fehler beim Löschen des Produkts.');
     }
 }

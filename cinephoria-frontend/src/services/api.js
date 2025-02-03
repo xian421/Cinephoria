@@ -1351,7 +1351,21 @@ export async function fetchProductByBarcode(token, barcode) {
 }
 
 
+//Delete SUpermarkt Item with ID
 
+export async function deleteSupermarketItem(token, item_id) {
+    const response = await fetch(`${API_BASE_URL}/supermarkt/items/${item_id}`, {
+        method: 'DELETE',
+        headers: {
+            'Authorization': `Bearer ${token}`
+        }
+    });
+    if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Netzwerkantwort war nicht ok');
+    }
+    return response.json();
+}
 
 
 // Neue Funktion für Mitarbeiter

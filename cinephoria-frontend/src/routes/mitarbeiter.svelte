@@ -1,23 +1,5 @@
 <script>
 import { navigate } from 'svelte-routing';
-import { onMount } from 'svelte';
-import { authStore } from '../stores/authStore';
-import { get } from 'svelte/store';
-
-//Schreibe eine FUnktion zu überprüfung ob der User admin ist
-
-onMount(() => {
-    const { isAdmin } = get(authStore);
-    if (!isAdmin) {
-        setTimeout(() => {
-            navigate('/');
-            //Hier nochmal timeout und seite neu laden
-            setTimeout(() => {
-                location.reload();
-            }, 500);
-        }, 500);
-    }
-});
 
     const handleSupermarktKasse = () => {
         navigate('/mitarbeiter/supermarkt');        
@@ -74,13 +56,13 @@ onMount(() => {
         transform: translateY(-3px);
     }
 
-    .button-kino {
+    .button-mitte {
         background-color: #2196f3; /* Blau */
         color: white;
         box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
     }
 
-    .button-kino:hover {
+    .button-mitte:hover {
         background-color: #1e88e5;
         transform: translateY(-3px);
     }
@@ -92,7 +74,7 @@ onMount(() => {
         <button class="button button-supermarkt" on:click={handleSupermarktKasse}>
             Supermarkt-Daten
         </button>
-        <button class="button button-kino" on:click={handlePfandAutomat}>
+        <button class="button button-mitte" on:click={handlePfandAutomat}>
             Pfand-Automat
         </button>
         <button class="button button-supermarkt" on:click={handleScannen}>
