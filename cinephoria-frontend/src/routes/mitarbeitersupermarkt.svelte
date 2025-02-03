@@ -10,6 +10,7 @@
     import { pfandStore, setPfandOptions } from '../stores/pfandStore.js';
     import { sortStore, updateSort } from '../stores/sortStore.js';
     import { loadAllProducts, loadPfandOptions, addProduct, updateProduct, deleteProduct } from '../services/productService.js';
+    import { sortByDate, sortByNumeric, sortByString } from '../utils/sortStrategies.js';
 
     import { derived } from 'svelte/store';
 
@@ -40,49 +41,33 @@
             return [...products];
         }
 
-        return [...products].sort((a, b) => {
-            let aValue = a[column];
-            let bValue = b[column];
+        // Sonderfall: Wenn nach pfand_id sortiert werden soll,
+        // sortiere anhand des Pfandnamens.
+        if (column === 'pfand_id') {
+            return [...products].sort((a, b) => {
+            const aPfand = pfandOptions.find(p => p.pfand_id === a[column]);
+            const bPfand = pfandOptions.find(p => p.pfand_id === b[column]);
+            const aName = aPfand ? aPfand.name : '';
+            const bName = bPfand ? bPfand.name : '';
+            return sortByString(aName, bName, direction);
+            });
+        }
 
-            // Prüfen, ob die Spalte ein Datum ist
-            const isDateColumn = column === 'created_at' || column === 'updated_at';
+        // Wähle die passende Strategie basierend auf der Spalte
+        let strategy;
 
-            if (isDateColumn) {
-                const aDate = new Date(aValue);
-                const bDate = new Date(bValue);
-                return direction === 'asc' ? aDate.getTime() - bDate.getTime() : bDate.getTime() - aDate.getTime();
-            }
+        // Für Datumsfelder
+        if (column === 'created_at' || column === 'updated_at') {
+            strategy = sortByDate;
+        } else {
+            // Prüfe anhand des ersten Elements, ob der Wert numerisch ist
+            const firstValue = products[0][column];
+            const isNumeric = !isNaN(parseFloat(firstValue)) && isFinite(firstValue);
+            strategy = isNumeric ? sortByNumeric : sortByString;
+        }
 
-            if (column === 'pfand_id') {
-                // Sortiere nach Pfandname statt ID
-                const aPfand = pfandOptions.find(p => p.pfand_id === aValue);
-                const bPfand = pfandOptions.find(p => p.pfand_id === bValue);
-                const aName = aPfand ? aPfand.name.toLowerCase() : '';
-                const bName = bPfand ? bPfand.name.toLowerCase() : '';
-                if (aName < bName) return direction === 'asc' ? -1 : 1;
-                if (aName > bName) return direction === 'asc' ? 1 : -1;
-                return 0;
-            }
-
-            // Versuche, die Werte als Zahlen zu interpretieren
-            const aIsNumeric = !isNaN(parseFloat(aValue)) && isFinite(aValue);
-            const bIsNumeric = !isNaN(parseFloat(bValue)) && isFinite(bValue);
-
-            if (aIsNumeric && bIsNumeric) {
-                // Sortiere numerisch
-                return direction === 'asc'
-                    ? parseFloat(aValue) - parseFloat(bValue)
-                    : parseFloat(bValue) - parseFloat(aValue);
-            }
-
-            // Sortiere alphabetisch, wenn keine Zahlen vorliegen
-            aValue = aValue.toString().toLowerCase();
-            bValue = bValue.toString().toLowerCase();
-
-            if (aValue < bValue) return direction === 'asc' ? -1 : 1;
-            if (aValue > bValue) return direction === 'asc' ? 1 : -1;
-            return 0;
-        });
+        // Wende die gewählte Strategie an
+        return [...products].sort((a, b) => strategy(a[column], b[column], direction));
     }
 
 

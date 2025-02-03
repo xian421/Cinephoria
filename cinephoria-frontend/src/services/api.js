@@ -20,7 +20,6 @@ export const login = async (email, password) => {
 };
 
 export const validateToken = async (token) => {
-    console.log('hierlöschenspäter', token); //HIER löschen    
     const response = await fetch(`${API_BASE_URL}/validate-token`, {
         method: "POST",
         headers: {
@@ -315,29 +314,6 @@ export const fetchSeatsForShowtime = async (showtimeId, token) => {
     // 'data.seats' enthält jetzt 'type' und 'price'
     return data;
 };
-
-
-// Funktion zum Erstellen einer Buchung
-// export const createBooking = async (showtime_id, seatIds, token, orderID) => {
-//     const response = await fetch(`${API_BASE_URL}/bookings`, {
-//         method: 'POST',
-//         headers: {
-//             'Content-Type': 'application/json',
-//             'Authorization': `Bearer ${token}`,
-//         },
-//         body: JSON.stringify({
-//             showtime_id,
-//             seat_ids: seatIds,
-//             order_id: orderID // Neue Feld für PayPal Order ID
-//         }),
-//     });
-
-//     if (!response.ok) {
-//         const errorData = await response.json();
-//         throw new Error(errorData.error || 'Fehler beim Erstellen der Buchung.');
-//     }
-//     return await response.json();
-// };
 
 
 
@@ -1351,7 +1327,6 @@ export async function fetchProductByBarcode(token, barcode) {
 }
 
 
-//Delete SUpermarkt Item with ID
 
 export async function deleteSupermarketItem(token, item_id) {
     const response = await fetch(`${API_BASE_URL}/supermarkt/items/${item_id}`, {

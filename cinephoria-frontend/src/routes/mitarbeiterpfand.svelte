@@ -50,6 +50,7 @@
     
     function handleWeiter() {
       window.print();
+      resetAll();
     }
   </script>
   
