@@ -23,8 +23,8 @@ onMount(() => {
         navigate('/mitarbeiter/supermarkt');        
          };
 
-    const handleKinoTicket = () => {
-         navigate('/mitarbeiter/kino');
+    const handlePfandAutomat = () => {
+         navigate('/mitarbeiter/pfand');
     };
 
     const handleScannen = () => {
@@ -90,13 +90,13 @@ onMount(() => {
     <h1>Mitarbeiterbereich</h1>
     <div class="buttons">
         <button class="button button-supermarkt" on:click={handleSupermarktKasse}>
-            Supermarkt-Kasse-Daten
+            Supermarkt-Daten
         </button>
-        <button class="button button-kino" on:click={handleKinoTicket}>
-            Kino-Ticket Scannen
+        <button class="button button-kino" on:click={handlePfandAutomat}>
+            Pfand-Automat
         </button>
         <button class="button button-supermarkt" on:click={handleScannen}>
-            Aritel Scannen
+            Artikel Scannen
         </button>
     </div>
 </div>  

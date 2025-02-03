@@ -135,7 +135,11 @@
                       <li on:click={() => { navigate('/einstellungen'); toggleProfileMenu(false); }}>Einstellungen</li>
                       {#if $authStore.isAdmin}
                           <li on:click={() => { navigate('/admin'); toggleProfileMenu(false); }}>Admin</li>
-                      {/if}
+                          <li on:click={() => {
+                            toggleProfileMenu(false);
+                            window.location.assign('/mitarbeiter');
+                        }}>Mitarbeiter</li>
+                       {/if}
                       <li on:click={() => { navigate('/bestellungen'); toggleProfileMenu(false); }}>Meine Bestellungen</li>
                       <li on:click={logout}>Abmelden</li>
                   </ul>
