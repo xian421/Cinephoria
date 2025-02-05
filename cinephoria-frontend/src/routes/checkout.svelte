@@ -156,6 +156,7 @@
                    // const user = get(authStore);
                   //  const user_id = user.isLoggedIn ? user.userId : null;
                     const token = get(authStore).token;
+                    console.log("Token: ", token);
   
                     const cart_items = $cart.map(item => ({
                         seat_id: item.seat_id,
