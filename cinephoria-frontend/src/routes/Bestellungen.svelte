@@ -5,24 +5,20 @@
     import Swal from 'sweetalert2';
     import { fetchBookings } from '../services/api';
     import { navigate } from 'svelte-routing';
-    
+    import { pointsStore, fetchUserPointsStore } from '../stores/pointsStore';
 
     let orders = [];
     let totalWatchtime = 0;
-    let totalPoints = 0;
+    let totalPoints = 0; // Dieser Wert wird jetzt direkt aus dem pointsStore gezogen
     let isLoading = true;
     let error = null;
 
     // Hover-Zustand für jedes Order-Item
     let hoveredOrder = null;
 
-    // Funktionen zur Berechnung
+    // Berechnung der Watchtime bleibt unverändert
     function calculateWatchtime() {
         return orders.reduce((sum, order) => sum + (order.runtime || 0), 0);
-    }
-
-    function calculatePoints() {
-        return orders.reduce((sum, order) => sum + Math.floor((order.total_amount || 0) / 1), 0);
     }
 
     onMount(async () => {
@@ -35,8 +31,8 @@
         }
 
         try {
+            // Hole die Bestellungen
             const data = await fetchBookings(token);
-
             if (Array.isArray(data)) {
                 orders = data.map(order => ({
                     ...order,
@@ -50,9 +46,10 @@
             } else {
                 throw new Error('Unerwartetes Antwortformat');
             }
-
             totalWatchtime = calculateWatchtime();
-            totalPoints = calculatePoints();
+
+            // Aktualisiere den Punkte-Store mit dem aktuellen Punktestand des Users
+            await fetchUserPointsStore(token);
         } catch (err) {
             console.error('Fehler beim Laden der Bestellungen:', err);
             error = err.message || 'Fehler beim Laden der Bestellungen';
@@ -62,17 +59,14 @@
         }
     });
 
-    function handleMouseEnter(index) {
-        hoveredOrder = index;
-    }
+    // Abonniere den pointsStore, um totalPoints zu aktualisieren
+    pointsStore.subscribe(value => {
+        totalPoints = value;
+        console.log(`Aktuelle Punkte: ${totalPoints}`);
+    });
 
-    function handleMouseLeave() {
-        hoveredOrder = null;
-    }
-
-
-   
 </script>
+
 
 <style>
     body {
