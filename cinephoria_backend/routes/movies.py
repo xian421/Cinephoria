@@ -1,19 +1,9 @@
 # routes/movies.py
 from flask import Blueprint, jsonify, request
 import requests
-import os
+from cinephoria_backend.config import TMDB_API_URL, HEADERS
 
-# Hole dir den TMDB API Bearer Token aus den Umgebungsvariablen
-TMDB_BEARER_TOKEN = os.getenv('TMDB_BEARER_TOKEN')
-TMDB_API_URL = "https://api.themoviedb.org/3/movie"
 
-# Definiere Headers, die du für TMDB-Anfragen benötigst
-HEADERS = {
-    "accept": "application/json",
-    "Authorization": f"Bearer {TMDB_BEARER_TOKEN}"
-}
-
-# Erstelle einen Blueprint für die Movie-Routen
 movies_bp = Blueprint('movies', __name__)
 
 @movies_bp.route('/movies/now_playing', methods=['GET'])

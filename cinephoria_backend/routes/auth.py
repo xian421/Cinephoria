@@ -1,22 +1,17 @@
 # cinephoria_backend/routes/auth.py
 
-import os
+from flask import Blueprint, request, jsonify
 import jwt
 from datetime import datetime, timedelta, timezone
-from flask import Blueprint, request, jsonify
 import psycopg2
 from psycopg2.extras import RealDictCursor
 from functools import wraps
 
+# Importiere die zentralen Konfigurationswerte aus config.py
+from cinephoria_backend.config import DATABASE_URL, SECRET_KEY
 
 # Erstelle den Blueprint
 auth_bp = Blueprint('auth', __name__)
-
-# Konfiguration aus Umgebungsvariablen
-DATABASE_URL = os.getenv('DATABASE_URL')
-SECRET_KEY = os.getenv('SECRET_KEY')
-if not SECRET_KEY:
-    raise ValueError("SECRET_KEY environment variable is not set")
 
 # Middleware für Token-Validierung
 def token_required(f):
@@ -27,7 +22,7 @@ def token_required(f):
             return jsonify({'error': 'Token fehlt'}), 401
         try:
             decoded = jwt.decode(token, SECRET_KEY, algorithms=['HS256'])
-            request.user = decoded
+            request.user = decoded  # Speichere die Nutzerdaten in request.user
         except jwt.ExpiredSignatureError:
             return jsonify({'error': 'Token abgelaufen'}), 401
         except jwt.InvalidTokenError:
@@ -44,7 +39,6 @@ def admin_required(f):
             return jsonify({'error': 'Zugriff verweigert - keine Admin-Rechte'}), 403
         return f(*args, **kwargs)
     return decorated
-
 
 # Token Validierung Endpunkt
 @auth_bp.route('/validate-token', methods=['POST'])
@@ -79,15 +73,21 @@ def login():
     try:
         with psycopg2.connect(DATABASE_URL) as conn:
             with conn.cursor() as cursor:
-                cursor.execute("SELECT id, password, vorname, nachname, role FROM users WHERE email = %s", (email,))
+                cursor.execute(
+                    "SELECT id, password, vorname, nachname, role FROM users WHERE email = %s",
+                    (email,)
+                )
                 result = cursor.fetchone()
                 if not result:
                     return jsonify({'error': 'Ungültige E-Mail oder Passwort'}), 401
 
                 user_id, stored_password, vorname, nachname, role = result
 
-                # Passwortüberprüfung (PostgreSQL crypt-Methode)
-                cursor.execute("SELECT crypt(%s, %s) = %s AS password_match", (password, stored_password, stored_password))
+                # Passwortüberprüfung (mithilfe der PostgreSQL crypt()-Funktion)
+                cursor.execute(
+                    "SELECT crypt(%s, %s) = %s AS password_match",
+                    (password, stored_password, stored_password)
+                )
                 is_valid = cursor.fetchone()[0]
 
                 if is_valid:
@@ -130,12 +130,12 @@ def register():
     try:
         with psycopg2.connect(DATABASE_URL) as conn:
             with conn.cursor() as cursor:
-                # Prüfen, ob der Benutzer schon existiert
+                # Prüfen, ob der Benutzer bereits existiert
                 cursor.execute("SELECT email FROM users WHERE email = %s", (email,))
                 if cursor.fetchone():
                     return jsonify({'error': 'Benutzer mit dieser E-Mail existiert bereits'}), 409
 
-                # Passwort hashen mithilfe der PostgreSQL crypt()-Funktion
+                # Passwort hashen mit der PostgreSQL crypt()-Funktion
                 cursor.execute(
                     "INSERT INTO users (vorname, nachname, email, password) VALUES (%s, %s, %s, crypt(%s, gen_salt('bf')))",
                     (vorname, nachname, email, password)

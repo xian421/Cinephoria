@@ -16,7 +16,15 @@ import subprocess
 
 from cinephoria_backend.routes.movies import movies_bp
 from cinephoria_backend.routes.auth import auth_bp, token_required, admin_required
-
+from cinephoria_backend.config import (
+    DATABASE_URL,
+    PAYPAL_CLIENT_ID,
+    PAYPAL_CLIENT_SECRET,
+    PAYPAL_API_BASE,
+    TMDB_API_URL,
+    HEADERS,
+    SECRET_KEY,
+)
 
 
 app = Flask(__name__, static_folder='public', static_url_path='')
@@ -41,31 +49,6 @@ CORS(app, resources={
         "allow_headers": ["Content-Type", "Authorization"]
     }
 })
-
-
-# Datenbankkonfiguration
-DATABASE_URL = os.getenv('DATABASE_URL')
-PAYPAL_CLIENT_ID = os.getenv('PAYPAL_CLIENT_ID')
-PAYPAL_CLIENT_SECRET = os.getenv('PAYPAL_CLIENT_SECRET')
-PAYPAL_API_BASE = 'https://api-m.sandbox.paypal.com'
-
-# TMDb API-Konfiguration
-TMDB_API_URL = "https://api.themoviedb.org/3/movie"
-TMDB_BEARER_TOKEN = os.getenv('TMDB_BEARER_TOKEN')
-
-HEADERS = {
-    "accept": "application/json",
-    "Authorization": f"Bearer {TMDB_BEARER_TOKEN}"
-}
-
-# SECRET_KEY definieren
-SECRET_KEY = os.getenv('SECRET_KEY')
-if not SECRET_KEY:
-    raise ValueError("SECRET_KEY environment variable is not set")
-
-
-
-
 
 # PayPal Start
 
