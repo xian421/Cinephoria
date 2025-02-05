@@ -31,7 +31,6 @@ CORS(app, resources={
     }
 })
 
-PRINTER_NAME = "Generic / Text Only"
 
 # Datenbankkonfiguration
 DATABASE_URL = os.getenv('DATABASE_URL')
@@ -2964,34 +2963,6 @@ def read_qrcode_mitarbeiter(token):
     except Exception as e:
         logging.error(f"Fehler in read_qrcode: {e}")
         return jsonify({"error": "Interner Serverfehler"}), 500
-
-
-
-
-@app.route('/print-bon', methods=['POST'])
-def print_bon():
-    data = request.get_json()
-    if not data or 'bon' not in data:
-        return jsonify({'success': False, 'error': 'Keine Bon-Daten erhalten.'}), 400
-
-    bon = data['bon']
-    # bon sollte ein String sein, der den Druckinhalt darstellt
-
-    try:
-        # Speichere den Bon in eine temporäre Datei
-        with open('temp_bon.txt', 'w', encoding='utf-8') as f:
-            f.write(bon)
-
-        # Verwende PowerShell, um die Datei an den Drucker zu senden
-        cmd = f'Get-Content temp_bon.txt | Out-Printer -Name "{PRINTER_NAME}"'
-        subprocess.run(["powershell", "-Command", cmd], check=True)
-
-        return jsonify({'success': True}), 200
-    except subprocess.CalledProcessError as e:
-        return jsonify({'success': False, 'error': str(e)}), 500
-    except Exception as e:
-        return jsonify({'success': False, 'error': str(e)}), 500
-
 
 
 
