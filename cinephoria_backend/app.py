@@ -16,6 +16,7 @@ import subprocess
 
 from cinephoria_backend.routes.movies import movies_bp
 from cinephoria_backend.routes.auth import auth_bp, token_required, admin_required
+from cinephoria_backend.routes.paypal import paypal_bp
 from cinephoria_backend.config import (
     DATABASE_URL,
     PAYPAL_CLIENT_ID,
@@ -33,6 +34,7 @@ app = Flask(__name__, static_folder='public', static_url_path='')
 # Einzelne Module verwenden
 app.register_blueprint(movies_bp, url_prefix='')
 app.register_blueprint(auth_bp, url_prefix='')
+app.register_blueprint(paypal_bp, url_prefix='')
 
 
 
