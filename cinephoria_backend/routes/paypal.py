@@ -179,7 +179,6 @@ def capture_paypal_order():
                     else:
                         logging.error(f"USER_ID IST NULL: {user_id}")
 
-#Logging
 
                     conn.commit()
 

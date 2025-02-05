@@ -1040,7 +1040,7 @@ def get_user_bookings():
             booking_dict = {
                 'booking_id': booking['booking_id'],
                 'showtime_id': booking['showtime_id'],
-                'total_amount': float(booking['total_amount']),
+                'total_amount': float(booking['total_amount']) if booking['total_amount'] is not None else 0,
                 'payment_status': booking['payment_status'],
                 'paypal_order_id': booking['paypal_order_id'],
                 'created_at': booking['created_at'].isoformat(),

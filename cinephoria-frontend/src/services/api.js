@@ -344,7 +344,7 @@ export const capturePayPalOrder = async (
     vorname,
     nachname,
     email,
-    user_id,
+    token,
     total_amount,
     cart_items
 ) => {
@@ -352,26 +352,24 @@ export const capturePayPalOrder = async (
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`  // Token hier im Header mitgeben
         },
         body: JSON.stringify({
             orderID,
             vorname,
             nachname,
             email,
-            user_id,
             total_amount,
             cart_items
         }),
     });
-
     const data = await response.json();
     if (!response.ok) {
         throw new Error(data.error || 'Fehler beim Erfassen der PayPal-Order');
     }
-
-    // Wenn alles klappt, bekommst du: "message": "Payment captured and booking completed","booking_id": booking_id, "qr_token": qr_token
     return data;
 };
+
 
 // 3) Buchungsdetails basierend auf dem QR-Token abrufen
 export async function fetchQRCodeData(qrcodetoken) {
