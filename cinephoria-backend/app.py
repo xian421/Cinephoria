@@ -12,10 +12,11 @@ from functools import wraps
 import uuid
 import logging
 import subprocess
-
+from routes.movies import movies_bp
 
 
 app = Flask(__name__, static_folder='public', static_url_path='')
+app.register_blueprint(movies_bp, url_prefix='')
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
