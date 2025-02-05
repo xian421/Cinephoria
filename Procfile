@@ -1,1 +1,1 @@
-web: gunicorn cinephoria-backend.app:app
+web: gunicorn cinephoria_backend.app:app
