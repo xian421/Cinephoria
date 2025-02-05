@@ -362,48 +362,7 @@ def validate_token():
     except jwt.InvalidTokenError:
         return jsonify({'error': 'Ungültiges Token'}), 401
 
-@app.route('/movies/now_playing', methods=['GET'])
-def get_now_playing():
-    results = []
-    for i in range(1, 6):  # Seiten von 1 bis 5 durchlaufen
-        url = f"{TMDB_API_URL}/now_playing?language=de-DE&page={i}&region=DE"
-        response = requests.get(url, headers=HEADERS)
-        
-        if response.status_code == 200:
-            data = response.json()
-            filtered_results = [
-                movie for movie in data['results'] if movie.get('poster_path')
-            ]
-            results.extend(filtered_results)
-        else:
-            print(f"Fehler bei Seite {i}: {response.status_code}")
-    
-    # Alle Ergebnisse in ein JSON-Objekt packen
-    return jsonify({"results": results})
 
-@app.route('/movies/upcoming', methods=['GET'])
-def get_upcoming():
-    url = f"{TMDB_API_URL}/upcoming?language=de-DE&page=1&region=DE"
-    response = requests.get(url, headers=HEADERS)
-    if response.status_code == 200:
-        return jsonify(response.json())
-    else:
-        return jsonify({"error": "Unable to fetch upcoming movies"}), response.status_code
-
-@app.route('/movies/<int:movie_id>', methods=['GET'])
-def get_movie_details(movie_id):
-    # URL für die TMDB-API mit der spezifischen Film-ID
-    url = f"{TMDB_API_URL}/{movie_id}?language=de-DE"
-    
-    # Anfrage an die API senden
-    response = requests.get(url, headers=HEADERS)
-    
-    # Erfolgreiche Antwort zurückgeben
-    if response.status_code == 200:
-        return jsonify(response.json())
-    else:
-        # Fehler behandeln und Fehlermeldung zurückgeben
-        return jsonify({"error": f"Unable to fetch details for movie ID {movie_id}"}), response.status_code
 
 @app.route('/movie/<int:movie_id>/release_dates', methods=['GET'])
 def get_movie_release_dates(movie_id):
