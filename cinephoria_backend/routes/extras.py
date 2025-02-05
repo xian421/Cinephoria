@@ -19,6 +19,7 @@ def get_user_bookings():
         with get_db_connection() as conn:
             with conn.cursor(cursor_factory=psycopg2.extras.DictCursor) as cursor:
 
+                # Abfrage: Buchungsdaten inkl. aggregierter Sitzplätze
                 cursor.execute("""
                     SELECT 
                         b.booking_id, 
@@ -31,12 +32,28 @@ def get_user_bookings():
                         s.screen_id, 
                         s.start_time, 
                         s.end_time,
-                        sc.name AS screen_name
+                        sc.name AS screen_name,
+                        json_agg(
+                            json_build_object(
+                                'seat_id', bs.seat_id,
+                                'price', COALESCE(bs.price, 0)::numeric,
+                                'row', s2.row,
+                                'number', s2.number,
+                                'seat_type', st.name,
+                                'seat_type_discount_id', bs.seat_type_discount_id
+                            )
+                        ) AS seats
                     FROM bookings b
                     JOIN booking_seats bs ON b.booking_id = bs.booking_id
                     JOIN showtimes s ON bs.showtime_id = s.showtime_id
                     JOIN screens sc ON s.screen_id = sc.screen_id
+                    JOIN seats s2 ON bs.seat_id = s2.seat_id
+                    JOIN seat_types st ON s2.seat_type_id = st.seat_type_id
                     WHERE b.user_id = %s
+                    GROUP BY 
+                        b.booking_id, bs.showtime_id, b.total_amount, b.payment_status, 
+                        b.paypal_order_id, b.created_at, s.movie_id, s.screen_id, 
+                        s.start_time, s.end_time, sc.name
                     ORDER BY b.created_at DESC
                 """, (user_id,))
                 bookings = cursor.fetchall()
@@ -44,40 +61,8 @@ def get_user_bookings():
                 if not bookings:
                     return jsonify({'bookings': []}), 200
 
-                # Sammeln aller eindeutigen movie_ids
+                # Sammeln aller eindeutigen movie_ids, um später die Filmdetails abzurufen
                 movie_ids = list({booking['movie_id'] for booking in bookings})
-
-                # Abrufen der Buchungs-Sitzplätze
-                booking_ids = [booking['booking_id'] for booking in bookings]
-                cursor.execute("""
-                    SELECT 
-                        bs.booking_id, 
-                        bs.seat_id, 
-                        bs.price,
-                        s.row,
-                        s.number,
-                        st.name AS seat_type,
-                        bs.seat_type_discount_id      
-                    FROM booking_seats bs
-                    JOIN seats s ON bs.seat_id = s.seat_id
-                    JOIN seat_types st ON s.seat_type_id = st.seat_type_id
-                    WHERE bs.booking_id = ANY(%s)
-                """, (booking_ids,))
-                booking_seats = cursor.fetchall()
-
-                # Mapping von booking_id zu Sitzplätzen
-                seats_map = {}
-                for bs in booking_seats:
-                    booking_id = bs['booking_id']
-                    seat = {
-                        'seat_id': bs['seat_id'],
-                        'price': float(bs['price']) if bs['price'] is not None else 0,
-                        'row': bs['row'],
-                        'number': bs['number'],
-                        'seat_type': bs['seat_type'],
-                        'seat_type_discount_id': bs['seat_type_discount_id']
-                    }
-                    seats_map.setdefault(booking_id, []).append(seat)
 
         # Abrufen der Filmdetails von TMDB für jede eindeutige movie_id
         movie_details = {}
@@ -114,14 +99,16 @@ def get_user_bookings():
                 'start_time': booking['start_time'].isoformat(),
                 'end_time': booking['end_time'].isoformat() if booking['end_time'] else None,
                 'screen_name': booking['screen_name'],
-                'seats': seats_map.get(booking['booking_id'], [])
+                'seats': booking['seats']  # bereits als JSON aggregiert
             }
             bookings_list.append(booking_dict)
 
         return jsonify({'bookings': bookings_list}), 200
 
     except Exception as e:
+        print(e)
         return jsonify({'error': 'Fehler beim Abrufen der Buchungen'}), 500
+
 
 
 

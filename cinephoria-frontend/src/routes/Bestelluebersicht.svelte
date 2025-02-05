@@ -26,41 +26,48 @@
     }
 
     onMount(async () => {
-        const token = get(authStore).token;
-        if (!token) {
-            error = 'Nicht authentifiziert';
-            isLoading = false;
-            await Swal.fire({ title: "Fehler", text: error, icon: "error" });
-            return;
+    const token = get(authStore).token;
+    if (!token) {
+        error = 'Nicht authentifiziert';
+        isLoading = false;
+        await Swal.fire({ title: "Fehler", text: error, icon: "error" });
+        return;
+    }
+
+    try {
+        const data = await fetchBookings(token);
+        console.log(data);
+
+        if (Array.isArray(data)) {
+            // Filtere Duplikate basierend auf booking_id
+            const uniqueData = data.filter((order, index, self) =>
+                index === self.findIndex(o => o.booking_id === order.booking_id)
+            );
+
+            orders = uniqueData.map(order => ({
+                ...order,
+                runtime: order.start_time && order.end_time
+                    ? Math.floor((new Date(order.end_time) - new Date(order.start_time)) / (1000 * 60))
+                    : 0,
+                date: order.created_at,
+                seat: order.seat || 'Keine Angaben',
+                screen: order.screen || 'Unbekannt'
+            }));
+        } else {
+            throw new Error('Unerwartetes Antwortformat');
         }
 
-        try {
-            const data = await fetchBookings(token);
-
-            if (Array.isArray(data)) {
-                orders = data.map(order => ({
-                    ...order,
-                    runtime: order.start_time && order.end_time
-                        ? Math.floor((new Date(order.end_time) - new Date(order.start_time)) / (1000 * 60))
-                        : 0,
-                    date: order.created_at,
-                    seat: order.seat || 'Keine Angaben',
-                    screen: order.screen || 'Unbekannt'
-                }));
-            } else {
-                throw new Error('Unerwartetes Antwortformat');
-            }
-
-            totalWatchtime = calculateWatchtime();
-            totalPoints = calculatePoints();
-        } catch (err) {
-            console.error('Fehler beim Laden der Bestellungen:', err);
-            error = err.message || 'Fehler beim Laden der Bestellungen';
-            await Swal.fire({ title: "Fehler", text: error, icon: "error" });
-        } finally {
-            isLoading = false;
-        }
+        totalWatchtime = calculateWatchtime();
+        totalPoints = calculatePoints();
+    } catch (err) {
+        console.error('Fehler beim Laden der Bestellungen:', err);
+        error = err.message || 'Fehler beim Laden der Bestellungen';
+        await Swal.fire({ title: "Fehler", text: error, icon: "error" });
+    } finally {
+        isLoading = false;
+    }
     });
+
 
     function handleMouseEnter(index) {
         hoveredOrder = index;
