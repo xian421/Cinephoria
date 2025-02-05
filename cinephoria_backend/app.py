@@ -1,5 +1,6 @@
 # app.py
 from flask import Flask
+from flask_cors import CORS
 
 
 from cinephoria_backend.routes.movies import movies_bp
