@@ -992,7 +992,7 @@ export async function fetchMovieTrailerUrl(token, movie_id) {
     const data = await response.json();
     return data.trailer_url;
 }
-/*
+
 export async function  fetchBookings(token) {
     const response = await fetch(`${API_BASE_URL}/bookings`, {
         headers: {
@@ -1006,7 +1006,7 @@ export async function  fetchBookings(token) {
     }
     return data.bookings;
 }
-*/
+
 
 // Funktion zum Abrufen der aktuellen Punkte
 export async function getUserPoints(token) {

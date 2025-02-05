@@ -153,8 +153,9 @@
             onApprove: async (data, actions) => {
                 const { orderID } = data;
                 try {
-                    const user = get(authStore);
-                    const user_id = user.isLoggedIn ? user.userId : null;
+                   // const user = get(authStore);
+                  //  const user_id = user.isLoggedIn ? user.userId : null;
+                    const token = get(authStore).token;
   
                     const cart_items = $cart.map(item => ({
                         seat_id: item.seat_id,
@@ -167,7 +168,7 @@
                         firstName,
                         lastName,
                         email,
-                        user_id,
+                        token,
                         totalPrice,
                         cart_items
                     );
