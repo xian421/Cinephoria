@@ -1,14 +1,13 @@
 # cinephoria_backend/routes/auth.py
 
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, current_app
 import jwt
 from datetime import datetime, timedelta, timezone
-import psycopg2
-from psycopg2.extras import RealDictCursor
 from functools import wraps
+import os
 
 # Importiere die zentralen Konfigurationswerte aus config.py
-from cinephoria_backend.config import DATABASE_URL, SECRET_KEY
+from cinephoria_backend.config import DATABASE_URL, SECRET_KEY, get_db_connection
 
 # Erstelle den Blueprint
 auth_bp = Blueprint('auth', __name__)
@@ -71,7 +70,7 @@ def login():
         return jsonify({'error': 'E-Mail und Passwort sind erforderlich'}), 400
 
     try:
-        with psycopg2.connect(DATABASE_URL) as conn:
+        with get_db_connection() as conn:
             with conn.cursor() as cursor:
                 cursor.execute(
                     "SELECT id, password, vorname, nachname, role FROM users WHERE email = %s",
@@ -128,7 +127,7 @@ def register():
         return jsonify({'error': 'Alle Felder sind erforderlich'}), 400
 
     try:
-        with psycopg2.connect(DATABASE_URL) as conn:
+        with get_db_connection() as conn:
             with conn.cursor() as cursor:
                 # Prüfen, ob der Benutzer bereits existiert
                 cursor.execute("SELECT email FROM users WHERE email = %s", (email,))
@@ -154,7 +153,7 @@ def profile():
 
     if request.method == 'GET':
         try:
-            with psycopg2.connect(DATABASE_URL) as conn:
+            with get_db_connection() as conn:
                 with conn.cursor() as cursor:
                     cursor.execute("""
                         SELECT vorname, nachname, email, role, profile_image, nickname 
@@ -189,7 +188,7 @@ def profile():
             return jsonify({'error': 'Alle Felder sind erforderlich'}), 400
 
         try:
-            with psycopg2.connect(DATABASE_URL) as conn:
+            with get_db_connection() as conn:
                 with conn.cursor() as cursor:
                     cursor.execute("""
                         UPDATE users 
@@ -201,3 +200,55 @@ def profile():
         except Exception as e:
             print(f"Fehler beim Aktualisieren des Profils: {e}")
             return jsonify({'error': 'Fehler beim Aktualisieren des Profils'}), 500
+
+
+
+def get_allowed_profile_images():
+    # Nutze current_app.static_folder, falls du das in Blueprints oder in App-Kontexten verwenden möchtest
+    profile_images_dir = os.path.join(current_app.static_folder, 'Profilbilder')
+    try:
+        images = [f for f in os.listdir(profile_images_dir) if os.path.isfile(os.path.join(profile_images_dir, f))]
+        return images
+    except Exception as e:
+        current_app.logger.error(f"Fehler beim Abrufen der Profilbilder: {e}")
+        return []
+
+
+
+
+# Neuer Endpunkt zum Aktualisieren des Profilbildes
+@auth_bp.route('/profile/image', methods=['PUT'])
+@token_required
+def update_profile_image():
+    user_id = request.user.get('user_id')
+    data = request.get_json()
+    if not data or 'profile_image' not in data:
+        return jsonify({'error': 'Keine Bilddaten erhalten'}), 400
+    profile_image = data['profile_image']
+    
+    # Validierung des Profilbildes
+    allowed_images = get_allowed_profile_images()
+    if profile_image not in allowed_images:
+        return jsonify({'error': 'Ungültiges Profilbild'}), 400
+    
+    try:
+        with current_app.db_connection as conn:
+            with conn.cursor() as cursor:
+                cursor.execute("UPDATE users SET profile_image = %s WHERE id = %s", (profile_image, user_id))
+                conn.commit()
+        return jsonify({'message': 'Profilbild aktualisiert'}), 200
+    except Exception as e:
+        print(f"Fehler beim Aktualisieren des Profilbildes: {e}")
+        return jsonify({'error': 'Fehler beim Aktualisieren des Profilbildes'}), 500
+
+# Neuer Endpunkt zum Auflisten der verfügbaren Profilbilder
+@auth_bp.route('/profile/images', methods=['GET'])
+@token_required
+def list_profile_images():
+    try:
+        images = get_allowed_profile_images()
+        return jsonify({'images': images}), 200
+    except Exception as e:
+        print(f"Fehler beim Auflisten der Profilbilder: {e}")
+        return jsonify({'error': 'Fehler beim Auflisten der Profilbilder'}), 500
+    

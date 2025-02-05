@@ -23,6 +23,7 @@ from cinephoria_backend.routes.movies import movies_bp
 from cinephoria_backend.routes.auth import auth_bp, token_required, admin_required
 from cinephoria_backend.routes.paypal import paypal_bp
 from cinephoria_backend.routes.seats import seats_bp
+from cinephoria_backend.routes.seat_types import seat_types_bp
 
 
 
@@ -34,6 +35,7 @@ app.register_blueprint(movies_bp, url_prefix='')
 app.register_blueprint(auth_bp, url_prefix='')
 app.register_blueprint(paypal_bp, url_prefix='')
 app.register_blueprint(seats_bp, url_prefix='')
+app.register_blueprint(seat_types_bp, url_prefix='')
 
 
 
@@ -207,33 +209,6 @@ def get_screens():
         print(f"Fehler: {e}")
         return jsonify({'error': 'Fehler beim Abrufen der Kinosäle'}), 500
 
-
-
-
-
-@app.route('/seat_types', methods=['GET'])
-def get_seat_types():
-    try:
-        with psycopg2.connect(DATABASE_URL) as conn:
-            with conn.cursor() as cursor:
-                cursor.execute("""
-                    SELECT seat_type_id, name, price, color, icon
-                    FROM seat_types
-                """)
-                seat_types = cursor.fetchall()
-                seat_types_list = [
-                    {
-                        'seat_type_id': st[0],
-                        'name': st[1],
-                        'price': float(st[2]),
-                        'color': st[3] or '#678be0',  # Default color if None
-                        'icon': st[4]
-                    } for st in seat_types
-                ]
-        return jsonify({'seat_types': seat_types_list}), 200
-    except Exception as e:
-        print(f"Fehler beim Abrufen der Sitztypen: {e}")
-        return jsonify({'error': 'Fehler beim Abrufen der Sitztypen'}), 500
 
 
 @app.route('/showtimes', methods=['POST'])
@@ -614,227 +589,7 @@ def get_seats_for_showtime(showtime_id):
         return jsonify({'error': 'Fehler beim Abrufen der Sitzplätze'}), 500
 
 
-def get_allowed_profile_images():
-    PROFILE_IMAGES_DIR = os.path.join(app.static_folder, 'Profilbilder')
-    try:
-        images = [f for f in os.listdir(PROFILE_IMAGES_DIR) if os.path.isfile(os.path.join(PROFILE_IMAGES_DIR, f))]
-        print(f"Gefundene Profilbilder: {images}")  # Logge die gefundenen Bilder
-        return images
-    except Exception as e:
-        print(f"Fehler beim Abrufen der Profilbilder: {e}")
-        return []
 
-
-
-# Neuer Endpunkt zum Aktualisieren des Profilbildes
-@app.route('/profile/image', methods=['PUT'])
-@token_required
-def update_profile_image():
-    user_id = request.user.get('user_id')
-    data = request.get_json()
-    if not data or 'profile_image' not in data:
-        return jsonify({'error': 'Keine Bilddaten erhalten'}), 400
-    profile_image = data['profile_image']
-    
-    # Validierung des Profilbildes
-    allowed_images = get_allowed_profile_images()
-    if profile_image not in allowed_images:
-        return jsonify({'error': 'Ungültiges Profilbild'}), 400
-    
-    try:
-        with psycopg2.connect(DATABASE_URL) as conn:
-            with conn.cursor() as cursor:
-                cursor.execute("UPDATE users SET profile_image = %s WHERE id = %s", (profile_image, user_id))
-                conn.commit()
-        return jsonify({'message': 'Profilbild aktualisiert'}), 200
-    except Exception as e:
-        print(f"Fehler beim Aktualisieren des Profilbildes: {e}")
-        return jsonify({'error': 'Fehler beim Aktualisieren des Profilbildes'}), 500
-
-# Neuer Endpunkt zum Auflisten der verfügbaren Profilbilder
-@app.route('/profile/images', methods=['GET'])
-@token_required
-def list_profile_images():
-    try:
-        images = get_allowed_profile_images()
-        return jsonify({'images': images}), 200
-    except Exception as e:
-        print(f"Fehler beim Auflisten der Profilbilder: {e}")
-        return jsonify({'error': 'Fehler beim Auflisten der Profilbilder'}), 500
-
-@app.route('/seats/batch_update', methods=['POST'])
-@admin_required
-def batch_update_seats():
-    data = request.get_json()
-    screen_id = data.get('screen_id')
-    seats_to_add = data.get('seats_to_add', [])
-    seats_to_delete = data.get('seats_to_delete', [])
-    seats_to_update = data.get('seats_to_update', [])
-
-    if not screen_id:
-        return jsonify({'error': 'screen_id ist erforderlich'}), 400
-
-    try:
-        with psycopg2.connect(DATABASE_URL) as conn:
-            with conn.cursor() as cursor:
-                # Beginne eine Transaktion
-                cursor.execute("BEGIN;")
-                
-                # Hinzufügen der Sitze in Bulk
-                if seats_to_add:
-                    values = []
-                    for seat in seats_to_add:
-                        seat_type_name = seat.get('type', 'standard')
-                        # Sitztyp-ID abrufen
-                        cursor.execute("SELECT seat_type_id FROM seat_types WHERE name = %s", (seat_type_name,))
-                        result = cursor.fetchone()
-                        if not result:
-                            conn.rollback()
-                            return jsonify({'error': f'Ungültiger Sitztyp: {seat_type_name}'}), 400
-                        seat_type_id = result[0]
-                        values.append((screen_id, seat['row'], seat['number'], seat_type_id))
-                    insert_query = """
-                        INSERT INTO seats (screen_id, row, number, seat_type_id)
-                        VALUES %s
-                        ON CONFLICT (screen_id, row, number) DO NOTHING
-                    """
-                    psycopg2.extras.execute_values(cursor, insert_query, values)
-
-                # Aktualisieren der Sitztypen in Bulk
-                if seats_to_update:
-                    for seat in seats_to_update:
-                        seat_type_name = seat.get('type', 'standard')
-                        # Sitztyp-ID abrufen
-                        cursor.execute("SELECT seat_type_id FROM seat_types WHERE name = %s", (seat_type_name,))
-                        result = cursor.fetchone()
-                        if not result:
-                            conn.rollback()
-                            return jsonify({'error': f'Ungültiger Sitztyp: {seat_type_name}'}), 400
-                        seat_type_id = result[0]
-                        cursor.execute("""
-                            UPDATE seats
-                            SET seat_type_id = %s
-                            WHERE screen_id = %s AND row = %s AND number = %s
-                        """, (seat_type_id, screen_id, seat['row'], seat['number']))
-
-                # Löschen der Sitze in Bulk
-                if seats_to_delete:
-                    delete_query = """
-                        DELETE FROM seats
-                        WHERE screen_id = %s AND (row, number) IN %s
-                    """
-                    # Erstelle eine Liste von Tupeln (row, number)
-                    seats_to_delete_tuples = [(seat['row'], seat['number']) for seat in seats_to_delete]
-                    cursor.execute(delete_query, (screen_id, tuple(seats_to_delete_tuples)))
-
-                # Commit der Transaktion
-                conn.commit()
-
-        return jsonify({
-            'message': 'Sitze erfolgreich aktualisiert',
-            'added': len(seats_to_add),
-            'deleted': len(seats_to_delete),
-            'updated': len(seats_to_update)
-        }), 200
-
-    except Exception as e:
-        print(f"Fehler beim Aktualisieren der Sitze: {e}")
-        return jsonify({'error': 'Fehler beim Aktualisieren der Sitze'}), 500
-
-@app.route('/seat_types', methods=['POST'])
-@admin_required
-def add_seat_type():
-    data = request.get_json()
-    name = data.get('name')
-    price = data.get('price')
-    color = data.get('color')  # New field
-    icon = data.get('icon')    # New field
-
-    if not (name and price is not None and color):
-        return jsonify({'error': 'Name, Preis und Farbe sind erforderlich'}), 400
-
-    try:
-        with psycopg2.connect(DATABASE_URL) as conn:
-            with conn.cursor() as cursor:
-                cursor.execute(
-                    "INSERT INTO seat_types (name, price, color, icon) VALUES (%s, %s, %s, %s) RETURNING seat_type_id",
-                    (name, price, color, icon)
-                )
-                seat_type_id = cursor.fetchone()[0]
-                conn.commit()
-                return jsonify({'message': 'Sitztyp hinzugefügt', 'seat_type_id': seat_type_id}), 201
-    except Exception as e:
-        print(f"Fehler beim Hinzufügen des Sitztyps: {e}")
-        return jsonify({'error': 'Fehler beim Hinzufügen des Sitztyps'}), 500
-
-
-@app.route('/seat_types/<int:seat_type_id>', methods=['PUT'])
-@admin_required
-def update_seat_type(seat_type_id):
-    data = request.get_json()
-    name = data.get('name')
-    price = data.get('price')
-    color = data.get('color')  # New field
-    icon = data.get('icon')    # New field
-
-    #if not all([name, (price is not None), color]):
-    if price is None or color is None or not name:
-        return jsonify({'error': f'Alle Felder müssen angegeben werden. Name: {name}, Price: {price}, Color: {color}'}), 400
-
-
-
-    try:
-        with psycopg2.connect(DATABASE_URL) as conn:
-            with conn.cursor() as cursor:
-                # Build the UPDATE statement dynamically
-                update_fields = []
-                update_values = []
-
-                if name:
-                    update_fields.append("name = %s")
-                    update_values.append(name)
-                if price is not None:
-                    update_fields.append("price = %s")
-                    update_values.append(price)
-                if color:
-                    update_fields.append("color = %s")
-                    update_values.append(color)
-
-                update_fields.append("icon = %s")
-                update_values.append(icon)
-
-                update_values.append(seat_type_id)
-
-                update_query = f"UPDATE seat_types SET {', '.join(update_fields)} WHERE seat_type_id = %s"
-                cursor.execute(update_query, tuple(update_values))
-
-                if cursor.rowcount == 0:
-                    return jsonify({'error': 'Sitztyp nicht gefunden'}), 404
-
-                conn.commit()
-                return jsonify({'message': 'Sitztyp aktualisiert'}), 200
-    except Exception as e:
-        print(f"Fehler beim Aktualisieren des Sitztyps: {e}")
-        return jsonify({'error': 'Fehler beim Aktualisieren des Sitztyps'}), 500
-
-@app.route('/seat_types/<int:seat_type_id>', methods=['DELETE'])
-@admin_required
-def delete_seat_type(seat_type_id):
-    try:
-        with psycopg2.connect(DATABASE_URL) as conn:
-            with conn.cursor() as cursor:
-                cursor.execute("""
-                    DELETE FROM seat_types
-                    WHERE seat_type_id = %s
-                """, (seat_type_id,))
-                if cursor.rowcount == 0:
-                    return jsonify({'error': 'Sitztyp nicht gefunden'}), 404
-
-        return jsonify({'message': 'Sitztyp gelöscht'}), 200
-
-    except Exception as e:
-        print(f"Fehler beim Löschen des Sitzes: {e}")
-        return jsonify({'error': 'Fehler beim Löschen des Sitzes'}), 500
 
 
 @app.route('/user/cart', methods=['GET'])
