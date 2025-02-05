@@ -29,6 +29,22 @@ def token_required(f):
         return f(*args, **kwargs)
     return decorated
 
+def token_optional(f):
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        token = request.headers.get('Authorization', '').replace('Bearer ', '')
+        if not token:
+            return None
+        try:
+            decoded = jwt.decode(token, SECRET_KEY, algorithms=['HS256'])
+            request.user = decoded  # Speichere die Nutzerdaten in request.user
+        except jwt.ExpiredSignatureError:
+            return None
+        except jwt.InvalidTokenError:
+            return None
+        return f(*args, **kwargs)
+    return decorated
+
 def admin_required(f):
     @wraps(f)
     @token_required

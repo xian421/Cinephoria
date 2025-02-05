@@ -1,5 +1,5 @@
 # cinephoria_backend/routes/paypal.py
-
+import jwt 
 from flask import Blueprint, request, jsonify
 import requests
 import uuid
@@ -9,6 +9,7 @@ from cinephoria_backend.config import (
     PAYPAL_CLIENT_SECRET,
     get_db_connection
 )
+from cinephoria_backend.routes.auth import token_optional
 
 paypal_bp = Blueprint('paypal', __name__)
 
@@ -73,6 +74,7 @@ def create_paypal_order():
         return jsonify({"error": str(e)}), 500
 
 @paypal_bp.route('/paypal/capture-order', methods=['POST'])
+@token_optional
 def capture_paypal_order():
     data = request.get_json()
     order_id = data.get('orderID')
