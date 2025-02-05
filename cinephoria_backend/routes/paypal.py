@@ -81,7 +81,7 @@ def capture_paypal_order():
     vorname = data.get('vorname')
     nachname = data.get('nachname')
     email = data.get('email')
-    user_id = request.user.get('user_id') #kann null sein
+    user_id = request.user.get('user_id') if request.user else None
     total_amount = data.get('total_amount')
     cart_items = data.get('cart_items', [])
 
