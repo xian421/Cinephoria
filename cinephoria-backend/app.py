@@ -370,7 +370,6 @@ def get_now_playing():
         
         if response.status_code == 200:
             data = response.json()
-            # Filter: Nur Filme mit einem gültigen `poster_path` hinzufügen
             filtered_results = [
                 movie for movie in data['results'] if movie.get('poster_path')
             ]
