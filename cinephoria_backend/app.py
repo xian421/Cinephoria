@@ -214,112 +214,111 @@ def get_screens():
 
 
 
+# @app.route('/bookings', methods=['POST']) #Dashierändern
+# @token_required
+# def create_booking_route():
+#     data = request.get_json()
+#     showtime_id = data.get('showtime_id')
+#     seat_ids = data.get('seat_ids')  # Liste von seat_id
+#     user_id = request.user.get('user_id')  # Aus dem Token
+#     order_id = data.get('order_id')  # Neue PayPal Order ID
 
-@app.route('/bookings', methods=['POST']) #Dashierändern
-@token_required
-def create_booking_route():
-    data = request.get_json()
-    showtime_id = data.get('showtime_id')
-    seat_ids = data.get('seat_ids')  # Liste von seat_id
-    user_id = request.user.get('user_id')  # Aus dem Token
-    order_id = data.get('order_id')  # Neue PayPal Order ID
+#     if not showtime_id or not seat_ids or not order_id:
+#         return jsonify({'error': 'showtime_id, seat_ids und order_id sind erforderlich'}), 400
 
-    if not showtime_id or not seat_ids or not order_id:
-        return jsonify({'error': 'showtime_id, seat_ids und order_id sind erforderlich'}), 400
+#     try:
+#         with psycopg2.connect(DATABASE_URL) as conn:
+#             with conn.cursor() as cursor:
+#                 # Beginne eine Transaktion
+#                 cursor.execute("BEGIN;")
+                
+#                 # Ermitteln des Kinosaals für die Showtime
+#                 cursor.execute("""
+#                     SELECT screen_id FROM showtimes WHERE showtime_id = %s
+#                 """, (showtime_id,))
+#                 screen = cursor.fetchone()
+#                 if not screen:
+#                     conn.rollback()
+#                     return jsonify({'error': 'Showtime nicht gefunden'}), 404
+#                 screen_id = screen[0]
+                
+#                 # Überprüfen, ob die Sitzplätze zur Showtime gehören und verfügbar sind
+#                 cursor.execute("""
+#                     SELECT seat_id FROM seats
+#                     WHERE seat_id = ANY(%s) AND screen_id = %s
+#                 """, (seat_ids, screen_id))
+#                 available_seats = {row[0] for row in cursor.fetchall()}
+                
+#                 if not available_seats.issuperset(set(seat_ids)):
+#                     conn.rollback()
+#                     return jsonify({'error': 'Ein oder mehrere Sitzplätze sind nicht verfügbar'}), 400
+                
+#                 # Überprüfen, ob die Sitzplätze bereits gebucht wurden
+#                 cursor.execute("""
+#                     SELECT bs.seat_id FROM booking_seats bs
+#                     JOIN bookings b ON bs.booking_id = b.booking_id
+#                     WHERE bs.showtime_id = %s AND b.payment_status = 'completed' AND bs.seat_id = ANY(%s)
+#                     FOR UPDATE
+#                 """, (showtime_id, seat_ids))
+#                 already_booked = {row[0] for row in cursor.fetchall()}
+                
+#                 if already_booked:
+#                     conn.rollback()
+#                     return jsonify({'error': 'Ein oder mehrere Sitzplätze sind bereits gebucht'}), 400
+                
+#                 # Preise für die ausgewählten Sitzplätze abrufen
+#                 cursor.execute("""
+#                     SELECT s.seat_id, st.price
+#                     FROM seats s
+#                     JOIN seat_types st ON s.seat_type_id = st.seat_type_id
+#                     WHERE s.seat_id = ANY(%s)
+#                 """, (seat_ids,))
+#                 seat_prices = cursor.fetchall()
+#                 seat_price_dict = {seat_id: price for seat_id, price in seat_prices}
+                
+#                 # Gesamtbetrag berechnen
+#                 total_amount = sum(seat_price_dict[seat_id] for seat_id in seat_ids)
+                
+#                 # Erstellen der Buchung
+#                 cursor.execute("""
+#                     INSERT INTO bookings (user_id, showtime_id, payment_status, total_amount, paypal_order_id)
+#                     VALUES (%s, %s, %s, %s, %s)
+#                     RETURNING booking_id
+#                 """, (user_id, showtime_id, 'completed', total_amount, order_id))
+#                 booking_id = cursor.fetchone()[0]
+                
+#                 # Verknüpfen der Sitzplätze mit der Buchung und deren Preis
+#                 for seat_id in seat_ids:
+#                     price = seat_price_dict[seat_id]
+#                     cursor.execute("""
+#                         INSERT INTO booking_seats (booking_id, seat_id, price)
+#                         VALUES (%s, %s, %s)
+#                     """, (booking_id, seat_id, price))
+                
+#                 # **Neuer Code: Punkte gutschreiben**
+#                 points_to_add = int(total_amount)  # 1 Euro = 1 Punkt
 
-    try:
-        with psycopg2.connect(DATABASE_URL) as conn:
-            with conn.cursor() as cursor:
-                # Beginne eine Transaktion
-                cursor.execute("BEGIN;")
-                
-                # Ermitteln des Kinosaals für die Showtime
-                cursor.execute("""
-                    SELECT screen_id FROM showtimes WHERE showtime_id = %s
-                """, (showtime_id,))
-                screen = cursor.fetchone()
-                if not screen:
-                    conn.rollback()
-                    return jsonify({'error': 'Showtime nicht gefunden'}), 404
-                screen_id = screen[0]
-                
-                # Überprüfen, ob die Sitzplätze zur Showtime gehören und verfügbar sind
-                cursor.execute("""
-                    SELECT seat_id FROM seats
-                    WHERE seat_id = ANY(%s) AND screen_id = %s
-                """, (seat_ids, screen_id))
-                available_seats = {row[0] for row in cursor.fetchall()}
-                
-                if not available_seats.issuperset(set(seat_ids)):
-                    conn.rollback()
-                    return jsonify({'error': 'Ein oder mehrere Sitzplätze sind nicht verfügbar'}), 400
-                
-                # Überprüfen, ob die Sitzplätze bereits gebucht wurden
-                cursor.execute("""
-                    SELECT bs.seat_id FROM booking_seats bs
-                    JOIN bookings b ON bs.booking_id = b.booking_id
-                    WHERE bs.showtime_id = %s AND b.payment_status = 'completed' AND bs.seat_id = ANY(%s)
-                    FOR UPDATE
-                """, (showtime_id, seat_ids))
-                already_booked = {row[0] for row in cursor.fetchall()}
-                
-                if already_booked:
-                    conn.rollback()
-                    return jsonify({'error': 'Ein oder mehrere Sitzplätze sind bereits gebucht'}), 400
-                
-                # Preise für die ausgewählten Sitzplätze abrufen
-                cursor.execute("""
-                    SELECT s.seat_id, st.price
-                    FROM seats s
-                    JOIN seat_types st ON s.seat_type_id = st.seat_type_id
-                    WHERE s.seat_id = ANY(%s)
-                """, (seat_ids,))
-                seat_prices = cursor.fetchall()
-                seat_price_dict = {seat_id: price for seat_id, price in seat_prices}
-                
-                # Gesamtbetrag berechnen
-                total_amount = sum(seat_price_dict[seat_id] for seat_id in seat_ids)
-                
-                # Erstellen der Buchung
-                cursor.execute("""
-                    INSERT INTO bookings (user_id, showtime_id, payment_status, total_amount, paypal_order_id)
-                    VALUES (%s, %s, %s, %s, %s)
-                    RETURNING booking_id
-                """, (user_id, showtime_id, 'completed', total_amount, order_id))
-                booking_id = cursor.fetchone()[0]
-                
-                # Verknüpfen der Sitzplätze mit der Buchung und deren Preis
-                for seat_id in seat_ids:
-                    price = seat_price_dict[seat_id]
-                    cursor.execute("""
-                        INSERT INTO booking_seats (booking_id, seat_id, price)
-                        VALUES (%s, %s, %s)
-                    """, (booking_id, seat_id, price))
-                
-                # **Neuer Code: Punkte gutschreiben**
-                points_to_add = int(total_amount)  # 1 Euro = 1 Punkt
+#                 # Aktualisiere user_points
+#                 cursor.execute("""
+#                     UPDATE user_points
+#                     SET points = points + %s,
+#                         last_updated = CURRENT_TIMESTAMP
+#                     WHERE user_id = %s
+#                 """, (points_to_add, user_id))
 
-                # Aktualisiere user_points
-                cursor.execute("""
-                    UPDATE user_points
-                    SET points = points + %s,
-                        last_updated = CURRENT_TIMESTAMP
-                    WHERE user_id = %s
-                """, (points_to_add, user_id))
+#                 # Protokolliere die Punkte-Transaktion
+#                 cursor.execute("""
+#                     INSERT INTO points_transactions (user_id, points_change, description)
+#                     VALUES (%s, %s, %s)
+#                 """, (user_id, points_to_add, f'Punkte für Buchung {booking_id}'))
 
-                # Protokolliere die Punkte-Transaktion
-                cursor.execute("""
-                    INSERT INTO points_transactions (user_id, points_change, description)
-                    VALUES (%s, %s, %s)
-                """, (user_id, points_to_add, f'Punkte für Buchung {booking_id}'))
-
-                # Commit der Transaktion
-                conn.commit()
+#                 # Commit der Transaktion
+#                 conn.commit()
         
-        return jsonify({'message': 'Buchung erfolgreich', 'booking_id': booking_id}), 201
-    except Exception as e:
-        print(f"Fehler beim Erstellen der Buchung: {e}")
-        return jsonify({'error': 'Fehler beim Erstellen der Buchung'}), 500
+#         return jsonify({'message': 'Buchung erfolgreich', 'booking_id': booking_id}), 201
+#     except Exception as e:
+#         print(f"Fehler beim Erstellen der Buchung: {e}")
+#         return jsonify({'error': 'Fehler beim Erstellen der Buchung'}), 500
 
 
 
