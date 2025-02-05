@@ -1008,7 +1008,7 @@ def get_user_bookings():
                     booking_id = bs['booking_id']
                     seat = {
                         'seat_id': bs['seat_id'],
-                        'price': float(bs['price']),
+                        'price': float(bs['price']) if bs['price'] is not None else 0,
                         'row': bs['row'],
                         'number': bs['number'],
                         'seat_type': bs['seat_type'],
