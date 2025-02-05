@@ -71,6 +71,7 @@ def create_paypal_order():
     except Exception as e:
         print("Fehler in create_paypal_order:", e)
         return jsonify({"error": str(e)}), 500
+
 @paypal_bp.route('/paypal/capture-order', methods=['POST'])
 def capture_paypal_order():
     data = request.get_json()
@@ -78,7 +79,7 @@ def capture_paypal_order():
     vorname = data.get('vorname')
     nachname = data.get('nachname')
     email = data.get('email')
-    user_id = data.get('user_id')  # Kann None sein, falls z.B. ein Gast bucht
+    user_id = request.user.get('user_id') #kann null sein
     total_amount = data.get('total_amount')
     cart_items = data.get('cart_items', [])
 
@@ -153,21 +154,24 @@ def capture_paypal_order():
                     # Hier gehen wir davon aus, dass der total_amount korrekt übergeben wird.
                     # Falls du auf Nummer sicher gehen möchtest, kannst du alternativ auch
                     # nochmal über die cart_items anhand der DB-Preise den Gesamtbetrag berechnen.
-                    points_to_add = int(total_amount)  # 1 Euro = 1 Punkt
+                    if user_id is not None:
+                        points_to_add = int(total_amount)  # 1 Euro = 1 Punkt
 
-                    # Update der user_points-Tabelle
-                    cursor.execute("""
-                        UPDATE user_points
-                        SET points = points + %s,
-                            last_updated = CURRENT_TIMESTAMP
-                        WHERE user_id = %s
-                    """, (points_to_add, user_id))
+                        # Update der user_points-Tabelle
+                        cursor.execute("""
+                            UPDATE user_points
+                            SET points = points + %s,
+                                last_updated = CURRENT_TIMESTAMP
+                            WHERE user_id = %s
+                        """, (points_to_add, user_id))
 
-                    # Protokollierung der Punkte-Transaktion
-                    cursor.execute("""
-                        INSERT INTO points_transactions (user_id, points_change, description)
-                        VALUES (%s, %s, %s)
-                    """, (user_id, points_to_add, f'Punkte für Buchung {booking_id}'))
+                        # Protokollierung der Punkte-Transaktion
+                        cursor.execute("""
+                            INSERT INTO points_transactions (user_id, points_change, description)
+                            VALUES (%s, %s, %s)
+                        """, (user_id, points_to_add, f'Punkte für Buchung {booking_id}'))
+                    else:
+                        print("Keine user_id vorhanden, daher keine Punkte gutgeschrieben")
 
                     conn.commit()
 
@@ -182,4 +186,3 @@ def capture_paypal_order():
     except Exception as e:
         print("Fehler in capture_paypal_order:", e)
         return jsonify({"error": str(e)}), 500
-
