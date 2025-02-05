@@ -12,7 +12,7 @@ from functools import wraps
 import uuid
 import logging
 import subprocess
-from routes.movies import movies_bp
+from cinephoria_backend.routes.movies import movies_bp
 
 
 app = Flask(__name__, static_folder='public', static_url_path='')
