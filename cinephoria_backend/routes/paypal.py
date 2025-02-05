@@ -71,7 +71,6 @@ def create_paypal_order():
     except Exception as e:
         print("Fehler in create_paypal_order:", e)
         return jsonify({"error": str(e)}), 500
-
 @paypal_bp.route('/paypal/capture-order', methods=['POST'])
 def capture_paypal_order():
     data = request.get_json()
@@ -79,7 +78,7 @@ def capture_paypal_order():
     vorname = data.get('vorname')
     nachname = data.get('nachname')
     email = data.get('email')
-    user_id = data.get('user_id')  # Kann None sein
+    user_id = data.get('user_id')  # Kann None sein, falls z.B. ein Gast bucht
     total_amount = data.get('total_amount')
     cart_items = data.get('cart_items', [])
 
@@ -101,11 +100,13 @@ def capture_paypal_order():
         capture_data = response.json()
 
         if capture_data.get("status") == "COMPLETED":
+            # Erzeuge QR-Code Tokens oder ähnliches
             qr_token = str(uuid.uuid4())
             qr_seite = str(uuid.uuid4())
 
             with get_db_connection() as conn:
                 with conn.cursor() as cursor:
+                    # Buchung in die bookings-Tabelle eintragen
                     cursor.execute("""
                         INSERT INTO bookings (
                             user_id,
@@ -133,6 +134,7 @@ def capture_paypal_order():
                     ))
                     booking_id = cursor.fetchone()[0]
 
+                    # Alle zugehörigen Sitzplätze (cart_items) in booking_seats eintragen
                     for item in cart_items:
                         seat_id = item.get('seat_id')
                         showtime_id = item.get('showtime_id')
@@ -146,6 +148,26 @@ def capture_paypal_order():
                                 (booking_id, seat_id, showtime_id, seat_type_discount_id)
                             VALUES (%s, %s, %s, %s)
                         """, (booking_id, seat_id, showtime_id, seat_type_discount_id))
+                    
+                    # --- Punkte gutschreiben ---
+                    # Hier gehen wir davon aus, dass der total_amount korrekt übergeben wird.
+                    # Falls du auf Nummer sicher gehen möchtest, kannst du alternativ auch
+                    # nochmal über die cart_items anhand der DB-Preise den Gesamtbetrag berechnen.
+                    points_to_add = int(total_amount)  # 1 Euro = 1 Punkt
+
+                    # Update der user_points-Tabelle
+                    cursor.execute("""
+                        UPDATE user_points
+                        SET points = points + %s,
+                            last_updated = CURRENT_TIMESTAMP
+                        WHERE user_id = %s
+                    """, (points_to_add, user_id))
+
+                    # Protokollierung der Punkte-Transaktion
+                    cursor.execute("""
+                        INSERT INTO points_transactions (user_id, points_change, description)
+                        VALUES (%s, %s, %s)
+                    """, (user_id, points_to_add, f'Punkte für Buchung {booking_id}'))
 
                     conn.commit()
 
@@ -160,3 +182,4 @@ def capture_paypal_order():
     except Exception as e:
         print("Fehler in capture_paypal_order:", e)
         return jsonify({"error": str(e)}), 500
+
