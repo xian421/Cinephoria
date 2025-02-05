@@ -232,7 +232,7 @@ def update_profile_image():
         return jsonify({'error': 'Ungültiges Profilbild'}), 400
     
     try:
-        with current_app.db_connection as conn:
+        with get_db_connection() as conn:
             with conn.cursor() as cursor:
                 cursor.execute("UPDATE users SET profile_image = %s WHERE id = %s", (profile_image, user_id))
                 conn.commit()
