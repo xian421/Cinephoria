@@ -7,7 +7,8 @@ from .utils import get_db_connection, token_required  # Falls du diese Funktione
 
 DATABASE_URL = Config.DATABASE_URL
 
-auth_bp = Blueprint('discounts', __name__)
+discounts_bp = Blueprint('discounts', __name__)
+
 @app.route('/discounts', methods=['GET'])
 def get_discounts():
     try:
