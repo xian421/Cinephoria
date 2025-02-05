@@ -51,5 +51,52 @@ def get_movie_details(movie_id):
         return jsonify(response.json())
     else:
         return jsonify({"error": f"Unable to fetch details for movie ID {movie_id}"}), response.status_code
+    
 
-# Weitere movie-bezogene Routen können hier ergänzt werden...
+@movies_bp.route('/movie/<int:movie_id>/release_dates', methods=['GET'])
+def get_movie_release_dates(movie_id):
+    # URL für die TMDB-API mit der spezifischen Film-ID
+    url = f"{TMDB_API_URL}/{movie_id}/release_dates"
+    
+    # Anfrage an die API senden
+    response = requests.get(url, headers=HEADERS)
+    
+    # Erfolgreiche Antwort zurückgeben
+    if response.status_code == 200:
+        # JSON-Antwort parsen
+        data = response.json()
+        
+        # Filtere nur den Eintrag mit 'iso_3166_1': 'DE'
+        german_release = next((item for item in data['results'] if item['iso_3166_1'] == 'DE'), None)
+        
+        if german_release:
+            return jsonify(german_release)
+        else:
+            return jsonify({"error": "No release date found for Germany (DE)"}), 404
+    else:
+        # Fehler behandeln und Fehlermeldung zurückgeben
+        return jsonify({"error": f"Unable to fetch details for movie ID {movie_id}"}), response.status_code
+    
+
+@movies_bp.route('/movie/<int:movie_id>/trailer_url', methods=['GET'])
+def get_movie_trailer_url(movie_id):
+    # URL für die TMDB-API mit der spezifischen Film-ID
+    url = f"{TMDB_API_URL}/{movie_id}/videos?language=de-DE"
+
+    # Anfrage an die API senden
+    response = requests.get(url, headers=HEADERS)
+    
+    # Erfolgreiche Antwort zurückgeben
+    if response.status_code == 200:
+        data = response.json()
+        
+        # Filtert den Eintrag mit 'type' == 'Trailer' und 'site' == 'YouTube'
+        trailer = next((item for item in data.get('results', []) if item.get('type') == 'Trailer' and item.get('site') == 'YouTube'), None)
+        
+        if trailer and 'key' in trailer:
+            embed_url = f"https://www.youtube.com/embed/{trailer['key']}"
+            return jsonify({"trailer_url": embed_url}), 200
+        else:
+            return jsonify({"error": "No Trailer found."}), 404
+    else:
+        return jsonify({"error": f"Unable to fetch Trailer for movie ID {movie_id}"}), response.status_code

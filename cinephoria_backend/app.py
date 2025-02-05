@@ -16,7 +16,12 @@ from cinephoria_backend.routes.movies import movies_bp
 
 
 app = Flask(__name__, static_folder='public', static_url_path='')
+
+# Einzelne Module verwenden
 app.register_blueprint(movies_bp, url_prefix='')
+
+
+
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -364,29 +369,6 @@ def validate_token():
 
 
 
-@app.route('/movie/<int:movie_id>/release_dates', methods=['GET'])
-def get_movie_release_dates(movie_id):
-    # URL für die TMDB-API mit der spezifischen Film-ID
-    url = f"{TMDB_API_URL}/{movie_id}/release_dates"
-    
-    # Anfrage an die API senden
-    response = requests.get(url, headers=HEADERS)
-    
-    # Erfolgreiche Antwort zurückgeben
-    if response.status_code == 200:
-        # JSON-Antwort parsen
-        data = response.json()
-        
-        # Filtere nur den Eintrag mit 'iso_3166_1': 'DE'
-        german_release = next((item for item in data['results'] if item['iso_3166_1'] == 'DE'), None)
-        
-        if german_release:
-            return jsonify(german_release)
-        else:
-            return jsonify({"error": "No release date found for Germany (DE)"}), 404
-    else:
-        # Fehler behandeln und Fehlermeldung zurückgeben
-        return jsonify({"error": f"Unable to fetch details for movie ID {movie_id}"}), response.status_code
 
 @app.route('/login', methods=['POST'])
 def login():
@@ -1988,29 +1970,6 @@ def get_discount_for_seat_type(seat_type_id):
 
 
 
-
-@app.route('/movie/<int:movie_id>/trailer_url', methods=['GET'])
-def get_movie_trailer_url(movie_id):
-    # URL für die TMDB-API mit der spezifischen Film-ID
-    url = f"{TMDB_API_URL}/{movie_id}/videos?language=de-DE"
-
-    # Anfrage an die API senden
-    response = requests.get(url, headers=HEADERS)
-    
-    # Erfolgreiche Antwort zurückgeben
-    if response.status_code == 200:
-        data = response.json()
-        
-        # Filtert den Eintrag mit 'type' == 'Trailer' und 'site' == 'YouTube'
-        trailer = next((item for item in data.get('results', []) if item.get('type') == 'Trailer' and item.get('site') == 'YouTube'), None)
-        
-        if trailer and 'key' in trailer:
-            embed_url = f"https://www.youtube.com/embed/{trailer['key']}"
-            return jsonify({"trailer_url": embed_url}), 200
-        else:
-            return jsonify({"error": "No Trailer found."}), 404
-    else:
-        return jsonify({"error": f"Unable to fetch Trailer for movie ID {movie_id}"}), response.status_code
     
 
 @app.route('/bookings', methods=['GET'])
