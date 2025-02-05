@@ -3,9 +3,6 @@ from flask import Blueprint, jsonify, request
 import psycopg2.extras
 from cinephoria_backend.config import get_db_connection
 from cinephoria_backend.routes.auth import admin_required
-import logging
-
-logger = logging.getLogger(__name__)
 
 discounts_bp = Blueprint('discounts', __name__)
 
@@ -20,7 +17,6 @@ def get_discounts():
                 discounts_list = [dict(d) for d in discounts]
         return jsonify({'discounts': discounts_list}), 200
     except Exception as e:
-        logger.error(f"Fehler beim Abrufen der Discounts: {e}")
         return jsonify({'error': 'Fehler beim Abrufen der Discounts'}), 500
 
     
@@ -49,7 +45,6 @@ def add_discount():
         conn.rollback()
         return jsonify({'error': 'Discount mit diesem Namen existiert bereits'}), 409
     except Exception as e:
-        logger.error(f"Fehler beim Hinzufügen des Discounts: {e}")
         return jsonify({'error': 'Fehler beim Hinzufügen des Discounts'}), 500
     
         
@@ -80,7 +75,6 @@ def update_discount(discount_id):
         conn.rollback()
         return jsonify({'error': 'Ein Discount mit diesem Namen existiert bereits'}), 409
     except Exception as e:
-        logger.error(f"Fehler beim Aktualisieren des Discounts: {e}")
         return jsonify({'error': 'Fehler beim Aktualisieren des Discounts'}), 500
     
 
@@ -96,7 +90,6 @@ def delete_discount(discount_id):
                 conn.commit()
                 return jsonify({'message': 'Discount gelöscht'}), 200
     except Exception as e:
-        logger.error(f"Fehler beim Löschen des Discounts: {e}")
         return jsonify({'error': 'Fehler beim Löschen des Discounts'}), 500
     
 
@@ -139,7 +132,6 @@ def assign_discount_to_seat_type():
                 conn.commit()
                 return jsonify({'message': 'Discount dem Sitztyp zugewiesen'}), 200
     except Exception as e:
-        logger.error(f"Fehler beim Zuweisen des Discounts zu Sitztyp: {e}")
         return jsonify({'error': 'Fehler beim Zuweisen des Discounts zu Sitztyp'}), 500
 
 
@@ -165,7 +157,6 @@ def remove_discount_from_seat_type():
                 conn.commit()
                 return jsonify({'message': 'Discount vom Sitztyp entfernt'}), 200
     except Exception as e:
-        logger.error(f"Fehler beim Entfernen des Discounts vom Sitztyp: {e}")
         return jsonify({'error': 'Fehler beim Entfernen des Discounts vom Sitztyp'}), 500
 
 @discounts_bp.route('/seat_types_with_discounts', methods=['GET'])  #SucheDis
@@ -219,7 +210,6 @@ def get_seat_types_with_discounts():
 
         return jsonify({'seat_types': seat_types_list}), 200
     except Exception as e:
-        logger.error(f"Fehler beim Abrufen der Sitztypen mit Discounts: {e}")
         return jsonify({'error': 'Fehler beim Abrufen der Sitztypen mit Discounts'}), 500
 
 
@@ -256,7 +246,6 @@ def get_discount_for_seat_type(seat_type_id):
 
         return jsonify({'discounts': discounts}), 200
     except Exception as e:
-        logger.error(f"Fehler beim Abrufen des Discounts für Sitztyp: {e}")
         return jsonify({'error': 'Fehler beim Abrufen des Discounts für Sitztyp'}), 500
 
 

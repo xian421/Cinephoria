@@ -4,12 +4,126 @@ import psycopg2
 import psycopg2.extras
 from cinephoria_backend.config import get_db_connection
 from cinephoria_backend.routes.auth import token_required, admin_required
-import logging
+from cinephoria_backend.config import TMDB_API_URL, HEADERS
+import requests
 
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
 
 extras_bp = Blueprint('extras', __name__)
+
+
+@extras_bp.route('/bookings', methods=['GET'])
+@token_required
+def get_user_bookings():
+    user_id = request.user.get('user_id')
+    try:
+        with get_db_connection() as conn:
+            with conn.cursor(cursor_factory=psycopg2.extras.DictCursor) as cursor:
+
+                cursor.execute("""
+                    SELECT 
+                        b.booking_id, 
+                        bs.showtime_id, 
+                        b.total_amount,
+                        b.payment_status,
+                        b.paypal_order_id,
+                        b.created_at, 
+                        s.movie_id, 
+                        s.screen_id, 
+                        s.start_time, 
+                        s.end_time,
+                        sc.name AS screen_name
+                    FROM bookings b
+                    JOIN booking_seats bs ON b.booking_id = bs.booking_id
+                    JOIN showtimes s ON bs.showtime_id = s.showtime_id
+                    JOIN screens sc ON s.screen_id = sc.screen_id
+                    WHERE b.user_id = %s
+                    ORDER BY b.created_at DESC
+                """, (user_id,))
+                bookings = cursor.fetchall()
+
+                if not bookings:
+                    return jsonify({'bookings': []}), 200
+
+                # Sammeln aller eindeutigen movie_ids
+                movie_ids = list({booking['movie_id'] for booking in bookings})
+
+                # Abrufen der Buchungs-Sitzplätze
+                booking_ids = [booking['booking_id'] for booking in bookings]
+                cursor.execute("""
+                    SELECT 
+                        bs.booking_id, 
+                        bs.seat_id, 
+                        bs.price,
+                        s.row,
+                        s.number,
+                        st.name AS seat_type,
+                        bs.seat_type_discount_id      
+                    FROM booking_seats bs
+                    JOIN seats s ON bs.seat_id = s.seat_id
+                    JOIN seat_types st ON s.seat_type_id = st.seat_type_id
+                    WHERE bs.booking_id = ANY(%s)
+                """, (booking_ids,))
+                booking_seats = cursor.fetchall()
+
+                # Mapping von booking_id zu Sitzplätzen
+                seats_map = {}
+                for bs in booking_seats:
+                    booking_id = bs['booking_id']
+                    seat = {
+                        'seat_id': bs['seat_id'],
+                        'price': float(bs['price']) if bs['price'] is not None else 0,
+                        'row': bs['row'],
+                        'number': bs['number'],
+                        'seat_type': bs['seat_type'],
+                        'seat_type_discount_id': bs['seat_type_discount_id']
+                    }
+                    seats_map.setdefault(booking_id, []).append(seat)
+
+        # Abrufen der Filmdetails von TMDB für jede eindeutige movie_id
+        movie_details = {}
+        for movie_id in movie_ids:
+            movie_response = requests.get(f"{TMDB_API_URL}/{movie_id}?language=de-DE", headers=HEADERS)
+            if movie_response.status_code == 200:
+                movie_data = movie_response.json()
+                movie_details[movie_id] = {
+                    'title': movie_data.get('title'),
+                    'poster_url': f"https://image.tmdb.org/t/p/w500{movie_data.get('poster_path')}" if movie_data.get('poster_path') else None
+                }
+            else:
+                movie_details[movie_id] = {
+                    'title': None,
+                    'poster_url': None
+                }
+
+        # Aufbau der finalen Buchungsstruktur
+        bookings_list = []
+        for booking in bookings:
+            movie_id = booking['movie_id']
+            movie_info = movie_details.get(movie_id, {})
+            booking_dict = {
+                'booking_id': booking['booking_id'],
+                'showtime_id': booking['showtime_id'],
+                'total_amount': float(booking['total_amount']) if booking['total_amount'] is not None else 0,
+                'payment_status': booking['payment_status'],
+                'paypal_order_id': booking['paypal_order_id'],
+                'created_at': booking['created_at'].isoformat(),
+                'movie_id': movie_id,
+                'movie_title': movie_info.get('title'),
+                'movie_poster_url': movie_info.get('poster_url'),
+                'screen_id': booking['screen_id'],
+                'start_time': booking['start_time'].isoformat(),
+                'end_time': booking['end_time'].isoformat() if booking['end_time'] else None,
+                'screen_name': booking['screen_name'],
+                'seats': seats_map.get(booking['booking_id'], [])
+            }
+            bookings_list.append(booking_dict)
+
+        return jsonify({'bookings': bookings_list}), 200
+
+    except Exception as e:
+        return jsonify({'error': 'Fehler beim Abrufen der Buchungen'}), 500
+
+
 
 @extras_bp.route('/user/points', methods=['GET'])
 @token_required
@@ -25,7 +139,6 @@ def get_user_points():
                 else:
                     return jsonify({'points': 0}), 200
     except Exception as e:
-        logger.error(f"Fehler beim Abrufen der Punkte: {e}")
         return jsonify({'error': 'Fehler beim Abrufen der Punkte'}), 500
 
 
@@ -89,7 +202,6 @@ def redeem_points():
         return jsonify({'message': f'{points_to_redeem} Punkte erfolgreich für die Belohnung eingelöst'}), 200
 
     except Exception as e:
-        logger.error(f"Fehler beim Einlösen der Punkte: {e}")
         return jsonify({'error': 'Fehler beim Einlösen der Punkte'}), 500
 
 
@@ -127,7 +239,6 @@ def get_points_transactions():
                 ]
         return jsonify({'transactions': transactions_list}), 200
     except Exception as e:
-        logger.error(f"Fehler beim Abrufen der Punkte-Transaktionen: {e}")
         return jsonify({'error': 'Fehler beim Abrufen der Punkte-Transaktionen'}), 500
     
 
@@ -142,7 +253,6 @@ def get_rewards():
                 rewards_list = [dict(r) for r in rewards]
         return jsonify({'rewards': rewards_list}), 200
     except Exception as e:
-        logger.error(f"Fehler beim Abrufen der Belohnungen: {e}")
         return jsonify({'error': 'Fehler beim Abrufen der Belohnungen'}), 500
     
 @extras_bp.route('/rewards', methods=['POST'])
@@ -167,7 +277,6 @@ def add_reward():
                 conn.commit()
                 return jsonify({'message': 'Belohnung hinzugefügt'}), 201
     except Exception as e:
-        logger.error(f"Fehler beim Hinzufügen der Belohnung: {e}")
         return jsonify({'error': 'Fehler beim Hinzufügen der Belohnung'}), 500
     
 @extras_bp.route('/rewards/<int:reward_id>', methods=['PUT'])
@@ -198,7 +307,6 @@ def update_reward(reward_id):
                 conn.commit()
                 return jsonify({'message': 'Belohnung aktualisiert'}), 200
     except Exception as e:
-        logger.error(f"Fehler beim Aktualisieren der Belohnung: {e}")
         return jsonify({'error': 'Fehler beim Aktualisieren der Belohnung'}), 500
     
 
@@ -214,7 +322,6 @@ def delete_reward(reward_id):
                 conn.commit()
                 return jsonify({'message': 'Belohnung gelöscht'}), 200
     except Exception as e:
-        logger.error(f"Fehler beim Löschen der Belohnung: {e}")
         return jsonify({'error': 'Fehler beim Löschen der Belohnung'}), 500
 
 @extras_bp.route('/leaderboard', methods=['GET'])
@@ -237,5 +344,6 @@ def get_leaderboard():
                 users_list = [dict(u) for u in users]
         return jsonify({'leaderboard': users_list}), 200
     except Exception as e:
-        logger.error(f"Fehler beim Abrufen des Leaderboards: {e}")
         return jsonify({'error': 'Fehler beim Abrufen des Leaderboards'}), 500
+    
+
