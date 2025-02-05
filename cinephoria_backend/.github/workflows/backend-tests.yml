@@ -1,0 +1,33 @@
+name: Backend Tests
+
+# Wann soll der Workflow getriggert werden?
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  test-backend:
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. Repo auschecken
+      - name: Check out code
+        uses: actions/checkout@v3
+
+      # 2. Python-Version festlegen
+      - name: Set up Python
+        uses: actions/setup-python@v3
+        with:
+          python-version: 3.12  
+      # 3. Abhängigkeiten installieren
+      - name: Install dependencies
+        run: |
+          pip install --upgrade pip
+          pip install -r requirements.txt
+
+      # 4. Tests starten (mit Coverage, falls du pytest-cov verwendest)
+      - name: Run tests
+        run: |
+          pytest --cov=. --cov-report=term-missing
