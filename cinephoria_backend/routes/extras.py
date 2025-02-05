@@ -1,0 +1,241 @@
+# cinephoria_backend/routes/extras.py
+from flask import Blueprint, jsonify, request
+import psycopg2
+import psycopg2.extras
+from cinephoria_backend.config import get_db_connection
+from cinephoria_backend.routes.auth import token_required, admin_required
+import logging
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+extras_bp = Blueprint('extras', __name__)
+
+@extras_bp.route('/user/points', methods=['GET'])
+@token_required
+def get_user_points():
+    user_id = request.user.get('user_id')
+    try:
+        with get_db_connection() as conn:
+            with conn.cursor() as cursor:
+                cursor.execute("SELECT points FROM user_points WHERE user_id = %s", (user_id,))
+                result = cursor.fetchone()
+                if result:
+                    return jsonify({'points': result[0]}), 200
+                else:
+                    return jsonify({'points': 0}), 200
+    except Exception as e:
+        logger.error(f"Fehler beim Abrufen der Punkte: {e}")
+        return jsonify({'error': 'Fehler beim Abrufen der Punkte'}), 500
+
+
+@extras_bp.route('/user/points/redeem', methods=['POST'])
+@token_required
+def redeem_points():
+    user_id = request.user.get('user_id')
+    data = request.get_json()
+    points_to_redeem = data.get('points')
+    reward_id = data.get('reward_id')  # Neuen Parameter hinzufügen
+
+    # Validierung der Eingabedaten
+    if not points_to_redeem or not isinstance(points_to_redeem, int) or points_to_redeem <= 0:
+        return jsonify({'error': 'Ungültige Punkteanzahl'}), 400
+
+    if not reward_id or not isinstance(reward_id, int):
+        return jsonify({'error': 'Ungültige reward_id'}), 400
+
+    try:
+        with get_db_connection() as conn:
+            with conn.cursor() as cursor:
+                # Beginne eine Transaktion
+                cursor.execute("BEGIN;")
+
+                # Überprüfen, ob die Belohnung existiert und die erforderlichen Punkte stimmt
+                cursor.execute("SELECT points FROM rewards WHERE reward_id = %s", (reward_id,))
+                reward = cursor.fetchone()
+                if not reward:
+                    conn.rollback()
+                    return jsonify({'error': 'Belohnung nicht gefunden'}), 404
+
+                required_points = reward[0]
+                if points_to_redeem != required_points:
+                    conn.rollback()
+                    return jsonify({'error': 'Die Anzahl der einzulösenden Punkte stimmt nicht mit der Belohnung überein'}), 400
+
+                # Überprüfen, ob der Benutzer genügend Punkte hat
+                cursor.execute("SELECT points FROM user_points WHERE user_id = %s FOR UPDATE", (user_id,))
+                result = cursor.fetchone()
+                if not result or result[0] < points_to_redeem:
+                    conn.rollback()
+                    return jsonify({'error': 'Nicht genügend Punkte'}), 400
+
+                # Punkte abziehen
+                cursor.execute("""
+                    UPDATE user_points
+                    SET points = points - %s,
+                        last_updated = CURRENT_TIMESTAMP
+                    WHERE user_id = %s
+                """, (points_to_redeem, user_id))
+
+                # Transaktion protokollieren mit reward_id
+                cursor.execute("""
+                    INSERT INTO points_transactions (user_id, points_change, description, reward_id)
+                    VALUES (%s, %s, %s, %s)
+                """, (user_id, -points_to_redeem, 'Einlösung von Punkten für Belohnung', reward_id))
+
+                # Transaktion committen
+                conn.commit()
+
+        return jsonify({'message': f'{points_to_redeem} Punkte erfolgreich für die Belohnung eingelöst'}), 200
+
+    except Exception as e:
+        logger.error(f"Fehler beim Einlösen der Punkte: {e}")
+        return jsonify({'error': 'Fehler beim Einlösen der Punkte'}), 500
+
+
+@extras_bp.route('/user/points/transactions', methods=['GET'])
+@token_required
+def get_points_transactions():
+    user_id = request.user.get('user_id')
+    try:
+        with get_db_connection() as conn:
+            with conn.cursor(cursor_factory=psycopg2.extras.DictCursor) as cursor:
+                cursor.execute("""
+                    SELECT pt.transaction_id, pt.points_change, pt.description, pt.timestamp, pt.reward_id, r.title AS reward_title, r.points AS reward_points, r.image AS reward_image, r.description AS reward_description
+                    FROM points_transactions pt
+                    JOIN rewards r ON pt.reward_id = r.reward_id
+                    WHERE user_id = %s
+                    ORDER BY timestamp DESC
+                """, (user_id,))
+                transactions = cursor.fetchall()
+                transactions_list = [
+                    {
+                        'transaction_id': t['transaction_id'],
+                        'points_change': t['points_change'],
+                        'description': t['description'],
+                        'timestamp': t['timestamp'].isoformat(),
+                        'reward': {
+                            'reward_id': t['reward_id'],
+                            'title': t['reward_title'],
+                            'points': t['reward_points'],
+                            'image': t['reward_image'],
+                            'description': t['reward_description']
+                        }
+
+                    }
+                    for t in transactions
+                ]
+        return jsonify({'transactions': transactions_list}), 200
+    except Exception as e:
+        logger.error(f"Fehler beim Abrufen der Punkte-Transaktionen: {e}")
+        return jsonify({'error': 'Fehler beim Abrufen der Punkte-Transaktionen'}), 500
+    
+
+
+@extras_bp.route('/rewards', methods=['GET'])
+def get_rewards():
+    try:
+        with get_db_connection() as conn:
+            with conn.cursor(cursor_factory=psycopg2.extras.DictCursor) as cursor:
+                cursor.execute("SELECT reward_id, title, points, description, image FROM rewards")
+                rewards = cursor.fetchall()
+                rewards_list = [dict(r) for r in rewards]
+        return jsonify({'rewards': rewards_list}), 200
+    except Exception as e:
+        logger.error(f"Fehler beim Abrufen der Belohnungen: {e}")
+        return jsonify({'error': 'Fehler beim Abrufen der Belohnungen'}), 500
+    
+@extras_bp.route('/rewards', methods=['POST'])
+@admin_required
+def add_reward():
+    data = request.get_json()
+    title = data.get('title')
+    points = data.get('points')
+    description = data.get('description', '')
+    image = data.get('image', '')
+
+    if not title or not points:
+        return jsonify({'error': 'Titel und Punkte sind erforderlich'}), 400
+
+    try:
+        with get_db_connection() as conn:
+            with conn.cursor() as cursor:
+                cursor.execute("""
+                    INSERT INTO rewards (title, points, description, image)
+                    VALUES (%s, %s, %s, %s)
+                """, (title, points, description, image))
+                conn.commit()
+                return jsonify({'message': 'Belohnung hinzugefügt'}), 201
+    except Exception as e:
+        logger.error(f"Fehler beim Hinzufügen der Belohnung: {e}")
+        return jsonify({'error': 'Fehler beim Hinzufügen der Belohnung'}), 500
+    
+@extras_bp.route('/rewards/<int:reward_id>', methods=['PUT'])
+@admin_required
+def update_reward(reward_id):
+    data = request.get_json()
+    title = data.get('title')
+    points = data.get('points')
+    description = data.get('description', '')
+    image = data.get('image', '')
+
+    if not title or not points:
+        return jsonify({'error': 'Titel und Punkte sind erforderlich'}), 400
+
+    try:
+        with get_db_connection() as conn:
+            with conn.cursor() as cursor:
+                cursor.execute("""
+                    UPDATE rewards
+                    SET title = %s,
+                        points = %s,
+                        description = %s,
+                        image = %s
+                    WHERE reward_id = %s
+                """, (title, points, description, image, reward_id))
+                if cursor.rowcount == 0:
+                    return jsonify({'error': 'Belohnung nicht gefunden'}), 404
+                conn.commit()
+                return jsonify({'message': 'Belohnung aktualisiert'}), 200
+    except Exception as e:
+        logger.error(f"Fehler beim Aktualisieren der Belohnung: {e}")
+        return jsonify({'error': 'Fehler beim Aktualisieren der Belohnung'}), 500
+    
+
+@extras_bp.route('/rewards/<int:reward_id>', methods=['DELETE'])
+@admin_required
+def delete_reward(reward_id):
+    try:
+        with get_db_connection() as conn:
+            with conn.cursor() as cursor:
+                cursor.execute("DELETE FROM rewards WHERE reward_id = %s", (reward_id,))
+                if cursor.rowcount == 0:
+                    return jsonify({'error': 'Belohnung nicht gefunden'}), 404
+                conn.commit()
+                return jsonify({'message': 'Belohnung gelöscht'}), 200
+    except Exception as e:
+        logger.error(f"Fehler beim Löschen der Belohnung: {e}")
+        return jsonify({'error': 'Fehler beim Löschen der Belohnung'}), 500
+
+@extras_bp.route('/leaderboard', methods=['GET'])
+def get_leaderboard():
+    try:
+        with get_db_connection() as conn:
+            with conn.cursor(cursor_factory=psycopg2.extras.DictCursor) as cursor:
+                cursor.execute("""
+                    SELECT up.user_id, u.nickname, up.points, u.profile_image, COUNT(b.booking_id) AS bookings, MAX(s.start_time) AS last_booking, SUM(EXTRACT(EPOCH FROM (s.end_time - s.start_time)) / 60) AS total_duration
+                    FROM users u
+                    JOIN user_points up ON u.id = up.user_id
+                    LEFT JOIN bookings b ON u.id = b.user_id
+                    JOIN booking_seats bs ON b.booking_id = bs.booking_id
+                    JOIN showtimes s ON bs.showtime_id = s.showtime_id
+                    GROUP BY up.user_id, u.nickname, up.points, u.profile_image
+                    ORDER BY  total_duration DESC
+                    
+                """)
+                users = cursor.fetchall()
+                users_list = [dict(u) for u in users]
+        return jsonify({'leaderboard': users_list}), 200
+    except Exception as e:
+        logger.error(f"Fehler beim Abrufen des Leaderboards: {e}")
+        return jsonify({'error': 'Fehler beim Abrufen des Leaderboards'}), 500
