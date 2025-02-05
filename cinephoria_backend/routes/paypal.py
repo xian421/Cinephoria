@@ -10,6 +10,10 @@ from cinephoria_backend.config import (
     get_db_connection
 )
 from cinephoria_backend.routes.auth import token_optional
+import logging
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 paypal_bp = Blueprint('paypal', __name__)
 
@@ -173,7 +177,9 @@ def capture_paypal_order():
                             VALUES (%s, %s, %s)
                         """, (user_id, points_to_add, f'Punkte für Buchung {booking_id}'))
                     else:
-                        print("Keine user_id vorhanden, daher keine Punkte gutgeschrieben")
+                        logging.error(f"USER_ID IST NULL: {user_id}")
+
+#Logging
 
                     conn.commit()
 
