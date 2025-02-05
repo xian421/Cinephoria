@@ -4,7 +4,7 @@ from flask import Blueprint, jsonify, request
 from psycopg2.extras import RealDictCursor
 from cinephoria_backend.config import get_db_connection
 
-qr_bp = Blueprint('supermarkt', __name__)
+qr_bp = Blueprint('qr', __name__)
 
 
 
