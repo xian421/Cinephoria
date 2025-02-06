@@ -1,19 +1,16 @@
-
 import os
+import pytest
+import importlib
+from unittest import mock
 
-# Setze die Umgebungsvariable vor dem Import!
-os.environ["DATABASE_URL"] = "***localhost:5432/test_db"
-
-# SECRET_KEY setzen, bevor config.py importiert wird
-os.environ["SECRET_KEY"] = "testsecret"
-
-# Jetzt erst config importieren!
-from cinephoria_backend.config import SECRET_KEY, DATABASE_URL, PAYPAL_CLIENT_ID, PAYPAL_CLIENT_SECRET
-
+@mock.patch.dict(os.environ, {"SECRET_KEY": "testsecret"})
 def test_secret_key():
-    assert SECRET_KEY == "testsecret"  # Falls du es in den Umgebungsvariablen gesetzt hast
+    import cinephoria_backend.config  # Importiere config nach dem Patchen!
+    importlib.reload(cinephoria_backend.config)  # Neu laden
+    assert cinephoria_backend.config.SECRET_KEY == "testsecret"
 
+@mock.patch.dict(os.environ, {"DATABASE_URL": "postgres://test:test@localhost:5432/test_db"})
 def test_database_url():
-    os.environ["DATABASE_URL"] = "postgres://test:test@localhost:5432/test_db"
-    from cinephoria_backend.config import DATABASE_URL
-    assert DATABASE_URL == "postgres://test:test@localhost:5432/test_db"
+    import cinephoria_backend.config  # Importiere config nach dem Patchen!
+    importlib.reload(cinephoria_backend.config)  # Neu laden
+    assert cinephoria_backend.config.DATABASE_URL == "postgres://test:test@localhost:5432/test_db"
