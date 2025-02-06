@@ -132,7 +132,6 @@
               <div class="profile-dropdown-menu">
                   <ul>
                       <li on:click={() => { navigate('/profile'); toggleProfileMenu(false); }}>Profil anzeigen</li>
-                      <li on:click={() => { navigate('/einstellungen'); toggleProfileMenu(false); }}>Einstellungen</li>
                       {#if $authStore.isAdmin}
                           <li on:click={() => { navigate('/admin'); toggleProfileMenu(false); }}>Admin</li>
                           <li on:click={() => {
