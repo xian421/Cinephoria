@@ -1,4 +1,4 @@
-from cinephoria_backend.routes import paypal
+from routes import paypal
 
 def test_sum():
     assert 1 + 2 == 3
