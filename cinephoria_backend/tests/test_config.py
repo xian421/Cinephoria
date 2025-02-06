@@ -1,5 +1,9 @@
 import os
-import pytest
+
+# SECRET_KEY setzen, bevor config.py importiert wird
+os.environ["SECRET_KEY"] = "testsecret"
+
+# Jetzt erst config importieren!
 from cinephoria_backend.config import SECRET_KEY, DATABASE_URL, PAYPAL_CLIENT_ID, PAYPAL_CLIENT_SECRET
 
 def test_secret_key():
