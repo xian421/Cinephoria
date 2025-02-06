@@ -137,7 +137,7 @@
                           <li on:click={() => { navigate('/admin'); toggleProfileMenu(false); }}>Admin</li>
                           <li on:click={() => {
                             toggleProfileMenu(false);
-                            window.location.assign('/mitarbeiter');
+                            window.location.assign('/mitarbeiter/kino');
                         }}>Mitarbeiter</li>
                        {/if}
                       <li on:click={() => { navigate('/bestellungen'); toggleProfileMenu(false); }}>Meine Bestellungen</li>
