@@ -1,4 +1,8 @@
+
 import os
+
+# Setze die Umgebungsvariable vor dem Import!
+os.environ["DATABASE_URL"] = "***localhost:5432/test_db"
 
 # SECRET_KEY setzen, bevor config.py importiert wird
 os.environ["SECRET_KEY"] = "testsecret"
