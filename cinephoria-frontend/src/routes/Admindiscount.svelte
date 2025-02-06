@@ -1,20 +1,30 @@
 <script>
     import { onMount } from 'svelte';
-    import Swal from 'sweetalert2';
-    import { 
-        fetchDiscounts, 
-        addDiscount, 
-        updateDiscount, 
-        deleteDiscount, 
-        assignDiscountToSeatType, 
-        removeDiscountFromSeatType, 
-        fetchSeatTypesWithDiscounts 
+    // SweetAlert2 NICHT mehr direkt importieren!
+    // import Swal from 'sweetalert2';
+
+    // Stattdessen unsere Helferfunktionen aus notifications.js:
+    import {
+        showErrorAlert,
+        showSuccessAlert,
+        showConfirmationDialog,
+        showCustomAlert
+    } from '../utils/notifications.js';
+
+    import {
+        fetchDiscounts,
+        addDiscount,
+        updateDiscount,
+        deleteDiscount,
+        assignDiscountToSeatType,
+        removeDiscountFromSeatType,
+        fetchSeatTypesWithDiscounts
     } from '../services/api.js';
+
     import { get } from 'svelte/store';
     import { authStore } from '../stores/authStore.js';
     import { navigate } from 'svelte-routing';
 
-    
     let discounts = [];
     let seatTypes = [];
     let isLoading = true;
@@ -35,17 +45,11 @@
                 fetchSeatTypesWithDiscounts()
             ]);
 
-            // Debugging: Logge die empfangenen Daten
-            console.log('Fetched Discounts:', fetchedDiscounts);
-            console.log('Fetched Seat Types:', fetchedSeatTypes);
-
             discounts = fetchedDiscounts.discounts;
             seatTypes = fetchedSeatTypes.map(st => ({
                 ...st,
                 discounts: st.discounts || []
             }));
-
-            console.log('Processed Seat Types:', seatTypes);
 
             isLoading = false;
         } catch (err) {
@@ -60,41 +64,28 @@
         const token = get(authStore).token;
 
         if (!newDiscountName.trim()) {
-            Swal.fire({
-                title: 'Fehler',
-                text: 'Bitte geben Sie einen Namen für den Discount ein.',
-                icon: 'error',
-                confirmButtonText: 'OK',
-            });
+            showErrorAlert('Bitte geben Sie einen Namen für den Discount ein.');
             return;
         }
 
         try {
             const result = await addDiscount(token, newDiscountName, newDiscountDescription);
-            discounts = [...discounts, {
-                discount_id: result.discount_id,
-                name: newDiscountName,
-                description: newDiscountDescription
-            }];
-            console.log('Added Discount:', result);
+            discounts = [
+                ...discounts,
+                {
+                    discount_id: result.discount_id,
+                    name: newDiscountName,
+                    description: newDiscountDescription
+                }
+            ];
 
             // Felder zurücksetzen
             newDiscountName = '';
             newDiscountDescription = '';
-            Swal.fire({
-                title: 'Erfolgreich',
-                text: 'Der neue Discount wurde hinzugefügt.',
-                icon: 'success',
-                confirmButtonText: 'OK',
-            });
+            showSuccessAlert('Der neue Discount wurde hinzugefügt.');
         } catch (err) {
             console.error('Fehler beim Hinzufügen des Discounts:', err);
-            Swal.fire({
-                title: 'Fehler',
-                text: err.message || 'Fehler beim Hinzufügen des Discounts.',
-                icon: 'error',
-                confirmButtonText: 'OK',
-            });
+            showErrorAlert(err.message || 'Fehler beim Hinzufügen des Discounts.');
         }
     }
 
@@ -103,33 +94,16 @@
         const token = get(authStore).token;
 
         if (!discount.name.trim()) {
-            Swal.fire({
-                title: 'Fehler',
-                text: 'Bitte geben Sie einen Namen für den Discount ein.',
-                icon: 'error',
-                confirmButtonText: 'OK',
-            });
+            showErrorAlert('Bitte geben Sie einen Namen für den Discount ein.');
             return;
         }
 
         try {
             await updateDiscount(token, discount.discount_id, discount.name, discount.description);
-            console.log('Updated Discount:', discount);
-
-            Swal.fire({
-                title: 'Erfolgreich',
-                text: 'Der Discount wurde aktualisiert.',
-                icon: 'success',
-                confirmButtonText: 'OK',
-            });
+            showSuccessAlert('Der Discount wurde aktualisiert.');
         } catch (err) {
             console.error('Fehler beim Aktualisieren des Discounts:', err);
-            Swal.fire({
-                title: 'Fehler',
-                text: err.message || 'Fehler beim Aktualisieren des Discounts.',
-                icon: 'error',
-                confirmButtonText: 'OK',
-            });
+            showErrorAlert(err.message || 'Fehler beim Aktualisieren des Discounts.');
         }
     }
 
@@ -137,160 +111,151 @@
     async function handleDeleteDiscount(discount_id) {
         const token = get(authStore).token;
 
-        Swal.fire({
-            title: 'Sind Sie sicher?',
-            text: 'Möchten Sie diesen Discount wirklich löschen?',
-            icon: 'warning',
-            showCancelButton: true,
-            confirmButtonText: 'Ja, löschen',
-            cancelButtonText: 'Abbrechen',
-        }).then(async (result) => {
+        // Mit eigener Confirm-Dialog-Funktion, wenn du "Ja, löschen" und "Abbrechen" custom willst:
+        showCustomAlert(
+            'Sind Sie sicher?',
+            'Möchten Sie diesen Discount wirklich löschen?',
+            'warning',
+            'Ja, löschen',
+            {
+                showCancelButton: true,
+                cancelButtonText: 'Abbrechen'
+            }
+        ).then(async (result) => {
             if (result.isConfirmed) {
                 try {
                     await deleteDiscount(token, discount_id);
                     discounts = discounts.filter(d => d.discount_id !== discount_id);
+
                     // Entferne den Discount aus allen Sitztypen
                     seatTypes = seatTypes.map(seatType => ({
                         ...seatType,
                         discounts: seatType.discounts.filter(d => d.discount_id !== discount_id)
                     }));
-                    console.log('Deleted Discount ID:', discount_id);
 
-                    Swal.fire({
-                        title: 'Gelöscht',
-                        text: 'Der Discount wurde gelöscht.',
-                        icon: 'success',
-                        confirmButtonText: 'OK',
-                    });
+                    showSuccessAlert('Der Discount wurde gelöscht.');
                 } catch (err) {
                     console.error('Fehler beim Löschen des Discounts:', err);
-                    Swal.fire({
-                        title: 'Fehler',
-                        text: err.message || 'Fehler beim Löschen des Discounts.',
-                        icon: 'error',
-                        confirmButtonText: 'OK',
-                    });
+                    showErrorAlert(err.message || 'Fehler beim Löschen des Discounts.');
                 }
             }
         });
     }
 
     // Funktion zum Zuweisen eines Discounts zu einem Sitztyp
-    async function handleAssignDiscount(seatType, discount) {
+    async function handleAssignDiscount(seatType) {
         const token = get(authStore).token;
 
-        // Dialog zur Eingabe von Rabattbetrag oder -prozentsatz
-        const { value: formValues } = await Swal.fire({
-            title: `Discount zuweisen: Sitztyp "${seatType.name}"`,
-            html:
-                `<select id="swal-discount-select" class="swal2-select">
-                    <option value="" disabled selected>Wähle einen Discount</option>
-                    ${discounts.map(d => `<option value="${d.discount_id}">${d.name}</option>`).join('')}
-                </select>
-                 <input id="swal-input1" class="swal2-input" placeholder="Rabattbetrag (EUR)">
-                 <input id="swal-input2" class="swal2-input" placeholder="Rabattprozentsatz (%)">`,
-            focusConfirm: false,
-            preConfirm: () => {
-                const discount_id = document.getElementById('swal-discount-select').value;
-                const discount_amount = document.getElementById('swal-input1').value;
-                const discount_percentage = document.getElementById('swal-input2').value;
-                return { discount_id, discount_amount, discount_percentage };
+        // Hier brauchst du benutzerdefiniertes HTML + preConfirm => showCustomAlert mit Extra-Optionen
+        const { value: formValues } = await showCustomAlert(
+            `Discount zuweisen: Sitztyp "${seatType.name}"`,
+            '', // Du kannst hier optional einen Text reinpacken
+            null, // kein Icon => man könnte 'info' nehmen
+            'Zuweisen', // Beschriftung des Confirm-Buttons
+            {
+                html:
+                    `<select id="swal-discount-select" class="swal2-select">
+                        <option value="" disabled selected>Wähle einen Discount</option>
+                        ${
+                            discounts
+                                .map(d => `<option value="${d.discount_id}">${d.name}</option>`)
+                                .join('')
+                        }
+                    </select>
+                    <input id="swal-input1" class="swal2-input" placeholder="Rabattbetrag (EUR)">
+                    <input id="swal-input2" class="swal2-input" placeholder="Rabattprozentsatz (%)">`,
+                focusConfirm: false,
+                preConfirm: () => {
+                    const discount_id = document.getElementById('swal-discount-select').value;
+                    const discount_amount = document.getElementById('swal-input1').value;
+                    const discount_percentage = document.getElementById('swal-input2').value;
+                    return { discount_id, discount_amount, discount_percentage };
+                },
+                showCancelButton: true,
+                cancelButtonText: 'Abbrechen'
             }
-        });
+        );
 
-        if (formValues) {
-            const { discount_id, discount_amount, discount_percentage } = formValues;
+        if (!formValues) {
+            // Abbruch
+            return;
+        }
 
-            if (!discount_id) {
-                Swal.fire({
-                    title: 'Fehler',
-                    text: 'Bitte wählen Sie einen Discount aus.',
-                    icon: 'error',
-                    confirmButtonText: 'OK',
-                });
-                return;
-            }
+        const { discount_id, discount_amount, discount_percentage } = formValues;
 
-            if ((!discount_amount && !discount_percentage) ||
-                (discount_amount && discount_percentage)) {
-                Swal.fire({
-                    title: 'Fehler',
-                    text: 'Bitte geben Sie entweder einen Rabattbetrag oder einen Rabattprozentsatz an.',
-                    icon: 'error',
-                    confirmButtonText: 'OK',
-                });
-                return;
-            }
+        if (!discount_id) {
+            showErrorAlert('Bitte wählen Sie einen Discount aus.');
+            return;
+        }
 
-            const selectedDiscount = discounts.find(d => d.discount_id == discount_id);
-            if (!selectedDiscount) {
-                Swal.fire({
-                    title: 'Fehler',
-                    text: 'Ungültiger Discount ausgewählt.',
-                    icon: 'error',
-                    confirmButtonText: 'OK',
-                });
-                return;
-            }
+        if (
+            (!discount_amount && !discount_percentage) ||
+            (discount_amount && discount_percentage)
+        ) {
+            showErrorAlert(
+                'Bitte geben Sie entweder einen Rabattbetrag oder einen Rabattprozentsatz an.'
+            );
+            return;
+        }
 
-            try {
-                await assignDiscountToSeatType(token, seatType.seat_type_id, selectedDiscount.discount_id,
-                    discount_amount ? parseFloat(discount_amount) : null,
-                    discount_percentage ? parseFloat(discount_percentage) : null
-                );
+        const selectedDiscount = discounts.find(d => d.discount_id == discount_id);
+        if (!selectedDiscount) {
+            showErrorAlert('Ungültiger Discount ausgewählt.');
+            return;
+        }
 
-                // Aktualisiere die Sitztypen-Zuweisungen
-                seatTypes = seatTypes.map(st => {
-                    if (st.seat_type_id === seatType.seat_type_id) {
-                        // Überprüfen, ob der Discount bereits zugewiesen ist
-                        const existing = st.discounts.find(d => d.discount_id === selectedDiscount.discount_id);
-                        if (existing) {
-                            // Aktualisiere die vorhandenen Werte
-                            return {
-                                ...st,
-                                discounts: st.discounts.map(d => d.discount_id === selectedDiscount.discount_id ? {
-                                    ...d,
-                                    discount_amount: discount_amount ? parseFloat(discount_amount) : null,
-                                    discount_percentage: discount_percentage ? parseFloat(discount_percentage) : null
-                                } : d)
-                            };
-                        } else {
-                            // Füge den neuen Discount hinzu
-                            return {
-                                ...st,
-                                discounts: [
-                                    ...st.discounts,
-                                    {
-                                        discount_id: selectedDiscount.discount_id,
-                                        name: selectedDiscount.name,
-                                        description: selectedDiscount.description,
+        try {
+            await assignDiscountToSeatType(
+                token,
+                seatType.seat_type_id,
+                selectedDiscount.discount_id,
+                discount_amount ? parseFloat(discount_amount) : null,
+                discount_percentage ? parseFloat(discount_percentage) : null
+            );
+
+            // Aktualisiere Sitztypen-Zuweisungen
+            seatTypes = seatTypes.map(st => {
+                if (st.seat_type_id === seatType.seat_type_id) {
+                    // Überprüfen, ob der Discount bereits zugewiesen ist
+                    const existing = st.discounts.find(d => d.discount_id === selectedDiscount.discount_id);
+                    if (existing) {
+                        // Aktualisiere die vorhandenen Werte
+                        return {
+                            ...st,
+                            discounts: st.discounts.map(d =>
+                                d.discount_id === selectedDiscount.discount_id
+                                    ? {
+                                        ...d,
                                         discount_amount: discount_amount ? parseFloat(discount_amount) : null,
                                         discount_percentage: discount_percentage ? parseFloat(discount_percentage) : null
                                     }
-                                ]
-                            };
-                        }
+                                    : d
+                            )
+                        };
+                    } else {
+                        // Füge den neuen Discount hinzu
+                        return {
+                            ...st,
+                            discounts: [
+                                ...st.discounts,
+                                {
+                                    discount_id: selectedDiscount.discount_id,
+                                    name: selectedDiscount.name,
+                                    description: selectedDiscount.description,
+                                    discount_amount: discount_amount ? parseFloat(discount_amount) : null,
+                                    discount_percentage: discount_percentage ? parseFloat(discount_percentage) : null
+                                }
+                            ]
+                        };
                     }
-                    return st;
-                });
+                }
+                return st;
+            });
 
-                console.log(`Assigned Discount ID ${selectedDiscount.discount_id} to Seat Type ID ${seatType.seat_type_id}`);
-
-                Swal.fire({
-                    title: 'Erfolgreich',
-                    text: 'Der Discount wurde dem Sitztyp zugewiesen.',
-                    icon: 'success',
-                    confirmButtonText: 'OK',
-                });
-            } catch (err) {
-                console.error('Fehler beim Zuweisen des Discounts:', err);
-                Swal.fire({
-                    title: 'Fehler',
-                    text: err.message || 'Fehler beim Zuweisen des Discounts.',
-                    icon: 'error',
-                    confirmButtonText: 'OK',
-                });
-            }
+            showSuccessAlert('Der Discount wurde dem Sitztyp zugewiesen.');
+        } catch (err) {
+            console.error('Fehler beim Zuweisen des Discounts:', err);
+            showErrorAlert(err.message || 'Fehler beim Zuweisen des Discounts.');
         }
     }
 
@@ -298,17 +263,20 @@
     async function handleRemoveDiscount(seatType, discount) {
         const token = get(authStore).token;
 
-        Swal.fire({
-            title: 'Sind Sie sicher?',
-            text: `Möchten Sie den Discount "${discount.name}" von Sitztyp "${seatType.name}" entfernen?`,
-            icon: 'warning',
-            showCancelButton: true,
-            confirmButtonText: 'Ja, entfernen',
-            cancelButtonText: 'Abbrechen',
-        }).then(async (result) => {
+        showCustomAlert(
+            'Sind Sie sicher?',
+            `Möchten Sie den Discount "${discount.name}" von Sitztyp "${seatType.name}" entfernen?`,
+            'warning',
+            'Ja, entfernen',
+            {
+                showCancelButton: true,
+                cancelButtonText: 'Abbrechen'
+            }
+        ).then(async (result) => {
             if (result.isConfirmed) {
                 try {
                     await removeDiscountFromSeatType(token, seatType.seat_type_id, discount.discount_id);
+
                     // Aktualisiere die Sitztypen-Zuweisungen
                     seatTypes = seatTypes.map(st => {
                         if (st.seat_type_id === seatType.seat_type_id) {
@@ -319,32 +287,21 @@
                         }
                         return st;
                     });
-                    console.log(`Removed Discount ID ${discount.discount_id} from Seat Type ID ${seatType.seat_type_id}`);
 
-                    Swal.fire({
-                        title: 'Entfernt',
-                        text: 'Der Discount wurde vom Sitztyp entfernt.',
-                        icon: 'success',
-                        confirmButtonText: 'OK',
-                    });
+                    showSuccessAlert('Der Discount wurde vom Sitztyp entfernt.');
                 } catch (err) {
                     console.error('Fehler beim Entfernen des Discounts:', err);
-                    Swal.fire({
-                        title: 'Fehler',
-                        text: err.message || 'Fehler beim Entfernen des Discounts.',
-                        icon: 'error',
-                        confirmButtonText: 'OK',
-                    });
+                    showErrorAlert(err.message || 'Fehler beim Entfernen des Discounts.');
                 }
             }
         });
     }
 
-
     function goBack() {
         navigate('/admin'); // Passe den Pfad entsprechend an
     }
 </script>
+
 
 <style>
     /* Basis-Layout */
@@ -643,6 +600,6 @@
             {/each}
         </div>
     {/if}
-    <button class="back-button" on:click={goBack}>Zurück zum Adminbereich</button>
 
+    <button class="back-button" on:click={goBack}>Zurück zum Adminbereich</button>
 </main>

@@ -95,7 +95,14 @@ h1 {
 }
 
 
-
+/* Input-Felder / Select innerhalb des Popups */
+.custom-swal2-popup .swal2-input,
+.custom-swal2-popup .swal2-select {
+    background-color: #333 !important;  /* dunkleres Grau */
+    color: #fff !important;
+    border: 1px solid #2ecc71;
+    border-radius: 6px;
+}
 
 /* Globale Stile für minimalistische Routen */
 .minimal-route {
