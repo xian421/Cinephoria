@@ -75,4 +75,4 @@ In der **package.json** findest du zwei Gruppen von Abhängigkeiten:
 
 2. **Repository klonen:**  
    ```bash
-   git clone https://github.com/user/repo1.git
+   git clone https://github.com/xian421/Cinephoria
