@@ -381,6 +381,9 @@ body {
   max-height: 100px;
   overflow: hidden;
   position: relative;
+  overflow-y: auto;
+  /* Scrolbutton verstecken */
+  scrollbar-width: none;
 }
 
 .movie-overview::after {
